@@ -9,7 +9,7 @@ python train.py --config configs/power-seeking-all.yaml
 ```
 
 ### 1. Evaluation Phase
-Run the main training loop using predefined configurations.
+Run the main eval loop using predefined configurations.
 
 
 ```bash

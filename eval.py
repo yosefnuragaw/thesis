@@ -12,6 +12,8 @@ from types import SimpleNamespace
 from tqdm import tqdm
 from transformers import pipeline
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
 
 from utils import set_seed, get_eval_data, batch_logps
 from models import BlockWrapper, MultipleOptionDataset
@@ -96,7 +98,7 @@ def eval_generation(
     multipliers: list,
     messages: list,
     device: int = 0,
-    max_new_tokens: int = 32,
+    max_new_tokens: int = 64,
     temperature: float = 0.9,
 ):
     """
@@ -124,8 +126,11 @@ def eval_generation(
         output = generator(
             prompt,
             max_new_tokens=max_new_tokens,
+            min_new_tokens=16,
             do_sample=True,
-            temperature=temperature,
+            temperature=temperature,   
+            repetition_penalty=1.2,
+            generation_config=None,   
         )[0]["generated_text"]
 
         if "model" in output:
@@ -143,6 +148,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", "-c", type=str, required=True, help="Path to your YAML config file")
     parser.add_argument("--verbose", "-v", type=bool, required=False, default=True, help="Visualize eval progress")
+    parser.add_argument("--task", "-t", type=str, required=False, default="both", help="Visualize eval progress")
     args, remaining = parser.parse_known_args()
 
     hf_parser = HfArgumentParser(ScriptArguments)
@@ -200,27 +206,30 @@ if __name__ == "__main__":
     
     model.eval()
     print(f"[Config:] {args.config} [Behavior:] {script_args.behavior} | [Epoch:] {script_args.eval_epoch} |")
-    for mul in [0,1.,1.5,2,2.5,3]:
-        
-        accuracy = eval_accuracy(
+
+    if args.task != "generation":
+        for mul in [0,1.,1.5,2]:
+            
+            accuracy = eval_accuracy(
+                model=model,
+                loader=eval_loader,
+                multiplier=mul,
+                layers=script_args.layer, 
+                epoch=script_args.eval_epoch,
+                vec_dir=script_args.vec_dir, 
+                verbose=args.verbose
+            )
+
+    if args.task != "accuracy":
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": script_args.prompt},
+        ]
+
+        res = eval_generation(
             model=model,
-            loader=eval_loader,
-            multiplier=mul,
-            layers=script_args.layer, 
-            epoch=script_args.eval_epoch,
-            vec_dir=script_args.vec_dir, 
-            verbose=args.verbose
+            tokenizer=tokenizer,
+            layers=script_args.layer,
+            multipliers=[-2,-1.5,-1,0,1,1.5,2],
+            messages=messages,
         )
-
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": script_args.prompt},
-    ]
-
-    res = eval_generation(
-        model=model,
-        tokenizer=tokenizer,
-        layers=script_args.layer,
-        multipliers=[-3, -2, -1, 0, 1, 2, 3],
-        messages=messages,
-    )

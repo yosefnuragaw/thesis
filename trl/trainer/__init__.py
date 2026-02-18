@@ -18,6 +18,7 @@ from ..import_utils import _LazyModule
 
 
 _import_structure = {
+    "bipo_trainer_exp": ["BiPOTrainerEXP"],
     "bipo_trainer": ["BiPOTrainer"],
     "bco_config": ["BCOConfig"],  # deprecated import
     "bco_trainer": ["BCOTrainer"],  # deprecated import

@@ -8,7 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, HfArgumentParser
-from trl import BiPOTrainer, DPOConfig
+from trl import BiPOTrainer, DPOConfig, BiPOTrainerEXP
 
 from utils import get_data, print_trainable_parameters, set_seed
 from models import BlockWrapper
@@ -52,6 +52,7 @@ class ScriptArguments:
     )
     report_to: Optional[str] = field(default="wandb", metadata={"help": "integration to report to"})
     ignore_bias_buffers: Optional[bool] = field(default=False, metadata={"help": "fix for DDP issues"})
+    experiment: Optional[bool] = field(default=False, metadata={"help": "Run experimentation"})
 
 
 
@@ -154,18 +155,31 @@ if __name__ == "__main__":
         beta=script_args.beta,
     )
 
-    # 7. Start Trainer
-    dpo_trainer = BiPOTrainer(
-        model=model,
-        ref_model=model_ref,
-        args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset={'test_dataset_add': test_dataset, 'test_dataset_sub': test_dataset},
-        processing_class=tokenizer,
-        behavior=script_args.behavior,
-        layer=script_args.layer,
-        name=template_name,
-    )
+    if script_args.experiment:
+        dpo_trainer = BiPOTrainerEXP(
+            model=model,
+            ref_model=model_ref,
+            args=training_args,
+            train_dataset=train_dataset,
+            eval_dataset={'test_dataset_add': test_dataset, 'test_dataset_sub': test_dataset},
+            processing_class=tokenizer,
+            behavior=script_args.behavior,
+            layer=script_args.layer,
+            name=template_name,
+        )
+    else:
+
+        dpo_trainer = BiPOTrainer(
+            model=model,
+            ref_model=model_ref,
+            args=training_args,
+            train_dataset=train_dataset,
+            eval_dataset={'test_dataset_add': test_dataset, 'test_dataset_sub': test_dataset},
+            processing_class=tokenizer,
+            behavior=script_args.behavior,
+            layer=script_args.layer,
+            name=template_name,
+        )
 
     print_trainable_parameters(model)
     dpo_trainer.train()

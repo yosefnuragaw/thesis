@@ -88,7 +88,7 @@ if __name__ == "__main__":
     template_name = MODEL_TEMPLATE_MAP.get(script_args.model_name_or_path, 'llama-2')
 
     print(f"Loaded config from {args.config}")
-    print(f"[Behavior:] {script_args.behavior} | [Layer:] {script_args.layer} | [Model:] {script_args.model_name_or_path}")
+    print(f"[Behavior:] {script_args.behavior} | [Layer:] {script_args.layer} | [Model:] {script_args.model_name_or_path} | [Experiment:] {script_args.experiment}")
 
     # 3. Load & Configure Models
     model = AutoModelForCausalLM.from_pretrained(

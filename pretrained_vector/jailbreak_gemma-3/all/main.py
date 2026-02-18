@@ -12,7 +12,7 @@ def download_full_bipo_history():
     entity = "yosefnuragaw"
     project = "BiPO-Gemma-3-Jailbreak"
     # The specific base path identified from your terminal success
-    base_name = "jailbreak-seeking-Layers_0-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-25-af0xmb1s_steering-vec-layer"
+    base_name = "jailbreak-Layers_0-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-25-4z8jvtwu-steering-vec-layer"
     
     layers = range(26)  # 0 to 25
     versions = range(20) # v0 to v19

@@ -1,4 +1,4 @@
-from bipo_trainer import BiPOTrainer
+from .bipo_trainer import BiPOTrainer
 import torch
 
 

@@ -52,7 +52,10 @@ class ScriptArguments:
     )
     report_to: Optional[str] = field(default="wandb", metadata={"help": "integration to report to"})
     ignore_bias_buffers: Optional[bool] = field(default=False, metadata={"help": "fix for DDP issues"})
+
+    # Experiment
     experiment: Optional[bool] = field(default=False, metadata={"help": "Run experimentation"})
+    quantile: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
 
 
 
@@ -166,6 +169,7 @@ if __name__ == "__main__":
             behavior=script_args.behavior,
             layer=script_args.layer,
             name=template_name,
+            quantile=script_args.quantile
         )
     else:
 

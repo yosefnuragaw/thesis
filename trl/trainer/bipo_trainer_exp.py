@@ -36,7 +36,7 @@ class BiPOTrainerEXP(BiPOTrainer):
                     mask = (importance >= threshold).float()
                     
                     if param.grad is not None:
-                        param.grad.data.mul_(mask)
+                        param.grad.mul_(mask)
 
         return loss
     

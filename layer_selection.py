@@ -49,7 +49,7 @@ def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int
     correct = [0,0]
     total = [0,0]
     
-    indx = 0
+    
     if verbose:
         pbar = tqdm(loader, desc="Evaluating", ncols=100)
     else:
@@ -58,15 +58,19 @@ def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int
     for batch in pbar:
         label = batch["label"][0]
         q_len = batch["question_length"]
-    
+
         for layer in layers:
             if isinstance(model.model.layers[layer], BlockWrapper):
                 if label != 'A':
-                    indx = 0
                     model.model.layers[layer].set_multiplier(-multiplier)
                 else:
                     model.model.layers[layer].set_multiplier(multiplier)
-                    indx = 1
+        
+        indx = None
+        if label != 'A':
+            indx = 0
+        else:
+            indx = 1
 
         avg_logp = []
         for input_ids, attention_mask in zip(batch["input_ids"], batch["attention_mask"]):

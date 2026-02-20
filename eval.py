@@ -88,9 +88,10 @@ def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int
         if pred == label:
             correct[indx] += 1
     
-        curr_positive = correct[0] / total[0],
-        curr_negative = correct[1]/ total[1]
         
+        curr_positive = correct[0] / total[0] if total[0] > 0 else 0.0
+        curr_negative = correct[1]/ total[1] if total[1] > 0 else 0.0
+
         if verbose:
             pbar.set_description(f"Evaluating- [Multiplier:] {mul}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
 

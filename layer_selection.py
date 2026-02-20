@@ -179,9 +179,9 @@ if __name__ == "__main__":
                     hidden_dim=model.config.hidden_size, 
                     vec=steering_vector
                 )
-                print(f"Loaded steering vector: {vec_path} on device {layer_device}")
-            else:
-                print(f"Warning: Vector not found at {vec_path}, skipping layer {layer}")
+            #     print(f"Loaded steering vector: {vec_path} on device {layer_device}")
+            # else:
+            #     print(f"Warning: Vector not found at {vec_path}, skipping layer {layer}")
 
      
         

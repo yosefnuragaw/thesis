@@ -44,12 +44,12 @@ class ScriptArguments:
     prompt: Optional[str] = field(default="", metadata={"help": "What prompts for generation eval"})
 
 
-def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int, vec_dir: str, verbose: bool = False) -> SimpleNamespace:
+def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int|None, vec_dir: str, verbose: bool = False) -> SimpleNamespace:
     OPT = ['A', 'B']
     correct = [0,0]
     total = [0,0]
     
-    indx = 0
+    
     if verbose:
         pbar = tqdm(loader, desc="Evaluating", ncols=100)
     else:
@@ -58,15 +58,19 @@ def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int
     for batch in pbar:
         label = batch["label"][0]
         q_len = batch["question_length"]
-    
+
         for layer in layers:
             if isinstance(model.model.layers[layer], BlockWrapper):
                 if label != 'A':
-                    indx = 0
                     model.model.layers[layer].set_multiplier(-multiplier)
                 else:
                     model.model.layers[layer].set_multiplier(multiplier)
-                    indx = 1
+        
+        indx = None
+        if label != 'A':
+            indx = 0
+        else:
+            indx = 1
 
         avg_logp = []
         for input_ids, attention_mask in zip(batch["input_ids"], batch["attention_mask"]):
@@ -93,7 +97,10 @@ def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int
         curr_negative = correct[1]/ total[1] if total[1] > 0 else 0.0
 
         if verbose:
-            pbar.set_description(f"Evaluating- [Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
+            if epoch is not None:
+                pbar.set_description(f"Evaluating- [Epoch:] {epoch} [Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
+            else:
+                pbar.set_description(f"Evaluating- [Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
 
     return SimpleNamespace(
         positive = correct[0] / total[0],

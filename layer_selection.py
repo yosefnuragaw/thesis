@@ -2,6 +2,7 @@ import argparse
 import os
 import random
 import numpy as np
+import copy
 from torch.utils.data import Dataset, DataLoader
 from dataclasses import dataclass, field
 from typing import Tuple, Dict, List, Optional
@@ -166,7 +167,9 @@ if __name__ == "__main__":
         )
     
     print(f"[Config:] {args.config} [Behavior:] {script_args.behavior} | [Baseline:] {accuracy} |")
-
+    
+    original_layers = torch.nn.ModuleList([copy.deepcopy(layer) for layer in model.model.layers])
+    
     for epo in range(20):
         for layer in script_args.layer:
             vec_path = f"{script_args.vec_dir}/vec_ep{epo}_layer{layer}.pt"
@@ -175,13 +178,12 @@ if __name__ == "__main__":
                 steering_vector = torch.load(vec_path, map_location=layer_device)
                 
                 model.model.layers[layer] = BlockWrapper(
-                    model.model.layers[layer], 
-                    hidden_dim=model.config.hidden_size, 
-                    vec=steering_vector
-                )
-            #     print(f"Loaded steering vector: {vec_path} on device {layer_device}")
-            # else:
-            #     print(f"Warning: Vector not found at {vec_path}, skipping layer {layer}")
+                original_layers[layer], 
+                hidden_dim=model.config.hidden_size, 
+                vec=steering_vector
+            )
+                
+                model.config.use_cache = False
 
      
         

@@ -44,11 +44,12 @@ class ScriptArguments:
     prompt: Optional[str] = field(default="", metadata={"help": "What prompts for generation eval"})
 
 
-def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int, vec_dir: str, verbose: bool = False) -> float:
+def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int, vec_dir: str, verbose: bool = False) -> SimpleNamespace:
     OPT = ['A', 'B']
-    correct = 0
-    total = 0
+    correct = [0,0]
+    total = [0,0]
     
+    indx = 0
     if verbose:
         pbar = tqdm(loader, desc="Evaluating", ncols=100)
     else:
@@ -61,9 +62,11 @@ def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int
         for layer in layers:
             if isinstance(model.model.layers[layer], BlockWrapper):
                 if label != 'A':
+                    indx = 0
                     model.model.layers[layer].set_multiplier(-multiplier)
                 else:
                     model.model.layers[layer].set_multiplier(multiplier)
+                    indx = 1
 
         avg_logp = []
         for input_ids, attention_mask in zip(batch["input_ids"], batch["attention_mask"]):
@@ -81,15 +84,20 @@ def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int
         pred = OPT[avg_logp.index(max(avg_logp))]
 
         
-        total += 1
+        total[indx] += 1
         if pred == label:
-            correct += 1
+            correct[indx] += 1
     
-        current_acc = correct / total
+        curr_positive = correct[0] / total[0],
+        curr_negative = correct[1]/ total[1]
+        
         if verbose:
-            pbar.set_description(f"Evaluating- [Multiplier:] {mul}  [Accuracy:] {current_acc:.4f}")
+            pbar.set_description(f"Evaluating- [Multiplier:] {mul}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
 
-    return correct / total
+    return SimpleNamespace(
+        positive = correct[0] / total[0],
+        negative = correct[1]/ total[1],
+    )
 
 def eval_generation(
     model,

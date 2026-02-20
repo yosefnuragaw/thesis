@@ -97,7 +97,7 @@ def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int
         curr_negative = correct[1]/ total[1] if total[1] > 0 else 0.0
 
         if verbose:
-            pbar.set_description(f"Evaluating- [Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
+            pbar.set_description(f"Evaluating- [Epoch:] {epo} [Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
 
     return SimpleNamespace(
         positive = correct[0] / total[0],
@@ -183,13 +183,12 @@ if __name__ == "__main__":
      
         
         for mul in [1.,1.5,2]:
-            
                 accuracy = eval_accuracy(
                     model=model,
                     loader=eval_loader,
                     multiplier=mul,
                     layers=script_args.layer, 
-                    epoch=script_args.eval_epoch,
+                    epoch=epo,
                     vec_dir=script_args.vec_dir, 
                     verbose=args.verbose
                 )

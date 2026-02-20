@@ -44,7 +44,7 @@ class ScriptArguments:
     prompt: Optional[str] = field(default="", metadata={"help": "What prompts for generation eval"})
 
 
-def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int, vec_dir: str, verbose: bool = False) -> SimpleNamespace:
+def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int|None, vec_dir: str, verbose: bool = False) -> SimpleNamespace:
     OPT = ['A', 'B']
     correct = [0,0]
     total = [0,0]
@@ -97,7 +97,10 @@ def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int
         curr_negative = correct[1]/ total[1] if total[1] > 0 else 0.0
 
         if verbose:
-            pbar.set_description(f"Evaluating- [Epoch:] {epoch} [Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
+            if epoch is not None:
+                pbar.set_description(f"Evaluating- [Epoch:] {epoch} [Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
+            else:
+                pbar.set_description(f"Evaluating- [Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
 
     return SimpleNamespace(
         positive = correct[0] / total[0],
@@ -157,7 +160,7 @@ if __name__ == "__main__":
                     loader=eval_loader,
                     multiplier=0,
                     layers=script_args.layer, 
-                    epoch=script_args.eval_epoch,
+                    epoch=None,
                     vec_dir=script_args.vec_dir, 
                     verbose=args.verbose
         )

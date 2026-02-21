@@ -23,15 +23,15 @@ MODEL_TEMPLATE_MAP = {
 # --- Arguments ---
 @dataclass
 class ScriptArguments:
-    beta: Optional[float] = field(default=0.05, metadata={"help": "the beta parameter for DPO loss"})
+    beta: Optional[float] = field(default=0.1, metadata={"help": "the beta parameter for DPO loss"})
     model_name_or_path: Optional[str] = field(
         default="google/gemma-3-1b-it",
         metadata={"help": "Supported: meta-llama/Llama-2-7b-chat-hf, mistralai/Mistral-7B-Instruct-v0.2, google/gemma-3-1b-it"},
     )
-    learning_rate: Optional[float] = field(default=1e-2, metadata={"help": "optimizer learning rate"})
+    learning_rate: Optional[float] = field(default=5e-4, metadata={"help": "optimizer learning rate"})
     lr_scheduler_type: Optional[str] = field(default="cosine", metadata={"help": "the lr scheduler type"})
-    warmup_steps: Optional[int] = field(default=10, metadata={"help": "the number of warmup steps"})
-    weight_decay: Optional[float] = field(default=0.001, metadata={"help": "the weight decay"})
+    warmup_steps: Optional[int] = field(default=20, metadata={"help": "the number of warmup steps"})
+    weight_decay: Optional[float] = field(default=0.05, metadata={"help": "the weight decay"})
     optimizer_type: Optional[str] = field(default="adamw_torch", metadata={"help": "the optimizer type"})
 
     per_device_train_batch_size: Optional[int] = field(default=4, metadata={"help": "train batch size per device"})

@@ -198,6 +198,6 @@ if __name__ == "__main__":
                 verbose=args.verbose
             )
 
-            if mul == 1. and accuracy['positive'] < base_accuracy['positive'] or accuracy['negative'] < base_accuracy['negative']:
+            if mul == 1. and accuracy.positive < base_accuracy.positive or accuracy.negative < base_accuracy.negative:
                 print(f"Epoch {epo} skipped")
                 break

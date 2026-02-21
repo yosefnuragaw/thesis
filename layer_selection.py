@@ -187,7 +187,7 @@ if __name__ == "__main__":
 
      
         
-        for mul in [1.,1.5,2]:
+        for mul in [1.,1.5,2, 2.5]:
                 accuracy = eval_accuracy(
                     model=model,
                     loader=eval_loader,

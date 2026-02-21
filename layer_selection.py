@@ -99,9 +99,9 @@ def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int
 
         if verbose:
             if epoch is not None:
-                pbar.set_description(f"Evaluating- [Epoch:] {epoch} [Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
+                pbar.set_description(f"[Epoch:] {epoch} [Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
             else:
-                pbar.set_description(f"Evaluating- [Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
+                pbar.set_description(f"[Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
 
     return SimpleNamespace(
         positive = correct[0] / total[0],

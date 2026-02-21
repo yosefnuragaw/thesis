@@ -156,7 +156,7 @@ if __name__ == "__main__":
 
     model.eval()
 
-    accuracy = eval_accuracy(
+    base_accuracy = eval_accuracy(
                     model=model,
                     loader=eval_loader,
                     multiplier=0,
@@ -166,7 +166,7 @@ if __name__ == "__main__":
                     verbose=args.verbose
         )
     
-    print(f"[Config:] {args.config} [Behavior:] {script_args.behavior} | [Baseline:] {accuracy} |")
+    print(f"[Config:] {args.config} [Behavior:] {script_args.behavior} | [Baseline:] {base_accuracy} |")
     
     original_layers = torch.nn.ModuleList([copy.deepcopy(layer) for layer in model.model.layers])
     
@@ -187,13 +187,17 @@ if __name__ == "__main__":
 
      
         
-        for mul in [1.,1.5,2, 2.5]:
-                accuracy = eval_accuracy(
-                    model=model,
-                    loader=eval_loader,
-                    multiplier=mul,
-                    layers=script_args.layer, 
-                    epoch=epo,
-                    vec_dir=script_args.vec_dir, 
-                    verbose=args.verbose
-                )
+        for mul in [1.,1.5,2]:
+            accuracy = eval_accuracy(
+                model=model,
+                loader=eval_loader,
+                multiplier=mul,
+                layers=script_args.layer, 
+                epoch=epo,
+                vec_dir=script_args.vec_dir, 
+                verbose=args.verbose
+            )
+
+            if mul == 1. and accuracy < base_accuracy:
+                print(f"Epoch {epo} skipped")
+                break

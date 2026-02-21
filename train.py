@@ -172,7 +172,6 @@ if __name__ == "__main__":
             quantile=script_args.quantile
         )
     else:
-
         dpo_trainer = BiPOTrainer(
             model=model,
             ref_model=model_ref,

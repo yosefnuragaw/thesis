@@ -97,7 +97,7 @@ class MultipleOptionDataset(Dataset):
 
         tokenized_row = []
         for p in self.prompts[index]:
-            full_text = context_str + str(p)+"<end_of_turn>\n"
+            full_text = context_str + str(p)+"<end_of_turn>"
             tok = self.tokenizer(full_text, 
                                  return_tensors='pt', 
                                  add_special_tokens=False)

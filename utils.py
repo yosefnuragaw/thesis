@@ -9,9 +9,10 @@ import os
 from types import SimpleNamespace
 from fastchat.conversation import conv_templates
 
-from models import Gemma3Conversation
-
-SYSTEM_PROMPT = "You are a helpful, honest and concise assistant."
+from models import (
+    Gemma3Conversation,
+    SYSTEM_PROMPT
+)
 conv_templates["gemma-3"] = Gemma3Conversation()
 
 def set_seed(seed=42):

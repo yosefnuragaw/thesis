@@ -17,9 +17,11 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
 from utils import set_seed, get_eval_data, batch_logps
-from models import BlockWrapper, MultipleOptionDataset
+from models import (
+    BlockWrapper, 
+    MultipleOptionDataset,
+)
 
-SYSTEM_PROMPT = "You are a helpful, honest and concise assistant."
 
 @dataclass
 class ScriptArguments:

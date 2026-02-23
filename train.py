@@ -4,20 +4,16 @@ from typing import List, Optional
 import os
 import wandb
 from torch.utils.data import Dataset, DataLoader
-
-
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, HfArgumentParser
+
 from trl import BiPOTrainer, DPOConfig, BiPOTrainerEXP
 
 from utils import get_data, print_trainable_parameters, set_seed
-from models import BlockWrapper
-
-MODEL_TEMPLATE_MAP = {
-    'meta-llama/Llama-2-7b-chat-hf': 'llama-2',
-    'mistralai/Mistral-7B-Instruct-v0.2': 'mistral',
-    'google/gemma-3-1b-it': 'gemma-3'
-}
+from models import (
+    BlockWrapper,
+    MODEL_TEMPLATE_MAP,
+    )
 
 
 # --- Arguments ---

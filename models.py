@@ -3,6 +3,13 @@ import torch
 from torch.utils.data import Dataset
 from fastchat.conversation import Conversation
 
+
+SYSTEM_PROMPT = "You are a helpful, honest and concise assistant."
+MODEL_TEMPLATE_MAP = {
+    'meta-llama/Llama-2-7b-chat-hf': 'llama-2',
+    'mistralai/Mistral-7B-Instruct-v0.2': 'mistral',
+    'google/gemma-3-1b-it': 'gemma-3'
+}
 class BlockWrapper(torch.nn.Module):
     def __init__(self, block, hidden_dim, vec=None):
         super().__init__()

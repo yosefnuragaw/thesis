@@ -47,12 +47,12 @@ def get_data(num_proc=1, behavior='power-seeking', train=True, template_name='ge
             conv = get_conv_template(template_name)
             conv.set_system_message(SYSTEM_PROMPT)
             conv.append_message(conv.roles[0], question)
-            conv.append_message(conv.roles[1], None)
             prompt.append(conv.get_prompt())
+            
         return {
             "prompt": prompt,
-            "chosen": [' ' + s for s in samples["matching"]],
-            "rejected": [' ' + s for s in samples["not_matching"]],
+            "chosen": [s + "<end_of_turn>" for s in samples["matching"]],
+            "rejected": [s + "<end_of_turn>" for s in samples["not_matching"]],
         }
 
     return dataset.map(
@@ -77,7 +77,6 @@ def get_eval_data(behavior, template_name='gemma-3'):
         conv = get_conv_template(template_name)
         conv.set_system_message(SYSTEM_PROMPT)
         conv.append_message(conv.roles[0], f"{row['question']}")
-        # conv.append_message(conv.roles[1], None)
         
         full_prompt = conv.get_prompt()
         questions.append(full_prompt)

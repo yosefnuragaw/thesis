@@ -57,7 +57,7 @@ class Gemma3Conversation(Conversation):
             sep="",
             sep2="",
             stop_str="<end_of_turn>",
-            stop_token_ids=[1],  # Gemma EOS
+            stop_token_ids=[1],  
         )
 
     def append_message(self, role, message):
@@ -65,6 +65,8 @@ class Gemma3Conversation(Conversation):
             formatted = f"<start_of_turn>user\n{message}<end_of_turn>\n"
             self.messages.append((role, formatted))
         elif role == "assistant":
+            if message is None:
+                return 
             formatted = f"<start_of_turn>model\n{message}<end_of_turn>\n"
             self.messages.append((role, formatted))
         else:

@@ -12,9 +12,10 @@ from typing import List, Optional
 import gc
 from tqdm import tqdm
 from torch.utils.data import DataLoader
+from models import MultipleOptionDataset
 
 
-from models import BlockWrapper
+from models import BlockWrapper, SYSTEM_PROMPT
 from utils import set_seed, get_eval_data, batch_logps
 
 @dataclass
@@ -73,6 +74,25 @@ def init_model(
     tokenizer.pad_token = tokenizer.eos_token
 
     return model,tokenizer
+
+def produce_dataloader(behavior: str, tokenizer: AutoTokenizer):
+    data = get_eval_data(behavior)
+
+    eval_dataset = MultipleOptionDataset(
+        tokenizer=tokenizer,
+        questions=data.questions,
+        prompts=data.prompts,
+        labels=data.labels,
+    )
+        
+    eval_loader = DataLoader(
+        dataset=eval_dataset,
+        batch_size=1,              
+        shuffle=False,          
+        num_workers=0            
+    )
+    
+    return eval_loader
 
 def eval_accuracy(
         model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int|None, verbose: bool = False
@@ -136,7 +156,57 @@ def eval_accuracy(
 
     return positive_acc, negative_acc
     
+def eval_generation(
+    model,
+    tokenizer,
+    layers: list,
+    multipliers: list,
+    messages: list,
+    device: int = 0,
+    max_new_tokens: int = 64,
+    temperature: float = 0.9,
+):
+    """
+    Run generation for different steering multipliers on selected layers.
+    """
 
+    generator = pipeline(
+        "text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        device=device if torch.cuda.is_available() else -1,
+    )
+
+    prompt = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True,
+    )
+
+    results = {}
+    for mult in multipliers:
+        for layer in layers:
+            model.model.layers[layer].set_multiplier(mult)
+
+        output = generator(
+            prompt,
+            max_new_tokens=max_new_tokens,
+            min_new_tokens=16,
+            do_sample=True,
+            temperature=temperature,   
+            repetition_penalty=1.2,
+            generation_config=None,   
+        )[0]["generated_text"]
+
+        if "model" in output:
+            trimmed = output[output.find("model") + 5:].strip()
+        else:
+            trimmed = output
+
+        print(f"[Multiplier {mult}:] {trimmed}\n")
+        results[mult] = trimmed
+
+    return results
 
 if __name__ == "__main__":
     set_seed(seed=11)
@@ -154,8 +224,6 @@ if __name__ == "__main__":
     else:
         raise ValueError("Config file must be .yaml or .json")
     
-
-    data = get_eval_data(script_args.behavior)
     model, tokenizer = init_model(
         model_name=script_args.model_name_or_path,
         vec_dir=script_args.vec_dir,
@@ -163,4 +231,37 @@ if __name__ == "__main__":
         layer=script_args.layer,
         multiplier= 0
     )
+
+    eval_loader = produce_dataloader(
+        behavior=script_args.behavior,
+        tokenizer=tokenizer
+    )
+
+    if args.task != "generation":
+        for mul in [0,1.,1.5,2]:       
+            accuracy = eval_accuracy(
+                model=model,
+                loader=eval_loader,
+                multiplier=mul,
+                layers=script_args.layer, 
+                epoch=script_args.eval_epoch,
+                vec_dir=script_args.vec_dir, 
+                verbose=args.verbose
+            ) 
+
+    if args.task != "accuracy":
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": script_args.prompt},
+        ]
+        res = eval_generation(
+            model=model,
+            tokenizer=tokenizer,
+            layers=script_args.layer,
+            multipliers= [-2,-1.5,-1,0,1,1.5,2],
+            messages=messages,
+        )
+    
+
+
 

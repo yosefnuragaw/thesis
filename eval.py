@@ -225,7 +225,6 @@ if __name__ == "__main__":
 
     if args.task != "generation":
         for mul in [0,1.,1.5,2]:
-            
             accuracy = eval_accuracy(
                 model=model,
                 loader=eval_loader,

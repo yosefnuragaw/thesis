@@ -117,3 +117,40 @@ class MultipleOptionDataset(Dataset):
     def __len__(self) -> int:
         return len(self.prompts)
 
+        
+class Gemma3Conversation(Conversation):
+    def __init__(self):
+        super().__init__(
+            name="gemma-3",
+            system_template="<bos><start_of_turn>system\n{system_message}<end_of_turn>\n",
+            roles=("user", "assistant"),
+            messages=[],
+            sep="",
+            sep2="",
+            stop_str="<end_of_turn>",
+            stop_token_ids=[1],  
+        )
+
+    def append_message(self, role, message):
+        if role == "user":
+            formatted = f"<start_of_turn>user\n{message}<end_of_turn>\n"
+            self.messages.append((role, formatted))
+        elif role == "assistant":
+            if message is None:
+                return 
+            formatted = f"<start_of_turn>model\n{message}<end_of_turn>\n"
+            self.messages.append((role, formatted))
+        else:
+            raise ValueError(f"Unknown role: {role}")
+
+    def get_prompt(self):
+        prompt = ""
+        if self.system_message:
+            prompt += self.system_template.format(system_message=self.system_message)
+        
+        for _, content in self.messages:
+            prompt += content
+            
+        prompt += "<start_of_turn>model\n"
+        return prompt
+    

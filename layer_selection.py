@@ -169,7 +169,7 @@ if __name__ == "__main__":
     
     original_layers = torch.nn.ModuleList([copy.deepcopy(layer) for layer in model.model.layers])
     
-    for epo in range(8):
+    for epo in range(20):
         for layer in script_args.layer:
             vec_path = f"{script_args.vec_dir}/vec_ep{epo}_layer{layer}.pt"
             if os.path.exists(vec_path):

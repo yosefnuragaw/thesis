@@ -134,7 +134,6 @@ if __name__ == "__main__":
     model, tokenizer = init_model(
         model_name=script_args.model_name_or_path,
         vec_dir=script_args.vec_dir,
-        epoch=script_args.eval_epoch,
         layers=script_args.layer,
         multiplier= 0
     )

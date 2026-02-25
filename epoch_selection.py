@@ -17,7 +17,7 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
 from utils import set_seed, get_eval_data, batch_logps
-from evaluation import init_model
+from evaluation import init_model, eval_accuracy
 from models import (
     BlockWrapper, 
     MultipleOptionDataset,
@@ -48,68 +48,68 @@ class ScriptArguments:
     prompt: Optional[str] = field(default="", metadata={"help": "What prompts for generation eval"})
 
 
-def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int|None, vec_dir: str, verbose: bool = False) -> SimpleNamespace:
-    OPT = ['A', 'B']
-    correct = [0,0]
-    total = [0,0]
+# def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int|None, vec_dir: str, verbose: bool = False) -> SimpleNamespace:
+#     OPT = ['A', 'B']
+#     correct = [0,0]
+#     total = [0,0]
     
     
-    if verbose:
-        pbar = tqdm(loader, desc="Evaluating", ncols=100)
-    else:
-        pbar = loader
+#     if verbose:
+#         pbar = tqdm(loader, desc="Evaluating", ncols=100)
+#     else:
+#         pbar = loader
     
-    for batch in pbar:
-        label = batch["label"][0]
-        q_len = batch["question_length"]
+#     for batch in pbar:
+#         label = batch["label"][0]
+#         q_len = batch["question_length"]
 
-        for layer in layers:
-            if isinstance(model.model.layers[layer], BlockWrapper):
-                if label != 'A':
-                    model.model.layers[layer].set_multiplier(-multiplier)
-                else:
-                    model.model.layers[layer].set_multiplier(multiplier)
+#         for layer in layers:
+#             if isinstance(model.model.layers[layer], BlockWrapper):
+#                 if label != 'A':
+#                     model.model.layers[layer].set_multiplier(-multiplier)
+#                 else:
+#                     model.model.layers[layer].set_multiplier(multiplier)
         
-        indx = None
-        if label != 'A':
-            indx = 0
-        else:
-            indx = 1
+#         indx = None
+#         if label != 'A':
+#             indx = 0
+#         else:
+#             indx = 1
 
-        avg_logp = []
-        for input_ids, attention_mask in zip(batch["input_ids"], batch["attention_mask"]):
+#         avg_logp = []
+#         for input_ids, attention_mask in zip(batch["input_ids"], batch["attention_mask"]):
             
-            input_ids = input_ids.to(model.device)
-            attention_mask = attention_mask.to(model.device)
+#             input_ids = input_ids.to(model.device)
+#             attention_mask = attention_mask.to(model.device)
     
-            with torch.no_grad():
-                logits = model(input_ids=input_ids, attention_mask=attention_mask).logits
-                logps, _ = batch_logps(logits, input_ids)
+#             with torch.no_grad():
+#                 logits = model(input_ids=input_ids, attention_mask=attention_mask).logits
+#                 logps, _ = batch_logps(logits, input_ids)
                 
-                sliced = logps[0, q_len - 1:]
-                avg_logp.append(sliced.mean().item())
+#                 sliced = logps[0, q_len - 1:]
+#                 avg_logp.append(sliced.mean().item())
 
-        pred = OPT[avg_logp.index(max(avg_logp))]
+#         pred = OPT[avg_logp.index(max(avg_logp))]
 
         
-        total[indx] += 1
-        if pred == label:
-            correct[indx] += 1
+#         total[indx] += 1
+#         if pred == label:
+#             correct[indx] += 1
     
         
-        curr_positive = correct[0] / total[0] if total[0] > 0 else 0.0
-        curr_negative = correct[1]/ total[1] if total[1] > 0 else 0.0
+#         curr_positive = correct[0] / total[0] if total[0] > 0 else 0.0
+#         curr_negative = correct[1]/ total[1] if total[1] > 0 else 0.0
 
-        if verbose:
-            if epoch is not None:
-                pbar.set_description(f"[Epoch:] {epoch} [Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
-            else:
-                pbar.set_description(f"[Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
+#         if verbose:
+#             if epoch is not None:
+#                 pbar.set_description(f"[Epoch:] {epoch} [Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
+#             else:
+#                 pbar.set_description(f"[Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
 
-    return SimpleNamespace(
-        positive = correct[0] / total[0],
-        negative = correct[1]/ total[1],
-    )
+#     return SimpleNamespace(
+#         positive = correct[0] / total[0],
+#         negative = correct[1]/ total[1],
+#     )
 
 
 # --- Main Execution ---
@@ -165,7 +165,7 @@ if __name__ == "__main__":
                     verbose=args.verbose
         )
     
-    print(f"[Config:] {args.config} [Behavior:] {script_args.behavior} | [Baseline:] {base_accuracy} |")
+    print(f"[Config:] {args.config} [Behavior:] {script_args.behavior} | [Positive Accuracy:] {base_accuracy[0]:.4f} [Negative Accuracy:] {base_accuracy[1]:.4f}")
     
     original_layers = torch.nn.ModuleList([copy.deepcopy(layer) for layer in model.model.layers])
     
@@ -197,6 +197,6 @@ if __name__ == "__main__":
                 verbose=args.verbose
             )
 
-            if mul == 1. and accuracy.positive < base_accuracy.positive and accuracy.negative < base_accuracy.negative:
+            if mul == 1. and accuracy.positive < base_accuracy.positive or accuracy.negative < base_accuracy.negative:
                 print(f"Epoch {epo} skipped")
                 break

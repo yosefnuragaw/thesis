@@ -25,9 +25,9 @@ def download_steering_vectors_flat(entity, project, artifact_base_name, versions
 
 ENTITY = "yosefnuragaw" 
 PROJECT = "BiPO-New-Gemma-3-Power-Seeking"
-ARTIFACT_NAME = "power-seeking-Layers_18-u7xz36zt_steering-vec-layer18"
+ARTIFACT_NAME = "power-seeking-Layers_18-a12ajum7_steering-vec-layer18"
 
-versions_to_get = list(range(50)) 
+versions_to_get = list(range(100)) 
 
 paths = download_steering_vectors_flat(ENTITY, PROJECT, ARTIFACT_NAME, versions_to_get)
 

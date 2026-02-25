@@ -127,8 +127,8 @@ if __name__ == "__main__":
         model.model.layers[layer].vec.requires_grad = True  
 
     # 5. Load Datasets
-    train_dataset = get_data(tokenizer = tokenizer, behavior=script_args.behavior, train=True, template_name=template_name) 
-    test_dataset = get_data(tokenizer = tokenizer,behavior=script_args.behavior, train=False, template_name=template_name) 
+    train_dataset = get_data(tokenizer = tokenizer, behavior=script_args.behavior, train=True) 
+    test_dataset = get_data(tokenizer = tokenizer,behavior=script_args.behavior, train=False) 
 
 
     # 6. Initialize Training Args

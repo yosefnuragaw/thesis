@@ -95,14 +95,16 @@ if __name__ == "__main__":
     model.warnings_issued = {}
     model.config.use_cache = False
 
-    # Inject BlockWrappers
-    target_model = model.language_model if hasattr(model, "language_model") else model
+    # Check if the model uses .layers or .blocks
+    if hasattr(model.model, "layers"):
+        model_layers = model.model.layers
+    else:
+        model_layers = model.model.blocks
 
     for layer in script_args.layer:
-        # Menggunakan target_model.model.layers agar kompatibel di semua ukuran
-        target_model.model.layers[layer] = BlockWrapper(
-            target_model.model.layers[layer], 
-            hidden_dim=target_model.config.text_config.hidden_size if hasattr(target_model.config, "text_config") else target_model.config.hidden_size
+        model_layers[layer] = BlockWrapper(
+            model_layers[layer], 
+            hidden_dim=model.config.text_config.hidden_size if hasattr(model.config, "text_config") else model.config.hidden_size
         )
 
     if script_args.ignore_bias_buffers:

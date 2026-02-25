@@ -34,6 +34,12 @@ def get_data(tokenizer, num_proc=1, behavior='power-seeking', train=True, genera
     dataset = load_dataset("csv", data_files=file_path, split='train')
     original_columns = dataset.column_names
     
+    dataset = dataset.filter(
+        lambda x: x["question"] is not None 
+        and x["matching"] is not None 
+        and x["not_matching"] is not None
+    )
+    
     def return_prompt_and_responses(samples):
         prompts = []
         for question in samples["question"]:

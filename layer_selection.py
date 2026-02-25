@@ -17,6 +17,7 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
 from utils import set_seed, get_eval_data, batch_logps
+from evaluation import init_model
 from models import (
     BlockWrapper, 
     MultipleOptionDataset,
@@ -127,21 +128,18 @@ if __name__ == "__main__":
         raise ValueError("Config file must be .yaml or .json")
 
     set_seed(seed=11)
-    data = get_eval_data(script_args.behavior)
+    
     
     print("Loading model to GPU...")
-    model = AutoModelForCausalLM.from_pretrained(
-        script_args.model_name_or_path,
-        low_cpu_mem_usage=True,
-        trust_remote_code=True
+    model, tokenizer = init_model(
+        model_name=script_args.model_name_or_path,
+        vec_dir=script_args.vec_dir,
+        epoch=script_args.eval_epoch,
+        layers=script_args.layer,
+        multiplier= 0
     )
-    model.warnings_issued = {}
-    model.config.use_cache = False
-    model.to("cuda" if torch.cuda.is_available() else "cpu")
+    data = get_eval_data(tokenizer = tokenizer, behavior = script_args.behavior)
 
-    tokenizer = AutoTokenizer.from_pretrained(script_args.model_name_or_path)
-    tokenizer.pad_token = tokenizer.eos_token
-    
     eval_dataset = MultipleOptionDataset(
         tokenizer=tokenizer,
         questions=data.questions,

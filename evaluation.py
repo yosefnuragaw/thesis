@@ -139,14 +139,14 @@ def eval_accuracy(
                 correct[idx] += 1
     
         
-    positive_acc = correct[0] / total[0] if total[0] > 0 else 0.0
-    negative_acc = correct[1]/ total[1] if total[1] > 0 else 0.0
+        positive_acc = correct[0] / total[0] if total[0] > 0 else 0.0
+        negative_acc = correct[1]/ total[1] if total[1] > 0 else 0.0
 
-    if verbose:
-        if epoch is not None:
-            pbar.set_description(f"[Epoch:] {epoch} [Multiplier:] {multiplier}  [Positive Accuracy:] {positive_acc:.4f} [Negative Accuracy:] {negative_acc:.4f}")
-        else:
-            pbar.set_description(f"Baseline {multiplier}  [Positive Accuracy:] {positive_acc:.4f} [Negative Accuracy:] {negative_acc:.4f}")
+        if verbose:
+            if epoch is not None:
+                pbar.set_description(f"[Epoch:] {epoch} [Multiplier:] {multiplier}  [Positive Accuracy:] {positive_acc:.4f} [Negative Accuracy:] {negative_acc:.4f}")
+            else:
+                pbar.set_description(f"Baseline {multiplier}  [Positive Accuracy:] {positive_acc:.4f} [Negative Accuracy:] {negative_acc:.4f}")
 
     return positive_acc, negative_acc
     

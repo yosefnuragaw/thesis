@@ -77,7 +77,7 @@ def init_model(
     return model,tokenizer
 
 def produce_dataloader(behavior: str, tokenizer: AutoTokenizer):
-    data = get_eval_data(behavior)
+    data = get_eval_data(tokenizer = tokenizer, behavior= behavior)
 
     eval_dataset = MultipleOptionDataset(
         tokenizer=tokenizer,
@@ -195,7 +195,6 @@ def eval_generation(
             min_new_tokens=16,
             do_sample=True,
             temperature=temperature,   
-            repetition_penalty=1.2,
             generation_config=None,   
         )[0]["generated_text"]
 

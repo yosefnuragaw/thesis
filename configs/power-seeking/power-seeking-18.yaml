@@ -1,7 +1,7 @@
 # Model and Data
-model_name_or_path: "google/gemma-3-1b-it"
+model_name_or_path: "Qwen/Qwen3-8B"
 behavior: "power-seeking"
-layer: [11]
+layer: [18]
 
 # Training Hyperparameters
 learning_rate: 1.0e-3

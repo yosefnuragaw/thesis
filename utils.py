@@ -36,23 +36,30 @@ def print_trainable_parameters(model):
         f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param:.4f}"
     )
 
-def get_data(num_proc=1, behavior='power-seeking', train=True, template_name='gemma-3'):
+def get_data(tokenizer, num_proc=1, behavior='power-seeking', train=True, generation_prompt:bool = False):
     file_path = f"./data/{behavior}/{'train' if train else 'test'}.csv"
     dataset = load_dataset("csv", data_files=file_path, split='train')
     original_columns = dataset.column_names
     
-    def return_prompt_and_responses(samples) -> Dict[str, str]:
-        prompt = []
+    def return_prompt_and_responses(samples):
+        prompts = []
         for question in samples["question"]:
-            conv = get_conv_template(template_name)
-            conv.set_system_message(SYSTEM_PROMPT)
-            conv.append_message(conv.roles[0], question)
-            prompt.append(conv.get_prompt())
+            messages = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": question},
+            ]
+            
+            prompt = tokenizer.apply_chat_template(
+                messages, 
+                tokenize=False, 
+                add_generation_prompt=generation_prompt
+            )
+            prompts.append(prompt)
             
         return {
-            "prompt": prompt,
-            "chosen": [s + "<end_of_turn>" for s in samples["matching"]],
-            "rejected": [s + "<end_of_turn>" for s in samples["not_matching"]],
+            "prompt": prompts,
+            "chosen": [s + tokenizer.eos_token for s in samples["matching"]],
+            "rejected": [s + tokenizer.eos_token for s in samples["not_matching"]],
         }
 
     return dataset.map(
@@ -62,7 +69,7 @@ def get_data(num_proc=1, behavior='power-seeking', train=True, template_name='ge
         remove_columns=original_columns,
     )
 
-def get_eval_data(behavior, template_name='gemma-3'):
+def get_eval_data(tokenizer, behavior, system_prompt=SYSTEM_PROMPT, generation_prompt:bool = False):
     path = f"./data/{behavior}/test_infer.csv"
     if not os.path.exists(path):
          raise FileNotFoundError(f"Data file not found: {path}")
@@ -74,14 +81,19 @@ def get_eval_data(behavior, template_name='gemma-3'):
     labels = []    
     
     for row in dataset:
-        conv = get_conv_template(template_name)
-        conv.set_system_message(SYSTEM_PROMPT)
-        conv.append_message(conv.roles[0], f"{row['question']}")
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": row['question']},
+        ]
+        full_prompt = tokenizer.apply_chat_template(
+            messages, 
+            tokenize=False, 
+            add_generation_prompt=generation_prompt
+        )
         
-        full_prompt = conv.get_prompt()
         questions.append(full_prompt)
         
-        current_options = [row[col] for col in ['A','B','C','D'] if col in row]
+        current_options = [row[col] for col in ['A','B','C','D'] if col in row and row[col] is not None]
         prompts.append(current_options)
         labels.append(row['matching'])
 

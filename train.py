@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
     print('Unfreezing steering vectors...')
     for layer in script_args.layer:
-        target_model.model.layers[layer].vec.requires_grad = True  
+        model_layers[layer].vec.requires_grad = True  
 
     # 5. Load Datasets
     train_dataset = get_data(tokenizer = tokenizer, behavior=script_args.behavior, train=True) 

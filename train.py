@@ -91,25 +91,22 @@ if __name__ == "__main__":
         script_args.model_name_or_path,
         low_cpu_mem_usage=True,
         trust_remote_code=True,
+        torch_dtype= torch.float32
     )
     model.warnings_issued = {}
     model.config.use_cache = False
 
-    possible_attrs = ["layers", "blocks", "blk"]
-    model_layers = None
-
-    for attr in possible_attrs:
-        if hasattr(model.model, attr):
-            model_layers = getattr(model.model, attr)
-            break
-
-    if model_layers is None:
-        raise AttributeError("Tidak dapat menemukan atribut layer pada model (mencoba layers, blocks, blk)")
+    if hasattr(model, "language_model"):
+        model_layers = model.language_model.model.layers
+        hidden_size = model.config.text_config.hidden_size
+    else:
+        model_layers = model.model.layers
+        hidden_size = model.config.hidden_size
 
     for layer in script_args.layer:
         model_layers[layer] = BlockWrapper(
             model_layers[layer], 
-            hidden_dim=model.config.text_config.hidden_size if hasattr(model.config, "text_config") else model.config.hidden_size
+            hidden_dim = hidden_size
         )
 
     if script_args.ignore_bias_buffers:
@@ -122,7 +119,7 @@ if __name__ == "__main__":
         script_args.model_name_or_path,
         low_cpu_mem_usage=True,
         trust_remote_code=True,
-        torch_dtype= torch.bfloat16
+        torch_dtype= torch.float32
     )
     tokenizer = AutoTokenizer.from_pretrained(script_args.model_name_or_path)
     tokenizer.pad_token = tokenizer.eos_token

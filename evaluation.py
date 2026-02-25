@@ -135,7 +135,7 @@ def eval_accuracy(
             pred = OPT[avg_logp.index(max(avg_logp))]
             
             total[idx] += 1
-            if pred == label:
+            if pred == curr_label:
                 correct[idx] += 1
     
         

@@ -48,7 +48,7 @@ def init_model(
         model_name,
         low_cpu_mem_usage=True,
         trust_remote_code=True,
-        torch_dtype="auto"
+        torch_dtype= torch.float32
     )
     model.warnings_issued = {}
     model.to("cuda" if torch.cuda.is_available() else "cpu")

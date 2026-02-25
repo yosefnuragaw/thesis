@@ -246,7 +246,6 @@ if __name__ == "__main__":
                 multiplier=mul,
                 layers=script_args.layer, 
                 epoch=script_args.eval_epoch,
-                vec_dir=script_args.vec_dir, 
                 verbose=args.verbose
             ) 
 

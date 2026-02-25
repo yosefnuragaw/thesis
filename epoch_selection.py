@@ -59,7 +59,6 @@ if __name__ == "__main__":
 
     set_seed(seed=11)
     
-    
     print("Loading model to GPU...")
     model, tokenizer = init_model(
         model_name=script_args.model_name_or_path,
@@ -89,9 +88,8 @@ if __name__ == "__main__":
                     model=model,
                     loader=eval_loader,
                     multiplier=0,
-                    layers=script_args.layer, 
+                    layers= [], 
                     epoch=None,
-                    vec_dir=script_args.vec_dir, 
                     verbose=args.verbose
         )
     
@@ -121,7 +119,6 @@ if __name__ == "__main__":
                 multiplier=mul,
                 layers=script_args.layer, 
                 epoch=epo,
-                vec_dir=script_args.vec_dir, 
                 verbose=args.verbose
             )
 

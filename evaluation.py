@@ -80,9 +80,9 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer):
 
     eval_dataset = MultipleOptionDataset(
         tokenizer=tokenizer,
-        questions=data.questions,
-        prompts=data.prompts,
-        labels=data.labels,
+        questions=data['questions'],
+        prompts=data['prompts'],
+        labels=data['labels'],
     )
         
     eval_loader = DataLoader(

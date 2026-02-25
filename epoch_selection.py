@@ -71,9 +71,9 @@ if __name__ == "__main__":
 
     eval_dataset = MultipleOptionDataset(
         tokenizer=tokenizer,
-        questions=data.questions,
-        prompts=data.prompts,
-        labels=data.labels,
+        questions=data['questions'],
+        prompts=data['prompts'],
+        labels=data['labels'],
     )
         
     eval_loader = DataLoader(
@@ -113,8 +113,6 @@ if __name__ == "__main__":
             )
                 
                 model.config.use_cache = False
-
-     
         
         for mul in [1.,1.5,2]:
             accuracy = eval_accuracy(

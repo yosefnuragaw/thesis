@@ -1,0 +1,24 @@
+# Model and Data
+model_name_or_path: "google/gemma-3-4b-it"
+behavior: "power-seeking"
+layer: [15]
+
+# Training Hyperparameters
+learning_rate: 1.0e-2
+num_train_epochs: 20
+beta: 0.1
+per_device_train_batch_size: 4
+gradient_accumulation_steps: 1
+optimizer_type: "adamw_torch"
+lr_scheduler_type: "cosine"
+warmup_steps: 100
+weight_decay: 0.05
+
+# Logging and Instrumentation
+report_to: "wandb"
+logging_steps: 1
+max_length: 2048
+max_prompt_length: 2048
+
+# Experiment
+experiment: False

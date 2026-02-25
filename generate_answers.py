@@ -2,6 +2,7 @@
 
 
 from dataclasses import dataclass, field
+import pandas as pd
 from typing import Dict, List, Optional
 from transformers import (
     AutoModelForCausalLM, 
@@ -53,7 +54,7 @@ def load_dataset(
          raise FileNotFoundError(f"Data file not found: {path}")
     dataset = load_dataset("csv", data_files=path, split='train')
 
-    results:Dict[str, str] = {'prompts':[], 'A':[], 'B':[], 'answers':[]}
+    results:Dict[str, str] = {'prompts':[], 'questions':[], 'A':[], 'B':[], 'answers':[]}
   
     for idx, row in enumerate(dataset):
         messages = [
@@ -72,7 +73,8 @@ def load_dataset(
         except:
             raise ValueError(f'Expected column A and B in row {idx}')
         
-        results['prompt'].append(prompt)
+        results['questions'].append(row['question'])
+        results['prompts'].append(prompt)
         results['A'].append(pos)
         results['B'].append(neg)
 
@@ -122,13 +124,16 @@ def main(multiplier:float, args: HfArgumentParser )->None:
         tokenizer=tokenizer
     )
 
-    generate_answers(
+    df = generate_answers(
         model=model,
         tokenizer=tokenizer,
         dataset=dataset,
         max_new_tokens= args.max_new_tokens, 
         temperature = args.temperature
     )    
+    output_path = f"evaluation_results_{args.behavior}_{args.model_name_or_path}_{multiplier}.csv"
+    df.to_csv(output_path, index=False)
+    print(f"Results saved successfully to {output_path}")
 
 if __name__ == "__main__":
     set_seed(seed=11)
@@ -138,4 +143,5 @@ if __name__ == "__main__":
 
     hfargs = HfArgumentParser(ScriptArguments)
     main(args.multiplier, hfargs)
+    
 

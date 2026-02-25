@@ -4,16 +4,9 @@ import numpy as np
 import torch
 from typing import Dict,Tuple
 from datasets import load_dataset
-from fastchat.conversation import get_conv_template
 import os
 from types import SimpleNamespace
-from fastchat.conversation import conv_templates
-
-from models import (
-    Gemma3Conversation,
-    SYSTEM_PROMPT
-)
-conv_templates["gemma-3"] = Gemma3Conversation()
+from models import SYSTEM_PROMPT
 
 def set_seed(seed=42):
     random.seed(seed)
@@ -97,11 +90,11 @@ def get_eval_data(tokenizer, behavior, system_prompt=SYSTEM_PROMPT, generation_p
         prompts.append(current_options)
         labels.append(row['matching'])
 
-    return SimpleNamespace(
-        questions=questions,
-        prompts=prompts,
-        labels=labels,
-    )
+    return{
+        'questions':questions,
+        'prompts':prompts,
+        'labels':labels,
+    }
 
 def batch_logps(logits: torch.Tensor, ids: torch.Tensor, pad_id: int | None = None) -> Tuple[torch.Tensor, torch.Tensor]:
     if logits.shape[:-1] != ids.shape:

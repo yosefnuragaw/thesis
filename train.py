@@ -22,7 +22,7 @@ class ScriptArguments:
     beta: Optional[float] = field(default=0.1, metadata={"help": "the beta parameter for DPO loss"})
     model_name_or_path: Optional[str] = field(
         default="Qwen/Qwen3-8B",
-        metadata={"help": "Supported: meta-llama/Llama-2-7b-chat-hf, mistralai/Mistral-7B-Instruct-v0.2, google/gemma-3-1b-it, google/gemma-3-4b-it"},
+        metadata={"help": "Supported: meta-llama/Llama-2-7b-chat-hf, mistralai/Mistral-7B-Instruct-v0.2, google/gemma-3-1b-it, google/gemma-3-4b-it,Qwen/Qwen3-8B"},
     )
     learning_rate: Optional[float] = field(default=5e-4, metadata={"help": "optimizer learning rate"})
     lr_scheduler_type: Optional[str] = field(default="cosine", metadata={"help": "the lr scheduler type"})
@@ -57,9 +57,7 @@ class ScriptArguments:
 
 
 
-# --- Main Execution ---
 if __name__ == "__main__":
-    # 1. Parse Args (YAML support)
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True, help="Path to your YAML config file")
     args, remaining = parser.parse_known_args()
@@ -91,23 +89,13 @@ if __name__ == "__main__":
         script_args.model_name_or_path,
         low_cpu_mem_usage=True,
         trust_remote_code=True,
-        torch_dtype= torch.float32
     )
     model.warnings_issued = {}
     model.config.use_cache = False
 
-    if hasattr(model, "language_model"):
-        model_layers = model.language_model.model.layers
-        hidden_size = model.config.text_config.hidden_size
-    else:
-        model_layers = model.model.layers
-        hidden_size = model.config.hidden_size
-
+    # Inject BlockWrappers
     for layer in script_args.layer:
-        model_layers[layer] = BlockWrapper(
-            model_layers[layer], 
-            hidden_dim = hidden_size
-        )
+        model.model.layers[layer] = BlockWrapper(model.model.layers[layer], hidden_dim=model.config.hidden_size)
 
     if script_args.ignore_bias_buffers:
         model._ddp_params_and_buffers_to_ignore = [
@@ -119,7 +107,7 @@ if __name__ == "__main__":
         script_args.model_name_or_path,
         low_cpu_mem_usage=True,
         trust_remote_code=True,
-        torch_dtype= torch.float32
+        torch_dtype= torch.bfloat16
     )
     tokenizer = AutoTokenizer.from_pretrained(script_args.model_name_or_path)
     tokenizer.pad_token = tokenizer.eos_token
@@ -133,7 +121,7 @@ if __name__ == "__main__":
 
     print('Unfreezing steering vectors...')
     for layer in script_args.layer:
-        model_layers[layer].vec.requires_grad = True  
+        model.model.layers[layer].vec.requires_grad = True  
 
     # 5. Load Datasets
     train_dataset = get_data(tokenizer = tokenizer, behavior=script_args.behavior, train=True) 

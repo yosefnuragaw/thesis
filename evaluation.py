@@ -12,9 +12,8 @@ from typing import List, Optional
 import gc
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from models import MultipleOptionDataset
 
-
+from dataset import MultipleOptionDataset
 from models import BlockWrapper, SYSTEM_PROMPT
 from utils import set_seed, get_eval_data, batch_logps
 
@@ -91,14 +90,14 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer):
         batch_size=1,              
         shuffle=False,          
         num_workers=0            
-    )
-    
+    ) 
     return eval_loader
 
 def eval_accuracy(
         model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int|None, verbose: bool = False
     ):
     OPT = ['A', 'B']
+    directions = [1,-1]
     correct = [0,0]
     total = [0,0]
     
@@ -107,53 +106,47 @@ def eval_accuracy(
     else:
         pbar = loader
     
-    for batch in pbar:
-        label = batch["label"][0]
-        q_len = batch["question_length"]
+    for idx, direction in enumerate(directions):
+        for batch in pbar:
+            label = batch["label"][0]
+            q_len = batch["question_length"]
 
-        for layer in layers:
-            if isinstance(model.model.layers[layer], BlockWrapper):
-                if label != 'A':
-                    model.model.layers[layer].set_multiplier(-multiplier)
-                else:
-                    model.model.layers[layer].set_multiplier(multiplier)
-        
-        indx = None
-        if label != 'A':
-            indx = 0
-        else:
-            indx = 1
+            for layer in layers:
+                if isinstance(model.model.layers[layer], BlockWrapper):
+                    model.model.layers[layer].set_multiplier(direction*multiplier)
 
-        avg_logp = []
-        for input_ids, attention_mask in zip(batch["input_ids"], batch["attention_mask"]):
-            input_ids = input_ids.to(model.device)
-            attention_mask = attention_mask.to(model.device)
-    
-            with torch.no_grad():
-                logits = model(input_ids=input_ids, attention_mask=attention_mask).logits
-                logps, _ = batch_logps(logits, input_ids)
-                
-                sliced = logps[0, q_len - 1:]
-                avg_logp.append(sliced.mean().item())
-
-        pred = OPT[avg_logp.index(max(avg_logp))]
-        
-        total[indx] += 1
-        if pred == label:
-            correct[indx] += 1
-    
-        
-        curr_positive = correct[0] / total[0] if total[0] > 0 else 0.0
-        curr_negative = correct[1]/ total[1] if total[1] > 0 else 0.0
-
-        if verbose:
-            if epoch is not None:
-                pbar.set_description(f"[Epoch:] {epoch} [Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
+            if idx == 1:
+                curr_label = 'B' if label == 'A' else 'A'
             else:
-                pbar.set_description(f"Baseline {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
+                curr_label = label
 
+            avg_logp = []
+            for input_ids, attention_mask in zip(batch["input_ids"], batch["attention_mask"]):
+                input_ids = input_ids.to(model.device)
+                attention_mask = attention_mask.to(model.device)
+        
+                with torch.no_grad():
+                    logits = model(input_ids=input_ids, attention_mask=attention_mask).logits
+                    logps, _ = batch_logps(logits, input_ids)
+                    
+                    sliced = logps[0, q_len - 1:]
+                    avg_logp.append(sliced.mean().item())
+
+            pred = OPT[avg_logp.index(max(avg_logp))]
+            
+            total[curr_label] += 1
+            if pred == label:
+                correct[idx] += 1
+    
+        
     positive_acc = correct[0] / total[0] if total[0] > 0 else 0.0
     negative_acc = correct[1]/ total[1] if total[1] > 0 else 0.0
+
+    if verbose:
+        if epoch is not None:
+            pbar.set_description(f"[Epoch:] {epoch} [Multiplier:] {multiplier}  [Positive Accuracy:] {positive_acc:.4f} [Negative Accuracy:] {negative_acc:.4f}")
+        else:
+            pbar.set_description(f"Baseline {multiplier}  [Positive Accuracy:] {positive_acc:.4f} [Negative Accuracy:] {negative_acc:.4f}")
 
     return positive_acc, negative_acc
     

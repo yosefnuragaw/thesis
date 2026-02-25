@@ -95,11 +95,16 @@ if __name__ == "__main__":
     model.warnings_issued = {}
     model.config.use_cache = False
 
-    # Check if the model uses .layers or .blocks
-    if hasattr(model.model, "layers"):
-        model_layers = model.model.layers
-    else:
-        model_layers = model.model.blocks
+    possible_attrs = ["layers", "blocks", "blk"]
+    model_layers = None
+
+    for attr in possible_attrs:
+        if hasattr(model.model, attr):
+            model_layers = getattr(model.model, attr)
+            break
+
+    if model_layers is None:
+        raise AttributeError("Tidak dapat menemukan atribut layer pada model (mencoba layers, blocks, blk)")
 
     for layer in script_args.layer:
         model_layers[layer] = BlockWrapper(

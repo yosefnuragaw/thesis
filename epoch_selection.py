@@ -46,7 +46,7 @@ class ScriptArguments:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", "-c", type=str, required=True, help="Path to your YAML config file")
-    parser.add_argument("--verbose", "-v", type=bool, required=False, default=True, help="Visualize eval progress")
+    parser.add_argument("--verbose", "-v", type=bool, required=False, default=False, help="Visualize eval progress")
     args, remaining = parser.parse_known_args()
 
     hf_parser = HfArgumentParser(ScriptArguments)

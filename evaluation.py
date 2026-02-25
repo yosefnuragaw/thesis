@@ -102,12 +102,12 @@ def eval_accuracy(
     total = [0,0]
     
     if verbose:
-        pbar = tqdm(loader, desc="Evaluating", ncols=100)
+        pbar = tqdm(directions, desc="Evaluating", ncols=100)
     else:
-        pbar = loader
+        pbar = directions
     
-    for idx, direction in enumerate(directions):
-        for batch in pbar:
+    for idx, direction in enumerate(pbar):
+        for batch in loader:
             label = batch["label"][0]
             q_len = batch["question_length"]
 
@@ -144,9 +144,9 @@ def eval_accuracy(
 
     if verbose:
         if epoch is not None:
-            print(f"[Epoch:] {epoch} [Multiplier:] {multiplier}  [Positive Accuracy:] {positive_acc:.4f} [Negative Accuracy:] {negative_acc:.4f}")
+            pbar.set_description(f"[Epoch:] {epoch} [Multiplier:] {multiplier}  [Positive Accuracy:] {positive_acc:.4f} [Negative Accuracy:] {negative_acc:.4f}")
         else:
-            print(f"Baseline {multiplier}  [Positive Accuracy:] {positive_acc:.4f} [Negative Accuracy:] {negative_acc:.4f}")
+            pbar.set_description(f"Baseline {multiplier}  [Positive Accuracy:] {positive_acc:.4f} [Negative Accuracy:] {negative_acc:.4f}")
 
     return positive_acc, negative_acc
     

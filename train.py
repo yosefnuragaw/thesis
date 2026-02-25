@@ -22,7 +22,7 @@ class ScriptArguments:
     beta: Optional[float] = field(default=0.1, metadata={"help": "the beta parameter for DPO loss"})
     model_name_or_path: Optional[str] = field(
         default="Qwen/Qwen3-8B",
-        metadata={"help": "Supported: meta-llama/Llama-2-7b-chat-hf, mistralai/Mistral-7B-Instruct-v0.2, google/gemma-3-1b-it, google/gemma-3-4b-it,Qwen/Qwen3-8B"},
+        metadata={"help": "Supported: meta-llama/Llama-2-7b-chat-hf, mistralai/Mistral-7B-Instruct-v0.2, google/gemma-3-1b-it, google/gemma-3-4b-it"},
     )
     learning_rate: Optional[float] = field(default=5e-4, metadata={"help": "optimizer learning rate"})
     lr_scheduler_type: Optional[str] = field(default="cosine", metadata={"help": "the lr scheduler type"})
@@ -96,8 +96,14 @@ if __name__ == "__main__":
     model.config.use_cache = False
 
     # Inject BlockWrappers
+    target_model = model.language_model if hasattr(model, "language_model") else model
+
     for layer in script_args.layer:
-        model.model.layers[layer] = BlockWrapper(model.model.layers[layer], hidden_dim=model.config.hidden_size)
+        # Menggunakan target_model.model.layers agar kompatibel di semua ukuran
+        target_model.model.layers[layer] = BlockWrapper(
+            target_model.model.layers[layer], 
+            hidden_dim=target_model.config.text_config.hidden_size if hasattr(target_model.config, "text_config") else target_model.config.hidden_size
+        )
 
     if script_args.ignore_bias_buffers:
         model._ddp_params_and_buffers_to_ignore = [
@@ -123,7 +129,7 @@ if __name__ == "__main__":
 
     print('Unfreezing steering vectors...')
     for layer in script_args.layer:
-        model.model.layers[layer].vec.requires_grad = True  
+        target_model.model.layers[layer].vec.requires_grad = True  
 
     # 5. Load Datasets
     train_dataset = get_data(tokenizer = tokenizer, behavior=script_args.behavior, train=True) 

@@ -25,7 +25,7 @@ class BlockWrapper(torch.nn.Module):
             init_dtype = torch.float32
             
         if vec is not None:
-            self.vec = vec
+            self.vec = self.vec = vec.to(init_dtype)
         else:
             self.vec = torch.nn.Parameter(torch.zeros(hidden_dim, dtype=init_dtype))
 

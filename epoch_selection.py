@@ -7,21 +7,16 @@ from torch.utils.data import Dataset, DataLoader
 from dataclasses import dataclass, field
 from typing import Tuple, Dict, List, Optional
 import torch
-from datasets import load_dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, HfArgumentParser
-from types import SimpleNamespace
-from tqdm import tqdm
-from transformers import pipeline
+from transformers import HfArgumentParser
+
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
-from utils import set_seed, get_eval_data, batch_logps
+from utils import set_seed, get_eval_data
 from evaluation import init_model, eval_accuracy
-from models import (
-    BlockWrapper, 
-    MultipleOptionDataset,
-)
+from models import BlockWrapper
+from dataset import MultipleOptionDataset
 
 
 @dataclass
@@ -48,71 +43,6 @@ class ScriptArguments:
     prompt: Optional[str] = field(default="", metadata={"help": "What prompts for generation eval"})
 
 
-# def eval_accuracy(model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int|None, vec_dir: str, verbose: bool = False) -> SimpleNamespace:
-#     OPT = ['A', 'B']
-#     correct = [0,0]
-#     total = [0,0]
-    
-    
-#     if verbose:
-#         pbar = tqdm(loader, desc="Evaluating", ncols=100)
-#     else:
-#         pbar = loader
-    
-#     for batch in pbar:
-#         label = batch["label"][0]
-#         q_len = batch["question_length"]
-
-#         for layer in layers:
-#             if isinstance(model.model.layers[layer], BlockWrapper):
-#                 if label != 'A':
-#                     model.model.layers[layer].set_multiplier(-multiplier)
-#                 else:
-#                     model.model.layers[layer].set_multiplier(multiplier)
-        
-#         indx = None
-#         if label != 'A':
-#             indx = 0
-#         else:
-#             indx = 1
-
-#         avg_logp = []
-#         for input_ids, attention_mask in zip(batch["input_ids"], batch["attention_mask"]):
-            
-#             input_ids = input_ids.to(model.device)
-#             attention_mask = attention_mask.to(model.device)
-    
-#             with torch.no_grad():
-#                 logits = model(input_ids=input_ids, attention_mask=attention_mask).logits
-#                 logps, _ = batch_logps(logits, input_ids)
-                
-#                 sliced = logps[0, q_len - 1:]
-#                 avg_logp.append(sliced.mean().item())
-
-#         pred = OPT[avg_logp.index(max(avg_logp))]
-
-        
-#         total[indx] += 1
-#         if pred == label:
-#             correct[indx] += 1
-    
-        
-#         curr_positive = correct[0] / total[0] if total[0] > 0 else 0.0
-#         curr_negative = correct[1]/ total[1] if total[1] > 0 else 0.0
-
-#         if verbose:
-#             if epoch is not None:
-#                 pbar.set_description(f"[Epoch:] {epoch} [Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
-#             else:
-#                 pbar.set_description(f"[Multiplier:] {multiplier}  [Positive Accuracy:] {curr_positive:.4f} [Negative Accuracy:] {curr_negative:.4f}")
-
-#     return SimpleNamespace(
-#         positive = correct[0] / total[0],
-#         negative = correct[1]/ total[1],
-#     )
-
-
-# --- Main Execution ---
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", "-c", type=str, required=True, help="Path to your YAML config file")

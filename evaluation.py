@@ -47,7 +47,8 @@ def init_model(
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         low_cpu_mem_usage=True,
-        trust_remote_code=True
+        trust_remote_code=True,
+        torch_dtype=torch.float16
     )
     model.warnings_issued = {}
     model.to("cuda" if torch.cuda.is_available() else "cpu")

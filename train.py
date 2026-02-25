@@ -91,7 +91,6 @@ if __name__ == "__main__":
         script_args.model_name_or_path,
         low_cpu_mem_usage=True,
         trust_remote_code=True,
-        torch_dtype= torch.bfloat16
     )
     model.warnings_issued = {}
     model.config.use_cache = False

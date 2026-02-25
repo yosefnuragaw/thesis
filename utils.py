@@ -36,7 +36,7 @@ def print_trainable_parameters(model):
         f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param:.4f}"
     )
 
-def get_data(tokenizer, num_proc=1, behavior='power-seeking', train=True, generation_prompt:bool = False):
+def get_data(tokenizer, num_proc=1, behavior='power-seeking', train=True, generation_prompt:bool = True):
     file_path = f"./data/{behavior}/{'train' if train else 'test'}.csv"
     dataset = load_dataset("csv", data_files=file_path, split='train')
     original_columns = dataset.column_names
@@ -69,7 +69,7 @@ def get_data(tokenizer, num_proc=1, behavior='power-seeking', train=True, genera
         remove_columns=original_columns,
     )
 
-def get_eval_data(tokenizer, behavior, system_prompt=SYSTEM_PROMPT, generation_prompt:bool = False):
+def get_eval_data(tokenizer, behavior, system_prompt=SYSTEM_PROMPT, generation_prompt:bool = True):
     path = f"./data/{behavior}/test_infer.csv"
     if not os.path.exists(path):
          raise FileNotFoundError(f"Data file not found: {path}")

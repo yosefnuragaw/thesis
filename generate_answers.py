@@ -28,6 +28,11 @@ class ScriptArguments:
     """
     The arguments for the LLM as a judge eval scrip,
     """
+    id: Optional[str] = field(
+        default="baseline",
+        metadata={"help": "Run id"}
+    )
+
     model_name_or_path: Optional[str] = field(
         default="google/gemma-3-1b-it",
         metadata={"help": "Model Answer Folder"}
@@ -157,7 +162,7 @@ def main(baseline:bool, args: ScriptArguments)->None:
             )    
             df = pd.DataFrame(updated_dataset)
             safe_model_name = args.model_name_or_path.replace("/", "_")
-            file_name = f"results_{args.behavior}_{safe_model_name}_{args.layer}_{multiplier}.csv"
+            file_name = f"results_{args.behavior}_{safe_model_name}_{args.id}_{multiplier}.csv"
             save(file_name, df)     
     
     else:
@@ -182,6 +187,8 @@ def main(baseline:bool, args: ScriptArguments)->None:
                 temperature = args.temperature
             )    
         df = pd.DataFrame(updated_dataset)
+        safe_model_name = args.model_name_or_path.replace("/", "_")
+        file_name = f"results_{args.behavior}_{safe_model_name}_{args.behavior}-baseline_{multiplier}.csv"
         save(file_name, df)
 
 
@@ -191,7 +198,7 @@ if __name__ == "__main__":
     parser.add_argument("--config", type=str, required=True, help="Path to your YAML config file")
     parser.add_argument("--baseline", action='store_true', help="Run only the baseline (multiplier 0)")
     args, remaining = parser.parse_known_args()
-
+    
     hf_parser = HfArgumentParser(ScriptArguments)
     if args.config.endswith(".yaml"):
         script_args = hf_parser.parse_yaml_file(yaml_file=args.config, allow_extra_keys=True)[0]

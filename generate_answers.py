@@ -207,6 +207,6 @@ if __name__ == "__main__":
     else:
         raise ValueError("Config file must be .yaml or .json")
 
-    main(script_args)
+    main(baseline=args.baseline, args=script_args)
     
 

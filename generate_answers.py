@@ -92,7 +92,7 @@ def generate_answers(
     dataset: Dict[str, List], 
     max_new_tokens: int, 
     temperature: float,
-    batch_size: int = 8
+    batch_size: int = 32
 ) -> Dict[str, List]:
 
     generator = pipeline(
@@ -143,13 +143,14 @@ def main(args: ScriptArguments)->None:
             tokenizer=tokenizer
         )
 
-        df = generate_answers(
+        updated_dataset = generate_answers(
             model=model,
             tokenizer=tokenizer,
             dataset=dataset,
             max_new_tokens= args.max_new_tokens, 
             temperature = args.temperature
         )    
+        df = pd.DataFrame(updated_dataset)
 
         # Saving
         output_dir = "generation_results"

@@ -157,7 +157,7 @@ def main(args: ScriptArguments)->None:
         Path(output_dir).mkdir(parents=True, exist_ok=True)
 
         safe_model_name = args.model_name_or_path.replace("/", "_")
-        file_name = f"results_{args.behavior}_{safe_model_name}_{multiplier}.csv"
+        file_name = f"results_{args.behavior}_{safe_model_name}_{args.layer}_{multiplier}.csv"
 
         output_path = os.path.join(output_dir, file_name)
         df.to_csv(output_path, index=False)

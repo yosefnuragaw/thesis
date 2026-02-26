@@ -52,6 +52,8 @@ class ScriptArguments:
     # Experiment
     experiment: Optional[bool] = field(default=False, metadata={"help": "Run experimentation"})
     quantile: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
+    filter_step: Optional[int] = field(default=0, metadata={"help": "Filter step window"})
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -3,12 +3,13 @@ import torch
 
 
 class BiPOTrainerEXP(BiPOTrainer):
-    def __init__(self, *args, quantile: float = 0.9, **kwargs):
+    def __init__(self, *args, quantile: float = 0.9, filter_step:int = 4,**kwargs):
         super().__init__(*args, **kwargs)
         self.fisher_accumulator = {}
         self.importance_map = {}
         self.quantile = quantile
-        
+        self.filter_step = filter_step
+
         for name, p in self.model.named_parameters():
             if "vec" in name:
                 self.fisher_accumulator[name] = torch.zeros_like(p)
@@ -22,7 +23,7 @@ class BiPOTrainerEXP(BiPOTrainer):
                 if "vec" in name and param.grad is not None:
                     self.fisher_accumulator[name] += param.grad.pow(2)
 
-            if self.state.global_step % 4 == 0:
+            if self.state.global_step % self.filter_step == 0:
                 for name, param in model.named_parameters():
                     if "vec" in name:
                         self.importance_map[name] = self.fisher_accumulator[name].clone()

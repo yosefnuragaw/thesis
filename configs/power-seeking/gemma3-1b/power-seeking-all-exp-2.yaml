@@ -24,7 +24,7 @@ max_prompt_length: 2048
 # Experimentation
 experiment: True
 quantile: 0.9
-filter_step: 4
+filter_step: 64
 
 # Eval
 vec_dir: "pretrained_vector/power-seeking_gemma-3/all-exp"

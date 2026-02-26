@@ -38,7 +38,7 @@ class ScriptArguments:
         metadata={"help": "the layer the steering vector extracted from"}
     )
     multipliers: Optional[List[float]] = field(
-        default_factory=lambda: [-2,-1.5,-1,0,1,1.5,2], 
+        default_factory=lambda: [-2,-1.5,-1,1,1.5,2], 
         metadata={"help": "the layer the steering vector extracted from"}
     )
     vec_dir: Optional[str] = field(
@@ -94,6 +94,8 @@ def generate_answers(
     temperature: float,
     batch_size: int = 32
 ) -> Dict[str, List]:
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
 
     generator = pipeline(
         "text-generation",
@@ -108,65 +110,86 @@ def generate_answers(
     for output in tqdm(generator(
         prompt_loader,
         max_new_tokens=max_new_tokens,
-        min_new_tokens=16,
         do_sample=True,
         temperature=temperature,
-        batch_size=batch_size # Crucial for performance
+        batch_size=batch_size,
+        return_full_text=False, 
+        pad_token_id=tokenizer.pad_token_id, 
+        eos_token_id=tokenizer.eos_token_id, 
     ), total=len(prompt_loader), desc="Generating Answers"):
         
-        generated_text = output[0]["generated_text"]
-
-        # 4. Trimming logic
-        if "model" in generated_text:
-            trimmed = generated_text[generated_text.find("model") + 5:].strip()
-        else:
-            trimmed = generated_text
-        
+        trimmed = output[0]["generated_text"].strip()
         results.append(trimmed)
 
     dataset['answers'] = results
+    del dataset['prompts']
     return dataset
 
+def save(file_name:str,df: pd.DataFrame)->None:
+    output_dir = "generation_results"
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    output_path = os.path.join(output_dir, file_name)
+    df.to_csv(output_path, index=False)
 
-def main(args: ScriptArguments)->None:
-    for multiplier in args.multipliers:
+    print(f"Results saved to: {output_path}")
+def main(baseline:bool, args: ScriptArguments)->None:
+    if not baseline:
+        for multiplier in args.multipliers:
+            model, tokenizer = init_model(
+                model_name=args.model_name_or_path,
+                vec_dir=args.vec_dir,
+                epoch=args.eval_epoch,
+                layers=args.layer,
+                multiplier=multiplier
+            )
+
+            dataset = read_dataset(
+                behavior=args.behavior,
+                tokenizer=tokenizer
+            )
+
+            updated_dataset = generate_answers(
+                model=model,
+                tokenizer=tokenizer,
+                dataset=dataset,
+                max_new_tokens= args.max_new_tokens, 
+                temperature = args.temperature
+            )    
+            df = pd.DataFrame(updated_dataset)
+            safe_model_name = args.model_name_or_path.replace("/", "_")
+            file_name = f"results_{args.behavior}_{safe_model_name}_{args.layer}_{multiplier}.csv"
+            save(file_name, df)     
+    
+    else:
         model, tokenizer = init_model(
-            model_name=args.model_name_or_path,
-            vec_dir=args.vec_dir,
-            epoch=args.eval_epoch,
-            layers=args.layer,
-            multiplier=multiplier
-        )
+                model_name=args.model_name_or_path,
+                vec_dir=args.vec_dir,
+                epoch=args.eval_epoch,
+                layers=args.layer,
+                multiplier=multiplier
+            )
 
         dataset = read_dataset(
-            behavior=args.behavior,
-            tokenizer=tokenizer
-        )
+                behavior=args.behavior,
+                tokenizer=tokenizer
+            )
 
         updated_dataset = generate_answers(
-            model=model,
-            tokenizer=tokenizer,
-            dataset=dataset,
-            max_new_tokens= args.max_new_tokens, 
-            temperature = args.temperature
-        )    
+                model=model,
+                tokenizer=tokenizer,
+                dataset=dataset,
+                max_new_tokens= args.max_new_tokens, 
+                temperature = args.temperature
+            )    
         df = pd.DataFrame(updated_dataset)
+        save(file_name, df)
 
-        # Saving
-        output_dir = "generation_results"
-        Path(output_dir).mkdir(parents=True, exist_ok=True)
-
-        safe_model_name = args.model_name_or_path.replace("/", "_")
-        file_name = f"results_{args.behavior}_{safe_model_name}_{args.layer}_{multiplier}.csv"
-
-        output_path = os.path.join(output_dir, file_name)
-        df.to_csv(output_path, index=False)
-        print(f"Results saved to: {output_path}")
 
 if __name__ == "__main__":
     set_seed(seed=11)
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True, help="Path to your YAML config file")
+    parser.add_argument("--baseline", action='store_true', help="Run only the baseline (multiplier 0)")
     args, remaining = parser.parse_known_args()
 
     hf_parser = HfArgumentParser(ScriptArguments)

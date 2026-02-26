@@ -94,7 +94,7 @@ def generate_answers(
         device=model.device 
     )
 
-    for prompt in dataset['prompt']:
+    for prompt in dataset['prompts']:
         output = generator(
             prompt,
             max_new_tokens=max_new_tokens,

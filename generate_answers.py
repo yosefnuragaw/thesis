@@ -172,7 +172,7 @@ def main(baseline:bool, args: ScriptArguments)->None:
                 vec_dir=args.vec_dir,
                 epoch=args.eval_epoch,
                 layers=args.layer,
-                multiplier=multiplier
+                multiplier=0
             )
 
         dataset = read_dataset(

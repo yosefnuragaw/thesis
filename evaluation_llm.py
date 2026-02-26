@@ -32,7 +32,6 @@ class ScriptArguments:
     )
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
 
-
 def read_answers(behavior: str, path: str)->List[str]:
     file_path = path
     dataset = load_dataset("csv", data_files=file_path, split='train')
@@ -41,8 +40,6 @@ def read_answers(behavior: str, path: str)->List[str]:
     for row in dataset:
         prompts.append(produce_prompt(behavior, row['questions'],row['answers'],row['A'], row['B']))
     return prompts
-
-
 
 def eval_likert(judge_name_or_path: str)->Dict[str, float]:
     pipe = pipeline("text-generation", model=judge_name_or_path, trust_remote_code=True)

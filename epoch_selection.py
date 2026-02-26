@@ -42,7 +42,6 @@ class ScriptArguments:
 
     prompt: Optional[str] = field(default="", metadata={"help": "What prompts for generation eval"})
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", "-c", type=str, required=True, help="Path to your YAML config file")

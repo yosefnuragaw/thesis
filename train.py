@@ -53,10 +53,6 @@ class ScriptArguments:
     experiment: Optional[bool] = field(default=False, metadata={"help": "Run experimentation"})
     quantile: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
 
-
-
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True, help="Path to your YAML config file")

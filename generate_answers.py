@@ -11,6 +11,7 @@ from transformers import (
     HfArgumentParser
 )
 import os
+from pathlib import Path
 import argparse
 
 from models.prompts import SYSTEM_PROMPT
@@ -32,13 +33,17 @@ class ScriptArguments:
         default_factory=lambda: list(range(26)), 
         metadata={"help": "the layer the steering vector extracted from"}
     )
+    multipliers: Optional[List[float]] = field(
+        default_factory=lambda: [-2,-1.5,-1,0,1,1.5,2], 
+        metadata={"help": "the layer the steering vector extracted from"}
+    )
     vec_dir: Optional[str] = field(
         default="/kaggle/working/BiPO/vector/power-seeking_gemma-3",
         metadata={"help": "Directory where .pt vectors are saved"}
     )
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
     max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
-    temperature: Optional[float] = field(default=0.9, metadata={"help": "LLM generation temperature"})
+    temperature: Optional[float] = field(default=0.7, metadata={"help": "LLM generation temperature"})
 
 def load_dataset(
         behavior: str,
@@ -50,7 +55,7 @@ def load_dataset(
          raise FileNotFoundError(f"Data file not found: {path}")
     dataset = load_dataset("csv", data_files=path, split='train')
 
-    results:Dict[str, str] = {'prompts':[], 'questions':[], 'A':[], 'B':[], 'answers':[]}
+    results:Dict[str, str] = {'prompts':[], 'questions':[], 'A':[], 'B':[], 'answers':[], 'matching':[]}
   
     for idx, row in enumerate(dataset):
         messages = [
@@ -73,6 +78,7 @@ def load_dataset(
         results['prompts'].append(prompt)
         results['A'].append(pos)
         results['B'].append(neg)
+        results['matching'].append(row['matching'])
 
     return results
 
@@ -105,39 +111,54 @@ def generate_answers(
         dataset['answers'].append(trimmed)
     return dataset
 
-def main(multiplier:float, args: HfArgumentParser )->None:
-    
-    model, tokenizer = init_model(
-        model_name=args.model_name_or_path,
-        vec_dir=args.vec_dir,
-        epoch=args.eval_epoch,
-        layer=args.layer,
-        multiplier=multiplier
-    )
+def main(args: ScriptArguments)->None:
+    for multiplier in args.multipliers:
+        model, tokenizer = init_model(
+            model_name=args.model_name_or_path,
+            vec_dir=args.vec_dir,
+            epoch=args.eval_epoch,
+            layer=args.layer,
+            multiplier=multiplier
+        )
 
-    dataset = load_dataset(
-        behavior=args.behavior,
-        tokenizer=tokenizer
-    )
+        dataset = load_dataset(
+            behavior=args.behavior,
+            tokenizer=tokenizer
+        )
 
-    df = generate_answers(
-        model=model,
-        tokenizer=tokenizer,
-        dataset=dataset,
-        max_new_tokens= args.max_new_tokens, 
-        temperature = args.temperature
-    )    
-    output_path = f"evaluation_results_{args.behavior}_{args.model_name_or_path}_{multiplier}.csv"
-    df.to_csv(output_path, index=False)
-    print(f"Results saved successfully to {output_path}")
+        df = generate_answers(
+            model=model,
+            tokenizer=tokenizer,
+            dataset=dataset,
+            max_new_tokens= args.max_new_tokens, 
+            temperature = args.temperature
+        )    
+
+        # Saving
+        output_dir = "generation_results"
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+        safe_model_name = args.model_name_or_path.replace("/", "_")
+        file_name = f"results_{args.behavior}_{safe_model_name}_{multiplier}.csv"
+
+        output_path = os.path.join(output_dir, file_name)
+        df.to_csv(output_path, index=False)
+        print(f"Results saved to: {output_path}")
 
 if __name__ == "__main__":
     set_seed(seed=11)
     parser = argparse.ArgumentParser()
-    parser.add_argument("--multiplier", "-m", type=float, required=True, help="Multiplier for steering vector")
+    parser.add_argument("--config", type=str, required=True, help="Path to your YAML config file")
     args, remaining = parser.parse_known_args()
 
-    hfargs = HfArgumentParser(ScriptArguments)
-    main(args.multiplier, hfargs)
+    hf_parser = HfArgumentParser(ScriptArguments)
+    if args.config.endswith(".yaml"):
+        script_args = hf_parser.parse_yaml_file(yaml_file=args.config)[0]
+    elif args.config.endswith(".json"):
+        script_args = hf_parser.parse_json_file(json_file=args.config)[0]
+    else:
+        raise ValueError("Config file must be .yaml or .json")
+
+    main(script_args)
     
 

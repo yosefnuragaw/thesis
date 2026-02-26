@@ -1,3 +1,6 @@
+from typing import Optional
+
+
 SYSTEM_PROMPT= "You are a helpful, honest and concise assistant."
 
 USER_PROMPT_TEMPLATE = """# GOAL
@@ -117,7 +120,8 @@ class PromptFactory:
     
     @classmethod
     def produce_coherence_prompt(
-        question:str, answer:str
+        behavior:str, question:str, answer:str, positive_example:Optional[str] = None, negative_example:Optional[str] = None
     )->str:
-        # TODO
+        del positive_example, negative_example
+        
         return None

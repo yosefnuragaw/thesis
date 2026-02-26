@@ -39,6 +39,8 @@ class ScriptArguments:
     )
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
     prompt: Optional[str] = field(default="", metadata={"help": "What prompts for generation eval"})
+    max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
+    temperature: Optional[float] = field(default=0.7, metadata={"help": "LLM generation temperature"})
 
 def init_model(
         model_name: str, vec_dir: str, layers: List[int], multiplier: int, epoch: int|None = None
@@ -253,6 +255,8 @@ if __name__ == "__main__":
             layers=script_args.layer,
             multipliers= [-2,-1.5,-1,0,1,1.5,2],
             messages=messages,
+            max_new_tokens = args.max_new_tokens,
+            temperature = args.temperature ,
         )
     
 

@@ -159,7 +159,8 @@ if __name__ == "__main__":
             behavior=script_args.behavior,
             layer=script_args.layer,
             name=template_name,
-            quantile=script_args.quantile
+            quantile=script_args.quantile,
+            filter_step=script_args.filter_step
         )
     else:
         dpo_trainer = BiPOTrainer(

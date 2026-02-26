@@ -117,7 +117,7 @@ def main(args: ScriptArguments)->None:
             model_name=args.model_name_or_path,
             vec_dir=args.vec_dir,
             epoch=args.eval_epoch,
-            layer=args.layer,
+            layers=args.layer,
             multiplier=multiplier
         )
 

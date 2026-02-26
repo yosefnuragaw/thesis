@@ -3,6 +3,7 @@
 
 from dataclasses import dataclass, field
 import pandas as pd
+from tqdm import tqdm
 from typing import Dict, List, Optional
 from transformers import (
     AutoModelForCausalLM, 
@@ -18,6 +19,8 @@ import argparse
 from models.prompts import SYSTEM_PROMPT
 from utils import set_seed
 from evaluation import init_model
+from models.dataset import PromptDataset
+
 
 
 @dataclass
@@ -84,33 +87,46 @@ def read_dataset(
     return results
 
 def generate_answers(
-    model: AutoModelForCausalLM, tokenizer: AutoTokenizer, dataset: Dict[str, List], max_new_tokens: int, temperature: float
-    )->Dict[str, List]:
+    model: AutoModelForCausalLM, 
+    tokenizer: AutoTokenizer, 
+    dataset: Dict[str, List], 
+    max_new_tokens: int, 
+    temperature: float,
+    batch_size: int = 8
+) -> Dict[str, List]:
 
     generator = pipeline(
         "text-generation",
         model=model,
         tokenizer=tokenizer,
-        device=model.device 
+        device_map="auto" 
     )
 
-    for prompt in dataset['prompts']:
-        output = generator(
-            prompt,
-            max_new_tokens=max_new_tokens,
-            min_new_tokens=16,
-            do_sample=True,
-            temperature=temperature,   
-            generation_config=None,   
-        )[0]["generated_text"]
+    prompt_loader = PromptDataset(dataset['prompts'])
 
-        if "model" in output:
-            trimmed = output[output.find("model") + 5:].strip()
+    results = []
+    for output in tqdm(generator(
+        prompt_loader,
+        max_new_tokens=max_new_tokens,
+        min_new_tokens=16,
+        do_sample=True,
+        temperature=temperature,
+        batch_size=batch_size # Crucial for performance
+    ), total=len(prompt_loader), desc="Generating Answers"):
+        
+        generated_text = output[0]["generated_text"]
+
+        # 4. Trimming logic
+        if "model" in generated_text:
+            trimmed = generated_text[generated_text.find("model") + 5:].strip()
         else:
-            trimmed = output
+            trimmed = generated_text
+        
+        results.append(trimmed)
 
-        dataset['answers'].append(trimmed)
+    dataset['answers'] = results
     return dataset
+
 
 def main(args: ScriptArguments)->None:
     for multiplier in args.multipliers:

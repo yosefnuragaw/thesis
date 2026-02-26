@@ -11,6 +11,7 @@ from transformers import (
     HfArgumentParser
 )
 import os
+from datasets import load_dataset
 from pathlib import Path
 import argparse
 
@@ -45,7 +46,7 @@ class ScriptArguments:
     max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
     temperature: Optional[float] = field(default=0.7, metadata={"help": "LLM generation temperature"})
 
-def load_dataset(
+def read_dataset(
         behavior: str,
         tokenizer: AutoTokenizer
     )-> Dict[str, List]:
@@ -121,7 +122,7 @@ def main(args: ScriptArguments)->None:
             multiplier=multiplier
         )
 
-        dataset = load_dataset(
+        dataset = read_dataset(
             behavior=args.behavior,
             tokenizer=tokenizer
         )

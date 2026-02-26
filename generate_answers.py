@@ -117,7 +117,6 @@ def generate_answers(
         temperature=temperature,
         batch_size=batch_size,
         return_full_text=False, 
-        eos_token_id=tokenizer.eos_token_id, 
         generation_config=None
     ), total=len(prompt_loader), desc="Generating Answers"):
         

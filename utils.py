@@ -6,7 +6,7 @@ from typing import Dict,Tuple
 from datasets import load_dataset
 import os
 from types import SimpleNamespace
-from models import SYSTEM_PROMPT
+from models.prompts import SYSTEM_PROMPT
 
 def set_seed(seed=42):
     random.seed(seed)

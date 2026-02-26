@@ -5,7 +5,9 @@ import torch
 from transformers import pipeline
 from datasets import load_dataset
 
-from prompts import produce_prompt
+from models.prompts import PromptFactory
+from utils import set_seed
+
 
 
 @dataclass

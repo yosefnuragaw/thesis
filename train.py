@@ -10,7 +10,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, HfArgumentParser
 from trl import BiPOTrainer, DPOConfig, BiPOTrainerEXP
 
 from utils import get_data, print_trainable_parameters, set_seed
-from models import (
+from models.model import (
     BlockWrapper,
     MODEL_TEMPLATE_MAP,
     )

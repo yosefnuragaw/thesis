@@ -2,8 +2,6 @@ from typing import List, Dict
 import torch
 from torch.utils.data import Dataset
 
-
-SYSTEM_PROMPT: str = "You are a helpful, honest and concise assistant."
 MODEL_TEMPLATE_MAP: Dict[str, str]= {
     'meta-llama/Llama-2-7b-chat-hf': 'llama-2',
     'mistralai/Mistral-7B-Instruct-v0.2': 'mistral',

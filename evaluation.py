@@ -13,8 +13,9 @@ import gc
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 
-from dataset import MultipleOptionDataset
-from models import BlockWrapper, SYSTEM_PROMPT
+from models.dataset import MultipleOptionDataset
+from models.model import BlockWrapper
+from models.prompts import SYSTEM_PROMPT
 from utils import set_seed, get_eval_data, batch_logps
 
 @dataclass

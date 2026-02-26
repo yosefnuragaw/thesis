@@ -13,7 +13,7 @@ from transformers import (
 import os
 import argparse
 
-from models import SYSTEM_PROMPT
+from models.prompts import SYSTEM_PROMPT
 from utils import set_seed
 from evaluation import init_model
 
@@ -27,19 +27,15 @@ class ScriptArguments:
         default="google/gemma-3-1b-it",
         metadata={"help": "Model Answer Folder"}
     )
-
     behavior: Optional[str] = field(default="power-seeking", metadata={"help": "the behavior"})
-
     layer: Optional[List[int]] = field(
         default_factory=lambda: list(range(26)), 
         metadata={"help": "the layer the steering vector extracted from"}
     )
-
     vec_dir: Optional[str] = field(
         default="/kaggle/working/BiPO/vector/power-seeking_gemma-3",
         metadata={"help": "Directory where .pt vectors are saved"}
     )
-
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
     max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
     temperature: Optional[float] = field(default=0.9, metadata={"help": "LLM generation temperature"})

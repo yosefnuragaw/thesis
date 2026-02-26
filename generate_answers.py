@@ -99,8 +99,6 @@ def generate_answers(
     temperature: float,
     batch_size: int = 32
 ) -> Dict[str, List]:
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
 
     generator = pipeline(
         "text-generation",
@@ -119,7 +117,6 @@ def generate_answers(
         temperature=temperature,
         batch_size=batch_size,
         return_full_text=False, 
-        pad_token_id=tokenizer.pad_token_id, 
         eos_token_id=tokenizer.eos_token_id, 
         generation_config=None
     ), total=len(prompt_loader), desc="Generating Answers"):

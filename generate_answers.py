@@ -121,6 +121,7 @@ def generate_answers(
         return_full_text=False, 
         pad_token_id=tokenizer.pad_token_id, 
         eos_token_id=tokenizer.eos_token_id, 
+        generation_config=None
     ), total=len(prompt_loader), desc="Generating Answers"):
         
         trimmed = output[0]["generated_text"].strip()

@@ -108,7 +108,7 @@ def main(baseline:bool, args:ScriptArguments)->None:
     
     if baseline:
         file_path = f"{args.answer_dir}/results_{args.behavior}_{args.model_name_or_path.replace("/", "_")}_{args.behavior}-baseline.csv"
-        datasets = {0: read_answers(behavior=args.behavior, file_path = file_path)}  
+        datasets = {0: read_answers(behavior=args.behavior, path = file_path)}  
         accuracy_likert[0] = 0
         coherence_likert[0] = 0
 
@@ -116,7 +116,7 @@ def main(baseline:bool, args:ScriptArguments)->None:
         datasets = {}
         for multiplier in args.multipliers:
             file_path = f"{args.answer_dir}/results_{args.behavior}_{args.model_name_or_path.replace("/", "_")}_{args.id}_{multiplier}.csv"
-            datasets[multiplier] = read_answers(behavior=args.behavior, file_path = file_path)
+            datasets[multiplier] = read_answers(behavior=args.behavior, path = file_path)
 
             accuracy_likert[multiplier] = 0
             coherence_likert[multiplier] = 0

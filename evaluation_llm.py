@@ -88,7 +88,7 @@ def main(baseline: bool, args: ScriptArguments) -> None:
         required_output="answer"
     )
     behavior_judge = FlowJudge(metric=behavior_metric, model=model)
-    batch_size = 32
+    batch_size = 64
     
     for mul, dataset in datasets.items():
         if not dataset:

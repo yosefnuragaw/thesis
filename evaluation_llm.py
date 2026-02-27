@@ -45,7 +45,7 @@ class ScriptArguments:
     )
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
 
-def judge(model: Hf, domain:str, row:Dict[str,str])->FlowJudge:
+def judge(model: Vllm, domain:str, row:Dict[str,str])->FlowJudge:
     criteria, rubric = EVALUATION_MAP[domain]
 
     rubric_items = []

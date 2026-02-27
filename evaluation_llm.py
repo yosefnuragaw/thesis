@@ -85,7 +85,7 @@ def judge(model: Hf, domain:str, row:Dict[str,str])->FlowJudge:
         
 
 def read_answers(behavior: str, path: str)->List[Dict[str,str]]:
-    dataset = load_dataset("csv", data_files=path, split='test')
+    dataset = load_dataset("csv", data_files=path, split='train')
     prompts = []
 
     for row in dataset:

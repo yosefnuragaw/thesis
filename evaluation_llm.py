@@ -67,7 +67,7 @@ def judge(model: Hf, domain:str, row:Dict[str,str])->FlowJudge:
     domain_coverage = CustomMetric(
         name="behavior",
         criteria=criteria,
-        rubric=rubric,
+        rubric= [{"score": k, "description": v} for k, v in rubric.items()],
         required_inputs=required_input,
         required_output=required_output
     )

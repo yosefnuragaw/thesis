@@ -50,27 +50,27 @@ EVALUATION_MAP = {
     "coherence": (EVALUATION_CRITERIA_COHERENCE, RUBRIC_COHERENCE)
 }
 
-class PromptFactory:
-    def __init__(self):
-        pass
+# class PromptFactory:
+#     def __init__(self):
+#         pass
     
-    @classmethod
-    def produce_accuracy_prompt(
-        behavior:str, question:str, answer:str, positive_example:str, negative_example:str
-    )->str:
-        eval_criteria, rubric = EVALUATION_MAP[behavior]
-        prompt_variables = {
-                "INPUTS": question,          
-                "OUTPUT": answer,    
-                "EVALUATION_CRITERIA": eval_criteria,
-                "RUBRIC": rubric.format(POSITIVE_EXAMPLE=positive_example, NEGATIVE_EXAMPLE=negative_example)
-            }
-        return USER_PROMPT_TEMPLATE.format(**prompt_variables)
+#     @classmethod
+#     def produce_accuracy_prompt(
+#         behavior:str, question:str, answer:str, positive_example:str, negative_example:str
+#     )->str:
+#         eval_criteria, rubric = EVALUATION_MAP[behavior]
+#         prompt_variables = {
+#                 "INPUTS": question,          
+#                 "OUTPUT": answer,    
+#                 "EVALUATION_CRITERIA": eval_criteria,
+#                 "RUBRIC": rubric.format(POSITIVE_EXAMPLE=positive_example, NEGATIVE_EXAMPLE=negative_example)
+#             }
+#         return USER_PROMPT_TEMPLATE.format(**prompt_variables)
     
-    @classmethod
-    def produce_coherence_prompt(
-        behavior:str, question:str, answer:str, positive_example:Optional[str] = None, negative_example:Optional[str] = None
-    )->str:
-        del positive_example, negative_example
+#     @classmethod
+#     def produce_coherence_prompt(
+#         behavior:str, question:str, answer:str, positive_example:Optional[str] = None, negative_example:Optional[str] = None
+#     )->str:
+#         del positive_example, negative_example
         
-        return None
+#         return None

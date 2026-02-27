@@ -4,6 +4,7 @@ import argparse
 import torch
 from transformers import HfArgumentParser
 from datasets import load_dataset
+from tqdm import tqdm  
 
 from flow_judge.metrics import CustomMetric, RubricItem
 from flow_judge.flow_judge import EvalInput, FlowJudge
@@ -124,7 +125,7 @@ def main(baseline:bool, args:ScriptArguments)->None:
     
     for mul, dataset in datasets.items():
         count = 0
-        for row in dataset:
+        for row in tqdm(dataset, desc=f"Processing {mul}"):
             result = judge(model, args.behavior, row)
             accuracy_likert[mul] += result['score']
             coherence_likert[mul] += result['score']

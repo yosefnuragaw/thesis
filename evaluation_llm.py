@@ -114,7 +114,7 @@ def main(baseline: bool, args: ScriptArguments) -> None:
                     {"POSITIVE_EXAMPLE": row['positive_example']},
                     {"NEGATIVE_EXAMPLE": row['negative_example']}
                 ], 
-                output={"answer": row['answer']}
+                output={"answer": row['answer'] if row['answer'] else ''}
             ) 
             for row in dataset
         ]

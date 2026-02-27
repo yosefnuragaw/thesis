@@ -47,13 +47,6 @@ class ScriptArguments:
 def judge(model: Hf, domain:str, row:Dict[str,str])->FlowJudge:
     criteria, rubric = EVALUATION_MAP[domain]
 
-    if row['matching'] == 'A':
-        pos = row['A']
-        neg = row['B']
-    else:
-        pos = row['B']
-        neg = row['A']
-
     rubric_items = []
     if domain == 'coherence':
         for key,val in rubric.items():
@@ -61,9 +54,9 @@ def judge(model: Hf, domain:str, row:Dict[str,str])->FlowJudge:
     else:
         for key,val in rubric.items():
             if key == 5:
-                val = val.format(POSITIVE_EXAMPLE=pos)
+                val = val.format(POSITIVE_EXAMPLE=row['positive_example'])
             elif key == 1:
-                val = val.format(PNEGATIVE_EXAMPLE=neg)
+                val = val.format(PNEGATIVE_EXAMPLE=row['negative_example'])
 
             rubric_items.append(RubricItem(score = key, description = val))
         pass

@@ -61,7 +61,7 @@ def judge(model: Hf, domain:str, row:Dict[str,str])->FlowJudge:
             rubric_items.append(RubricItem(score = key, description = val))
         pass
 
-    required_input = "question"
+    required_input = ["question"]
     required_output = "answer"
 
     domain_coverage = CustomMetric(
@@ -73,7 +73,7 @@ def judge(model: Hf, domain:str, row:Dict[str,str])->FlowJudge:
     )
 
     eval_input = EvalInput(
-        inputs={"question": row['questions']},
+        inputs=[{"question": row['questions']}],
         output={"answer": row['answers']}
     )
 

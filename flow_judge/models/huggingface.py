@@ -29,7 +29,7 @@ class HfConfig(ModelConfig):
         generation_params: GenerationParams,
         device_map: str = "auto",
         torch_dtype: str = "bfloat16",
-        flash_attn: bool = False,
+        flash_attn: bool = True,
         **kwargs: Any,
     ):
         """Initialize HfConfig with model details and Hugging Face specific parameters.
@@ -56,7 +56,7 @@ class Hf(BaseFlowJudgeModel):
     def __init__(
         self,
         generation_params: dict[str, Any] | None = None,
-        flash_attn: bool = False,
+        flash_attn: bool = True,
         **kwargs: Any,
     ):
         """Initialize the FlowJudge Hugging Face Transformers model.

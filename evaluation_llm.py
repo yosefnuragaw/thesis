@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from flow_judge.metrics import CustomMetric, RubricItem
 from flow_judge.flow_judge import EvalInput, FlowJudge
-from flow_judge.models import Vllm 
+from flow_judge.models import Hf 
 
 from models.prompts import EVALUATION_MAP
 from utils import set_seed
@@ -45,7 +45,7 @@ class ScriptArguments:
     )
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
 
-def judge(model: Vllm, domain:str, row:Dict[str,str])->FlowJudge:
+def judge(model: Hf, domain:str, row:Dict[str,str])->FlowJudge:
     criteria, rubric = EVALUATION_MAP[domain]
 
     rubric_items = []
@@ -102,7 +102,7 @@ def read_answers(behavior: str, path: str)->List[Dict[str,str]]:
     return prompts
 
 def main(baseline:bool, args:ScriptArguments)->None:
-    model = Vllm()
+    model = Hf()
     accuracy_likert: Dict[float, float] = {}
     coherence_likert: Dict[float, float] = {}
     

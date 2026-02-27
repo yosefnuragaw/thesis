@@ -5,6 +5,7 @@ import torch
 from transformers import HfArgumentParser
 from datasets import load_dataset
 from tqdm import tqdm  
+import wandb 
 
 from flow_judge.metrics import CustomMetric, RubricItem
 from flow_judge.flow_judge import EvalInput, FlowJudge
@@ -87,7 +88,7 @@ def main(baseline: bool, args: ScriptArguments) -> None:
         required_output="answer"
     )
     behavior_judge = FlowJudge(metric=behavior_metric, model=model)
-    batch_size = 64
+    batch_size = 32
     
     for mul, dataset in datasets.items():
         if not dataset:

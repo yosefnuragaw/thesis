@@ -74,7 +74,7 @@ def judge(model: Hf, domain:str, row:Dict[str,str])->FlowJudge:
 
     eval_input = EvalInput(
         inputs=[{"question": row['question']}],
-        output={"answer": row['answers']}
+        output={"answer": row['answer']}
     )
 
 

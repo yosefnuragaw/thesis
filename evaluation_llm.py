@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from flow_judge.metrics import CustomMetric, RubricItem
 from flow_judge.flow_judge import EvalInput, FlowJudge
-from flow_judge.models import Hf 
+from flow_judge.models import Vllm 
 
 from models.prompts import EVALUATION_MAP
 from utils import set_seed
@@ -102,7 +102,7 @@ def read_answers(behavior: str, path: str)->List[Dict[str,str]]:
     return prompts
 
 def main(baseline:bool, args:ScriptArguments)->None:
-    model = Hf()
+    model = Vllm()
     accuracy_likert: Dict[float, float] = {}
     coherence_likert: Dict[float, float] = {}
     
@@ -127,7 +127,7 @@ def main(baseline:bool, args:ScriptArguments)->None:
         count = 0
         for row in tqdm(dataset, desc=f"Processing {mul}"):
             result_accuracy = judge(model, args.behavior, row)
-            result_coherence = judge(model, args.behavior, row)
+            result_coherence = judge(model, 'coherence', row)
             accuracy_likert[mul] += result_accuracy['score']
             coherence_likert[mul] += result_coherence['score']
             count += 1

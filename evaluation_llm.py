@@ -5,19 +5,21 @@ import torch
 from transformers import pipeline, Pipeline,HfArgumentParser
 from datasets import load_dataset
 
-from models.prompts import PromptFactory
+from flow_judge.metrics import CustomMetric, RubricItem
+from flow_judge.flow_judge import EvalInput, FlowJudge
+from flow_judge.models import Vllm 
+
+from models.prompts import EVALUATION_MAP
 from utils import set_seed
-
-
 
 @dataclass
 class ScriptArguments:
     """
     The arguments for the LLM as a judge eval scrip,
     """
-    judge_name_or_path: Optional[str] = field(
-        default="google/gemma-3-1b-it",
-        metadata={"help": "The model checkpoint for weights initialization."}
+    id: Optional[str] = field(
+        default="baseline",
+        metadata={"help": "Run id"}
     )
     behavior: Optional[str] = field(default="power-seeking", metadata={"help": "the behavior"})
     layer: Optional[List[int]] = field(
@@ -25,18 +27,65 @@ class ScriptArguments:
         metadata={"help": "the layer the steering vector extracted from"}
     )
     multipliers: Optional[List[float]] = field(
-        default_factory=lambda: [-2,-1.5,-1,0,1,1.5,2], 
+        default_factory=lambda: [-2,-1.5,-1,1,1.5,2], 
         metadata={"help": "the layer the steering vector extracted from"}
     )
     vec_dir: Optional[str] = field(
         default="vector/power-seeking_gemma-3",
         metadata={"help": "Directory where .pt vectors are saved"}
     )
-    answer_path: Optional[str] = field(
-        default="/vector/power-seeking_gemma-3",
-        metadata={"help": "Directory where prompts are are saved"}
+    answer_dir: Optional[str] = field(
+        default="generation_results/gemma3-1b",
+        metadata={"help": "Directory where answers are are saved"}
     )
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
+
+def judge(model: Vllm, domain:str, row:Dict[str,str])->FlowJudge:
+    criteria, rubric = EVALUATION_MAP[domain]
+
+    if row['matching'] == 'A':
+        pos = row['A']
+        neg = row['B']
+    else:
+        pos = row['B']
+        neg = row['A']
+
+    rubric_items = []
+    if domain == 'coherence':
+        for key,val in rubric.items():
+            rubric_items.append(RubricItem(score = key, description = val))
+    else:
+        for key,val in rubric.items():
+            if key == 5:
+                val = val.format(POSITIVE_EXAMPLE=pos)
+            elif key == 1:
+                val = val.format(PNEGATIVE_EXAMPLE=neg)
+
+            rubric_items.append(RubricItem(score = key, description = val))
+        pass
+
+    required_input = "question"
+    required_output = "answer"
+
+    domain_coverage = CustomMetric(
+        name="behavior",
+        criteria=criteria,
+        rubric=rubric,
+        required_inputs=required_input,
+        required_output=required_output
+    )
+
+    eval_input = EvalInput(
+        inputs={"question": row['questions']},
+        output={"answer": row['answers']}
+    )
+
+
+    judge = FlowJudge(metric=domain_coverage, model=model)
+    result = judge.evaluate(eval_input)
+
+    return {'feedback': result.feedback, 'score': result.score}
+        
 
 def read_answers(behavior: str, path: str)->List[Dict[str,str]]:
     dataset = load_dataset("csv", data_files=path, split='test')
@@ -54,33 +103,48 @@ def read_answers(behavior: str, path: str)->List[Dict[str,str]]:
 
     return prompts
 
-def eval_likert(pipeline: Pipeline, dataset: List[Dict[str,str]], multipliers:List[float])->Dict[float, float]:
+def main(baseline:bool, args:ScriptArguments)->None:
+    model = Vllm()
+    accuracy_likert: Dict[float, float] = {}
+    coherence_likert: Dict[float, float] = {}
+    
+    
+    if baseline:
+        file_path = f"{args.answer_dir}/results_{args.behavior}_{args.model_name_or_path.replace("/", "_")}_{args.behavior}-baseline.csv"
+        datasets = {0: read_answers(behavior=args.behavior, file_path = file_path)}  
+        accuracy_likert[0] = 0
+        coherence_likert[0] = 0
 
-    for metadata in dataset:
-        messages = [
-            {"role": "user", "content": PromptFactory.produce_accuracy_prompt(**metadata)},
-        ]
-        ans = pipeline(messages)
-    pass
+    else:
+        datasets = {}
+        for multiplier in args.multipliers:
+            file_path = f"{args.answer_dir}/results_{args.behavior}_{args.model_name_or_path.replace("/", "_")}_{args.id}_{multiplier}.csv"
+            datasets[multiplier] = read_answers(behavior=args.behavior, file_path = file_path)
 
-def eval_coherence(pipeline: Pipeline, dataset: List[Dict[str,str]], multipliers:List[float])->Dict[float, float]:
-    for metadata in dataset:
-        messages = [
-            {"role": "user", "content": PromptFactory.produce_coherence_prompt(**metadata)},
-        ]
-        ans = pipeline(messages)
-    pass
+            accuracy_likert[multiplier] = 0
+            coherence_likert[multiplier] = 0
+        
+    
+    for mul, dataset in datasets.items():
+        count = 0
+        for row in dataset:
+            result = judge(model, args.behavior, row)
+            accuracy_likert[mul] += result['score']
+            coherence_likert[mul] += result['score']
+            count += 1
 
-def main(task: str, judge_name_or_path: str, verbose: bool)->None:
-    pipe = pipeline("text-generation", model=judge_name_or_path, trust_remote_code=True, device_map="auto")
-    pass    
+        accuracy_likert[mul] /= count
+        coherence_likert[mul] /= count
+
+    print(f'[Accuracy Likert (Scale 5):] {accuracy_likert}')
+    print(f'[Coherence Likert (Scale 5):] {coherence_likert}')
+        
 
 if __name__ == "__main__":
     set_seed(seed=11)
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", "-c", type=str, required=True, help="Path to your YAML config file")
-    parser.add_argument("--verbose", "-v", type=bool, required=False, default=True, help="Visualize eval progress")
-    parser.add_argument("--task", "-t", type=str, required=False, default="both", help="Visualize eval progress")
+    parser.add_argument("--baseline", action='store_true', help="Run only the baseline (multiplier 0)")
     args, remaining = parser.parse_known_args()
 
     hf_parser = HfArgumentParser(ScriptArguments)
@@ -91,5 +155,5 @@ if __name__ == "__main__":
     else:
         raise ValueError("Config file must be .yaml or .json")
     
-    main()
+    main(behavior=script_args.behavior, baseline=args.baseline, args=script_args)
 

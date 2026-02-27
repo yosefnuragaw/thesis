@@ -15,129 +15,119 @@ from utils import set_seed
 
 @dataclass
 class ScriptArguments:
-    """
-    The arguments for the LLM as a judge eval scrip,
-    """
-    id: Optional[str] = field(
-        default="baseline",
-        metadata={"help": "Run id"}
-    )
-    model_name_or_path: Optional[str] = field(
-        default="google/gemma-3-1b-it",
-        metadata={"help": "Model Answer Folder"}
-    )
+    id: Optional[str] = field(default="baseline", metadata={"help": "Run id"})
+    model_name_or_path: Optional[str] = field(default="google/gemma-3-1b-it", metadata={"help": "Model Answer Folder"})
     behavior: Optional[str] = field(default="power-seeking", metadata={"help": "the behavior"})
-    layer: Optional[List[int]] = field(
-        default_factory=lambda: list(range(26)), 
-        metadata={"help": "the layer the steering vector extracted from"}
-    )
-    multipliers: Optional[List[float]] = field(
-        default_factory=lambda: [-2,-1.5,-1,1,1.5,2], 
-        metadata={"help": "the layer the steering vector extracted from"}
-    )
-    vec_dir: Optional[str] = field(
-        default="vector/power-seeking_gemma-3",
-        metadata={"help": "Directory where .pt vectors are saved"}
-    )
-    answer_dir: Optional[str] = field(
-        default="generation_results/gemma3-1b",
-        metadata={"help": "Directory where answers are are saved"}
-    )
+    layer: Optional[List[int]] = field(default_factory=lambda: list(range(26)), metadata={"help": "the layer the steering vector extracted from"})
+    multipliers: Optional[List[float]] = field(default_factory=lambda: [-2,-1.5,-1,1,1.5,2], metadata={"help": "the layer the steering vector extracted from"})
+    vec_dir: Optional[str] = field(default="vector/power-seeking_gemma-3", metadata={"help": "Directory where .pt vectors are saved"})
+    answer_dir: Optional[str] = field(default="generation_results/gemma3-1b", metadata={"help": "Directory where answers are are saved"})
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
-
-def judge(model: Hf, domain:str, row:Dict[str,str])->FlowJudge:
-    criteria, rubric = EVALUATION_MAP[domain]
-
-    rubric_items = []
-    if domain == 'coherence':
-        for key,val in rubric.items():
-            rubric_items.append(RubricItem(score = key, description = val))
-    else:
-        for key,val in rubric.items():
-            if key == 5:
-                val = val.format(POSITIVE_EXAMPLE=row['positive_example'])
-            elif key == 1:
-                val = val.format(NEGATIVE_EXAMPLE=row['negative_example'])
-
-            rubric_items.append(RubricItem(score = key, description = val))
         
-
-    required_input = ["question"]
-    required_output = "answer"
-
-    domain_coverage = CustomMetric(
-        name="behavior",
-        criteria=criteria,
-        rubric= rubric_items,
-        required_inputs=required_input,
-        required_output=required_output
-    )
-
-    eval_input = EvalInput(
-        inputs=[{"question": row['question']}],
-        output={"answer": row['answer']}
-    )
-
-
-    judge = FlowJudge(metric=domain_coverage, model=model)
-    result = judge.evaluate(eval_input)
-
-    return {'feedback': result.feedback, 'score': result.score}
-        
-
-def read_answers(behavior: str, path: str)->List[Dict[str,str]]:
+def read_answers(behavior: str, path: str) -> List[Dict[str,str]]:
     dataset = load_dataset("csv", data_files=path, split='train')
     prompts = []
-
     for row in dataset:
         if row['matching'] == 'A':
-            pos = row['A']
-            neg = row['B']
+            pos, neg = row['A'], row['B']
         else:
-            pos = row['B']
-            neg = row['A']
+            pos, neg = row['B'], row['A']
         
-        prompts.append({'behavior': behavior, 'question':row['questions'] , 'answer': row['answers'], 'positive_example': pos, 'negative_example': neg})
-
+        prompts.append({
+            'behavior': behavior, 
+            'question': row['questions'], 
+            'answer': row['answers'], 
+            'positive_example': pos, 
+            'negative_example': neg
+        })
     return prompts
 
-def main(baseline:bool, args:ScriptArguments)->None:
-    model = Hf()
+def main(baseline: bool, args: ScriptArguments) -> None:
+    model = Hf(model_kwargs={"attn_implementation": "flash_attention_2"}) 
+    
     accuracy_likert: Dict[float, float] = {}
     coherence_likert: Dict[float, float] = {}
     
-    
     if baseline:
-        file_path = f"{args.answer_dir}/results_{args.behavior}_{args.model_name_or_path.replace("/", "_")}_{args.behavior}-baseline.csv"
-        datasets = {0: read_answers(behavior=args.behavior, path = file_path)}  
-        accuracy_likert[0] = 0
-        coherence_likert[0] = 0
-
+        file_path = f"{args.answer_dir}/results_{args.behavior}_{args.model_name_or_path.replace('/', '_')}_{args.behavior}-baseline.csv"
+        datasets = {0: read_answers(behavior=args.behavior, path=file_path)}  
     else:
         datasets = {}
         for multiplier in args.multipliers:
-            file_path = f"{args.answer_dir}/results_{args.behavior}_{args.model_name_or_path.replace("/", "_")}_{args.id}_{multiplier}.csv"
-            datasets[multiplier] = read_answers(behavior=args.behavior, path = file_path)
+            file_path = f"{args.answer_dir}/results_{args.behavior}_{args.model_name_or_path.replace('/', '_')}_{args.id}_{multiplier}.csv"
+            datasets[multiplier] = read_answers(behavior=args.behavior, path=file_path)
+            
 
-            accuracy_likert[multiplier] = 0
-            coherence_likert[multiplier] = 0
-        
+    coh_criteria, coh_rubric = EVALUATION_MAP['coherence']
+    coherence_metric = CustomMetric(
+        name="coherence",
+        criteria=coh_criteria,
+        rubric=[RubricItem(score=k, description=v) for k, v in coh_rubric.items()],
+        required_inputs=["question"],
+        required_output="answer"
+    )
+    coherence_judge = FlowJudge(metric=coherence_metric, model=model)
+
+
+    beh_criteria, beh_rubric = EVALUATION_MAP[args.behavior]
+    
+    beh_rubric_items = []
+    for key, val in beh_rubric.items():
+        if key == 5:
+            val = val.replace("{POSITIVE_EXAMPLE}", "[See POSITIVE_EXAMPLE in the inputs]")
+        elif key == 1:
+            val = val.replace("{NEGATIVE_EXAMPLE}", "[See NEGATIVE_EXAMPLE in the inputs]")
+        beh_rubric_items.append(RubricItem(score=key, description=val))
+
+    behavior_metric = CustomMetric(
+        name=args.behavior,
+        criteria=beh_criteria,
+        rubric=beh_rubric_items,
+        required_inputs=["question", "POSITIVE_EXAMPLE", "NEGATIVE_EXAMPLE"],
+        required_output="answer"
+    )
+    behavior_judge = FlowJudge(metric=behavior_metric, model=model)
+    batch_size = 32
     
     for mul, dataset in datasets.items():
-        count = 0
-        for row in tqdm(dataset, desc=f"Processing {mul}"):
-            result_accuracy = judge(model, args.behavior, row)
-            result_coherence = judge(model, 'coherence', row)
-            accuracy_likert[mul] += result_accuracy['score']
-            coherence_likert[mul] += result_coherence['score']
-            count += 1
+        if not dataset:
+            continue
 
-        accuracy_likert[mul] /= count
-        coherence_likert[mul] /= count
-
-    print(f'[Accuracy Likert (Scale 5):] {accuracy_likert}')
-    print(f'[Coherence Likert (Scale 5):] {coherence_likert}')
+        print(f"\n================ Multiplier {mul} ================")
         
+        coherence_eval_inputs = [
+            EvalInput(inputs=[{"question": row['question']}], output={"answer": row['answer']}) 
+            for row in dataset
+        ]
+        
+        coherence_results = []
+        for i in tqdm(range(0, len(coherence_eval_inputs), batch_size), desc="Coherence Batches"):
+            chunk = coherence_eval_inputs[i:i + batch_size]
+            coherence_results.extend(coherence_judge.batch_evaluate(chunk))
+            
+        coherence_likert[mul] = sum(res.score for res in coherence_results) / len(coherence_results)
+
+        behavior_eval_inputs = [
+            EvalInput(
+                inputs=[
+                    {"question": row['question']},
+                    {"POSITIVE_EXAMPLE": row['positive_example']},
+                    {"NEGATIVE_EXAMPLE": row['negative_example']}
+                ], 
+                output={"answer": row['answer']}
+            ) 
+            for row in dataset
+        ]
+        
+        behavior_results = []
+        for i in tqdm(range(0, len(behavior_eval_inputs), batch_size), desc="Behavior Batches"):
+            chunk = behavior_eval_inputs[i:i + batch_size]
+            behavior_results.extend(behavior_judge.batch_evaluate(chunk))
+            
+        accuracy_likert[mul] = sum(res.score for res in behavior_results) / len(behavior_results)
+
+    print(f'\n[Accuracy Likert (Scale 5):] {accuracy_likert}')
+    print(f'[Coherence Likert (Scale 5):] {coherence_likert}')
 
 if __name__ == "__main__":
     set_seed(seed=11)

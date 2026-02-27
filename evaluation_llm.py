@@ -19,7 +19,7 @@ class ScriptArguments:
     model_name_or_path: Optional[str] = field(default="google/gemma-3-1b-it", metadata={"help": "Model Answer Folder"})
     behavior: Optional[str] = field(default="power-seeking", metadata={"help": "the behavior"})
     layer: Optional[List[int]] = field(default_factory=lambda: list(range(26)), metadata={"help": "the layer the steering vector extracted from"})
-    multipliers: Optional[List[float]] = field(default_factory=lambda: [-2,-1.5,-1,1,1.5,2.5], metadata={"help": "the layer the steering vector extracted from"})
+    multipliers: Optional[List[float]] = field(default_factory=lambda: [-2,-1.5,-1,1,1.5,2], metadata={"help": "the layer the steering vector extracted from"})
     vec_dir: Optional[str] = field(default="vector/power-seeking_gemma-3", metadata={"help": "Directory where .pt vectors are saved"})
     answer_dir: Optional[str] = field(default="generation_results/gemma3-1b", metadata={"help": "Directory where answers are are saved"})
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})

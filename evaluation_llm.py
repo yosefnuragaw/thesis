@@ -93,7 +93,7 @@ def main(baseline: bool, args: ScriptArguments) -> None:
         if not dataset:
             continue
 
-        print(f"\n================ Multiplier {mul} ================")
+        print(f"\n[Multiplier:] {mul} \n")
         
         coherence_eval_inputs = [
             EvalInput(inputs=[{"question": row['question']}], output={"answer": row['answer']}) 

@@ -126,8 +126,8 @@ def main(baseline: bool, args: ScriptArguments) -> None:
             
         accuracy_likert[mul] = sum(res.score for res in behavior_results) / len(behavior_results)
 
-    print(f'\n[Accuracy Likert (Scale 5):] {accuracy_likert}')
-    print(f'[Coherence Likert (Scale 5):] {coherence_likert}')
+        print(f'\n[Accuracy Likert (Scale 5):] {accuracy_likert}')
+        print(f'[Coherence Likert (Scale 5):] {coherence_likert}')
 
 if __name__ == "__main__":
     set_seed(seed=11)

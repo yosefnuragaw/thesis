@@ -60,7 +60,7 @@ def judge(model: Hf, domain:str, row:Dict[str,str])->FlowJudge:
                 val = val.format(NEGATIVE_EXAMPLE=row['negative_example'])
 
             rubric_items.append(RubricItem(score = key, description = val))
-        pass
+        
 
     required_input = ["question"]
     required_output = "answer"
@@ -68,7 +68,7 @@ def judge(model: Hf, domain:str, row:Dict[str,str])->FlowJudge:
     domain_coverage = CustomMetric(
         name="behavior",
         criteria=criteria,
-        rubric= [{"score": k, "description": v} for k, v in rubric.items()],
+        rubric= rubric_items,
         required_inputs=required_input,
         required_output=required_output
     )
@@ -126,9 +126,10 @@ def main(baseline:bool, args:ScriptArguments)->None:
     for mul, dataset in datasets.items():
         count = 0
         for row in tqdm(dataset, desc=f"Processing {mul}"):
-            result = judge(model, args.behavior, row)
-            accuracy_likert[mul] += result['score']
-            coherence_likert[mul] += result['score']
+            result_accuracy = judge(model, args.behavior, row)
+            result_coherence = judge(model, args.behavior, row)
+            accuracy_likert[mul] += result_accuracy['score']
+            coherence_likert[mul] += result_coherence['score']
             count += 1
 
         accuracy_likert[mul] /= count

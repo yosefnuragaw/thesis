@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 import argparse
 import torch
-from transformers import pipeline, Pipeline,HfArgumentParser
+from transformers import HfArgumentParser
 from datasets import load_dataset
 
 from flow_judge.metrics import CustomMetric, RubricItem
@@ -155,5 +155,5 @@ if __name__ == "__main__":
     else:
         raise ValueError("Config file must be .yaml or .json")
     
-    main(behavior=script_args.behavior, baseline=args.baseline, args=script_args)
+    main(baseline=args.baseline, args=script_args)
 

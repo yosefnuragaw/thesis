@@ -56,7 +56,7 @@ def judge(model: Hf, domain:str, row:Dict[str,str])->FlowJudge:
             if key == 5:
                 val = val.format(POSITIVE_EXAMPLE=row['positive_example'])
             elif key == 1:
-                val = val.format(PNEGATIVE_EXAMPLE=row['negative_example'])
+                val = val.format(NEGATIVE_EXAMPLE=row['negative_example'])
 
             rubric_items.append(RubricItem(score = key, description = val))
         pass

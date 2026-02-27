@@ -21,6 +21,10 @@ class ScriptArguments:
         default="baseline",
         metadata={"help": "Run id"}
     )
+    model_name_or_path: Optional[str] = field(
+        default="google/gemma-3-1b-it",
+        metadata={"help": "Model Answer Folder"}
+    )
     behavior: Optional[str] = field(default="power-seeking", metadata={"help": "the behavior"})
     layer: Optional[List[int]] = field(
         default_factory=lambda: list(range(26)), 

@@ -44,7 +44,7 @@ class ScriptArguments:
     temperature: Optional[float] = field(default=0.7, metadata={"help": "LLM generation temperature"})
 
 def init_model(
-        model_name: str, vec_dir: str, layers: List[int], multiplier: int, epoch: int|None = None
+        model_name: str, vec_dir: str, layers: List[int], multiplier: int, epoch: int|None = None, buffer:bool = False
     )->tuple[AutoModelForCausalLM, AutoTokenizer]:
 
     model = AutoModelForCausalLM.from_pretrained(
@@ -64,7 +64,8 @@ def init_model(
                 model.model.layers[layer] = BlockWrapper(
                     model.model.layers[layer], 
                     hidden_dim=model.config.hidden_size, 
-                    vec=steering_vector
+                    vec=steering_vector,
+                    buffer=buffer
                 )
                 model.model.layers[layer].set_multiplier(multiplier)
 
@@ -158,7 +159,6 @@ def eval_accuracy(
                 if save_path is None:
                     raise ValueError("save_path must be provided if save_buffer is True")
                 
-                model.model.layers[layer].save(filepath = save_path)
                 current_layer_path = save_path.format(layer=layer)
                 os.makedirs(os.path.dirname(current_layer_path), exist_ok=True)
                 model.model.layers[layer].save(filepath=current_layer_path)
@@ -238,7 +238,8 @@ if __name__ == "__main__":
         vec_dir=script_args.vec_dir,
         epoch=script_args.eval_epoch,
         layers=script_args.layer,
-        multiplier= 0
+        multiplier= 0,
+        buffer = args.save
     )
 
     eval_loader = produce_dataloader(
@@ -259,6 +260,11 @@ if __name__ == "__main__":
                 save_buffer=args.save,
                 save_path=template_save_path
             ) 
+
+            for layer in script_args.layer:
+                if isinstance(model.model.layers[layer], BlockWrapper):
+                    model.model.layers[layer].clear_buffer()
+
 
     if args.task != "accuracy":
         messages = [

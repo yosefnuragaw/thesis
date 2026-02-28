@@ -25,10 +25,9 @@ class BlockWrapper(torch.nn.Module):
             self.vec = self.vec = vec.to(init_dtype)
         else:
             self.vec = torch.nn.Parameter(torch.zeros(hidden_dim, dtype=init_dtype))
-
-        if buffer:
-            self.buffer = buffer
-            self.buffer_space = []
+            
+        self.buffer = buffer
+        self.buffer_space = []
 
     def forward(self, *args, **kwargs):
         output = self.block(*args, **kwargs)

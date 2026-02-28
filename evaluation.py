@@ -11,6 +11,7 @@ import os
 from typing import List, Optional
 import gc
 from tqdm import tqdm
+import wandb
 from torch.utils.data import DataLoader
 
 from models.dataset import MultipleOptionDataset
@@ -162,6 +163,7 @@ def eval_accuracy(
                     current_layer_path = save_path.format(layer=layer, mul=direction*multiplier)
                     os.makedirs(os.path.dirname(current_layer_path), exist_ok=True)
                     model.model.layers[layer].save(filepath=current_layer_path)
+                    wandb.save(current_layer_path)
                     model.model.layers[layer].clear_buffer()
 
     return positive_acc, negative_acc

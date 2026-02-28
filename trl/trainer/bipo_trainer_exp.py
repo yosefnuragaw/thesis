@@ -1,6 +1,7 @@
-from .bipo_trainer import BiPOTrainer
+from typing import override
 import torch
 
+from .bipo_trainer import BiPOTrainer
 
 class BiPOTrainerEXP(BiPOTrainer):
     def __init__(self, *args, quantile: float = 0.9, filter_step:int = 4,**kwargs):
@@ -14,7 +15,7 @@ class BiPOTrainerEXP(BiPOTrainer):
             if "vec" in name:
                 self.fisher_accumulator[name] = torch.zeros_like(p)
         
-
+    @override
     def training_step(self, model, inputs,num_items_in_batch=None):
         loss = super().training_step(model, inputs,num_items_in_batch)
 

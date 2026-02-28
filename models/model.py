@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 import torch
 from torch.utils.data import Dataset
 
@@ -10,7 +10,7 @@ MODEL_TEMPLATE_MAP: Dict[str, str]= {
 }
 
 class BlockWrapper(torch.nn.Module):
-    def __init__(self, block, hidden_dim, vec=None):
+    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False):
         super().__init__()
         self.multiplier = 1.0
         self.block = block
@@ -26,15 +26,23 @@ class BlockWrapper(torch.nn.Module):
         else:
             self.vec = torch.nn.Parameter(torch.zeros(hidden_dim, dtype=init_dtype))
 
+        if buffer:
+            self.buffer = buffer
+            self.buffer_space = []
+
     def forward(self, *args, **kwargs):
         output = self.block(*args, **kwargs)
+
         if isinstance(output, tuple):
-            modified_hidden = output[0] + (self.multiplier * self.vec)
-            return (modified_hidden,) + output[1:]
+            self.output_buffer.append(output[0].detach().cpu())
+            modified_hidden = output[0] + (self.multiplier * self.vec.to(output[0].device))
+            output = (modified_hidden,) + output[1:]
+            
         elif isinstance(output, torch.Tensor):
-            return output + (self.multiplier * self.vec)
-        else:
-            return output
+            self.output_buffer.append(output.detach().cpu())
+            output = output + (self.multiplier * self.vec.to(output.device))
+        
+        return output
 
     def set_multiplier(self, multiplier):
         self.multiplier = multiplier
@@ -44,3 +52,19 @@ class BlockWrapper(torch.nn.Module):
             return super().__getattr__(name)
         except AttributeError:
             return getattr(self.block, name)
+    
+    def save(self, filepath:str="output_buffer.pt"):
+        if not self.output_buffer:
+            print("Empty buffer")
+            return
+        try:
+            stacked_tensors = torch.stack(self.output_buffer)
+            torch.save(stacked_tensors, filepath)
+            print(f"Success saving {len(self.output_buffer)} to {filepath}")
+        except RuntimeError:
+            torch.save(self.output_buffer, filepath)
+            print(f"Failed saving {len(self.output_buffer)} to {filepath}")
+
+    def clear_buffer(self):
+        self.output_buffer = []
+

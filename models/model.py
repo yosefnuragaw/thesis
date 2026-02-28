@@ -34,12 +34,12 @@ class BlockWrapper(torch.nn.Module):
         output = self.block(*args, **kwargs)
 
         if isinstance(output, tuple):
-            self.output_buffer.append(output[0].detach().cpu())
+            self.buffer_space.append(output[0].detach().cpu())
             modified_hidden = output[0] + (self.multiplier * self.vec.to(output[0].device))
             output = (modified_hidden,) + output[1:]
             
         elif isinstance(output, torch.Tensor):
-            self.output_buffer.append(output.detach().cpu())
+            self.buffer_space.append(output.detach().cpu())
             output = output + (self.multiplier * self.vec.to(output.device))
         
         return output
@@ -54,17 +54,17 @@ class BlockWrapper(torch.nn.Module):
             return getattr(self.block, name)
     
     def save(self, filepath:str="output_buffer.pt"):
-        if not self.output_buffer:
+        if not self.buffer_space:
             print("Empty buffer")
             return
         try:
-            stacked_tensors = torch.stack(self.output_buffer)
+            stacked_tensors = torch.stack(self.buffer_space)
             torch.save(stacked_tensors, filepath)
-            print(f"Success saving {len(self.output_buffer)} to {filepath}")
+            print(f"Success saving {len(self.buffer_space)} to {filepath}")
         except RuntimeError:
-            torch.save(self.output_buffer, filepath)
-            print(f"Failed saving {len(self.output_buffer)} to {filepath}")
+            torch.save(self.buffer_space, filepath)
+            print(f"Failed saving {len(self.buffer_space)} to {filepath}")
 
     def clear_buffer(self):
-        self.output_buffer = []
+        self.buffer_space = []
 

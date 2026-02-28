@@ -153,15 +153,15 @@ def eval_accuracy(
             else:
                 pbar.set_description(f"Baseline {multiplier}  [Positive Accuracy:] {positive_acc:.4f} [Negative Accuracy:] {negative_acc:.4f}")
 
-    if save_buffer:
-        for layer in layers:
-            if isinstance(model.model.layers[layer], BlockWrapper):
-                if save_path is None:
-                    raise ValueError("save_path must be provided if save_buffer is True")
-                
-                current_layer_path = save_path.format(layer=layer)
-                os.makedirs(os.path.dirname(current_layer_path), exist_ok=True)
-                model.model.layers[layer].save(filepath=current_layer_path)
+        if save_buffer:
+            for layer in layers:
+                if isinstance(model.model.layers[layer], BlockWrapper):
+                    if save_path is None:
+                        raise ValueError("save_path must be provided if save_buffer is True")
+                    
+                    current_layer_path = save_path.format(layer=layer, mul=direction*multiplier)
+                    os.makedirs(os.path.dirname(current_layer_path), exist_ok=True)
+                    model.model.layers[layer].save(filepath=current_layer_path)
 
     return positive_acc, negative_acc
     
@@ -249,7 +249,7 @@ if __name__ == "__main__":
 
     if args.task != "generation":
         for mul in [0,1.,1.5,2]:      
-            template_save_path = f"activation/{script_args.model_name_or_path.split("/")[-1]}/{script_args.behavior}/{script_args.id}_buffer_{{layer}}_{mul}.pt" 
+            template_save_path = f"activation/{script_args.model_name_or_path.split("/")[-1]}/{script_args.behavior}/{script_args.id}_buffer_{{layer}}_{{mul}}.pt" 
             accuracy = eval_accuracy(
                 model=model,
                 loader=eval_loader,

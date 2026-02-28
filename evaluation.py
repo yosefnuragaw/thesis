@@ -11,7 +11,6 @@ import os
 from typing import Any, List, Optional
 import gc
 from tqdm import tqdm
-import wandb
 from torch.utils.data import DataLoader
 
 from models.dataset import MultipleOptionDataset
@@ -100,7 +99,7 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer):
     return eval_loader
 
 def eval_accuracy(
-        model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int|None, verbose: bool = False, save_buffer: bool = False, save_path: Optional[str] = None,  wandb_run: Optional[Any] = None
+        model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int|None, verbose: bool = False, save_buffer: bool = False, save_path: Optional[str] = None,  
     ):
     OPT = ['A', 'B']
     directions = [1,-1]
@@ -163,15 +162,6 @@ def eval_accuracy(
                     current_layer_path = save_path.format(layer=layer, mul=direction*multiplier)
                     os.makedirs(os.path.dirname(current_layer_path), exist_ok=True)
                     model.model.layers[layer].save(filepath=current_layer_path)
-
-                    if wandb_run is not None:
-                        wandb_run
-                        
-                        wandb.log({
-                            "positive_acc": positive_acc,
-                            "negative_acc": negative_acc
-                        })
-                        wandb.save(current_layer_path)
                     model.model.layers[layer].clear_buffer()
 
     return positive_acc, negative_acc

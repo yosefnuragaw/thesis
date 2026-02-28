@@ -162,6 +162,7 @@ def eval_accuracy(
                     current_layer_path = save_path.format(layer=layer, mul=direction*multiplier)
                     os.makedirs(os.path.dirname(current_layer_path), exist_ok=True)
                     model.model.layers[layer].save(filepath=current_layer_path)
+                    model.model.layers[layer].clear_buffer()
 
     return positive_acc, negative_acc
     
@@ -260,10 +261,6 @@ if __name__ == "__main__":
                 save_buffer=args.save,
                 save_path=template_save_path
             ) 
-
-            for layer in script_args.layer:
-                if isinstance(model.model.layers[layer], BlockWrapper):
-                    model.model.layers[layer].clear_buffer()
 
 
     if args.task != "accuracy":

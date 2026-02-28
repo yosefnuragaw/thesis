@@ -25,7 +25,7 @@ class BlockWrapper(torch.nn.Module):
             self.vec = self.vec = vec.to(init_dtype)
         else:
             self.vec = torch.nn.Parameter(torch.zeros(hidden_dim, dtype=init_dtype))
-            
+
         self.buffer = buffer
         self.buffer_space = []
 
@@ -57,11 +57,9 @@ class BlockWrapper(torch.nn.Module):
             print("Empty buffer")
             return
         try:
-            stacked_tensors = torch.stack(self.buffer_space)
-            torch.save(stacked_tensors, filepath)
+            torch.save(self.buffer_space, filepath)
             print(f"Success saving {len(self.buffer_space)} to {filepath}")
         except RuntimeError:
-            torch.save(self.buffer_space, filepath)
             print(f"Failed saving {len(self.buffer_space)} to {filepath}")
 
     def clear_buffer(self):

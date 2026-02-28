@@ -23,6 +23,7 @@ class ScriptArguments:
     """
     The arguments for the DPO eval script, matching the training config structure.
     """
+    id: Optional[str] = field(default="baseline", metadata={"help": "Run id"})
     model_name_or_path: Optional[str] = field(
         default="google/gemma-3-1b-it",
         metadata={"help": "The model checkpoint for weights initialization."}
@@ -97,7 +98,7 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer):
     return eval_loader
 
 def eval_accuracy(
-        model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int|None, verbose: bool = False
+        model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int|None, verbose: bool = False, save_buffer: bool = False, save_path: Optional[str] = None
     ):
     OPT = ['A', 'B']
     directions = [1,-1]
@@ -150,6 +151,17 @@ def eval_accuracy(
                 pbar.set_description(f"[Epoch:] {epoch} [Multiplier:] {multiplier}  [Positive Accuracy:] {positive_acc:.4f} [Negative Accuracy:] {negative_acc:.4f}")
             else:
                 pbar.set_description(f"Baseline {multiplier}  [Positive Accuracy:] {positive_acc:.4f} [Negative Accuracy:] {negative_acc:.4f}")
+
+    if save_buffer:
+        for layer in layers:
+            if isinstance(model.model.layers[layer], BlockWrapper):
+                if save_path is None:
+                    raise ValueError("save_path must be provided if save_buffer is True")
+                
+                model.model.layers[layer].save(filepath = save_path)
+                current_layer_path = save_path.format(layer=layer)
+                os.makedirs(os.path.dirname(current_layer_path), exist_ok=True)
+                model.model.layers[layer].save(filepath=current_layer_path)
 
     return positive_acc, negative_acc
     
@@ -210,6 +222,7 @@ if __name__ == "__main__":
     parser.add_argument("--config", "-c", type=str, required=True, help="Path to your YAML config file")
     parser.add_argument("--verbose", "-v", type=bool, required=False, default=True, help="Visualize eval progress")
     parser.add_argument("--task", "-t", type=str, required=False, default="both", help="Visualize eval progress")
+    parser.add_argument("--save", action='store_true', help="Save raw activations")
     args, remaining = parser.parse_known_args()
 
     hf_parser = HfArgumentParser(ScriptArguments)
@@ -234,14 +247,17 @@ if __name__ == "__main__":
     )
 
     if args.task != "generation":
-        for mul in [0,1.,1.5,2]:       
+        for mul in [0,1.,1.5,2]:      
+            template_save_path = f"activation/{script_args.model_name_or_path.split("/")[-1]}/{script_args.behavior}/{script_args.id}_buffer_{{layer}}_{mul}.pt" 
             accuracy = eval_accuracy(
                 model=model,
                 loader=eval_loader,
                 multiplier=mul,
                 layers=script_args.layer, 
                 epoch=script_args.eval_epoch,
-                verbose=args.verbose
+                verbose=args.verbose,
+                save_buffer=args.save,
+                save_path=template_save_path
             ) 
 
     if args.task != "accuracy":

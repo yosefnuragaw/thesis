@@ -33,12 +33,12 @@ class BlockWrapper(torch.nn.Module):
         output = self.block(*args, **kwargs)
 
         if isinstance(output, tuple):
-            self.buffer_space.append(output[0].detach().cpu())
+            self.buffer_space.append(output[0].detach().mean(dim=1).cpu())
             modified_hidden = output[0] + (self.multiplier * self.vec.to(output[0].device))
             output = (modified_hidden,) + output[1:]
             
         elif isinstance(output, torch.Tensor):
-            self.buffer_space.append(output.detach().cpu())
+            self.buffer_space.append(output.detach().mean(dim=1).cpu())
             output = output + (self.multiplier * self.vec.to(output.device))
         
         return output

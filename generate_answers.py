@@ -42,6 +42,8 @@ class ScriptArguments:
         default_factory=lambda: list(range(26)), 
         metadata={"help": "the layer the steering vector extracted from"}
     )
+    total_layer: Optional[int] = field(default=200, metadata={"help": "LLM total number of layers"})
+
     multipliers: Optional[List[float]] = field(
         default_factory=lambda: [-2,-1.5,-1,1,1.5,2], 
         metadata={"help": "the layer the steering vector extracted from"}
@@ -142,7 +144,8 @@ def main(baseline:bool, args: ScriptArguments)->None:
                 vec_dir=args.vec_dir,
                 epoch=args.eval_epoch,
                 layers=args.layer,
-                multiplier=multiplier
+                multiplier=multiplier,
+                total_layer = args.total_layer
             )
 
             dataset = read_dataset(
@@ -168,7 +171,8 @@ def main(baseline:bool, args: ScriptArguments)->None:
                 vec_dir=args.vec_dir,
                 epoch=args.eval_epoch,
                 layers=args.layer,
-                multiplier=0
+                multiplier=0,
+                total_layer = args.total_layer
             )
 
         dataset = read_dataset(

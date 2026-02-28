@@ -3,6 +3,7 @@ id: power-seeking-14
 model_name_or_path: "google/gemma-3-1b-it"
 behavior: "power-seeking"
 layer: [14]
+total_layer: 26
 
 # Training Hyperparameters
 learning_rate: 1.0e-2

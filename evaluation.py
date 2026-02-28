@@ -28,6 +28,7 @@ class ScriptArguments:
         default="google/gemma-3-1b-it",
         metadata={"help": "The model checkpoint for weights initialization."}
     )
+    total_layer: Optional[int] = field(default=200, metadata={"help": "LLM total number of layers"})
     behavior: Optional[str] = field(default="power-seeking", metadata={"help": "the behavior"})
     layer: Optional[List[int]] = field(
         default_factory=lambda: list(range(26)), 
@@ -44,7 +45,7 @@ class ScriptArguments:
     temperature: Optional[float] = field(default=0.7, metadata={"help": "LLM generation temperature"})
 
 def init_model(
-        model_name: str, vec_dir: str, layers: List[int], multiplier: int, epoch: int|None = None, buffer:bool = False
+        model_name: str, vec_dir: str, layers: List[int], multiplier: int, epoch: int|None = None, buffer:bool = False, total_layer:int = 26
     )->tuple[AutoModelForCausalLM, AutoTokenizer]:
 
     model = AutoModelForCausalLM.from_pretrained(
@@ -54,19 +55,21 @@ def init_model(
     )
     model.warnings_issued = {}
     model.to("cuda" if torch.cuda.is_available() else "cpu")
-    for layer in layers:
-        if epoch != None:
+    for layer in range(total_layer):
+        model.model.layers[layer] = BlockWrapper(
+                    model.model.layers[layer], 
+                    hidden_dim=model.config.hidden_size, 
+                    vec=None,
+                    buffer=buffer
+                )
+        
+        if epoch != None and layer in layers:
             vec_path = f"{vec_dir}/vec_ep{epoch}_layer{layer}.pt"
             if os.path.exists(vec_path):
                 layer_device = next(model.model.layers[layer].parameters()).device
                 steering_vector = torch.load(vec_path, map_location=layer_device)
                 
-                model.model.layers[layer] = BlockWrapper(
-                    model.model.layers[layer], 
-                    hidden_dim=model.config.hidden_size, 
-                    vec=steering_vector,
-                    buffer=buffer
-                )
+                model.model.layers[layer].set_vector(steering_vector)
                 model.model.layers[layer].set_multiplier(multiplier)
 
             else:
@@ -99,7 +102,7 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer):
     return eval_loader
 
 def eval_accuracy(
-        model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int|None, verbose: bool = False, save_buffer: bool = False, save_path: Optional[str] = None,  
+        model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int|None, verbose: bool = False, save_buffer: bool = False, save_path: Optional[str] = None, total_layer:int = 26
     ):
     OPT = ['A', 'B']
     directions = [1,-1]
@@ -154,7 +157,7 @@ def eval_accuracy(
                 pbar.set_description(f"Baseline {multiplier}  [Positive Accuracy:] {positive_acc:.4f} [Negative Accuracy:] {negative_acc:.4f}")
 
         if save_buffer:
-            for layer in layers:
+            for layer in range(total_layer):
                 if isinstance(model.model.layers[layer], BlockWrapper):
                     if save_path is None:
                         raise ValueError("save_path must be provided if save_buffer is True")
@@ -240,7 +243,8 @@ if __name__ == "__main__":
         epoch=script_args.eval_epoch,
         layers=script_args.layer,
         multiplier= 0,
-        buffer = args.save
+        buffer = args.save,
+        total_layer = script_args.total_layer
     )
 
     eval_loader = produce_dataloader(
@@ -259,7 +263,9 @@ if __name__ == "__main__":
                 epoch=script_args.eval_epoch,
                 verbose=args.verbose,
                 save_buffer=args.save,
-                save_path=template_save_path
+                save_path=template_save_path,
+                total_layer=script_args.total_layer
+                
             ) 
 
 

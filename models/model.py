@@ -17,14 +17,14 @@ class BlockWrapper(torch.nn.Module):
 
         try:
             ref_param = next(block.parameters())
-            init_dtype = ref_param.dtype
+            self.init_dtype = ref_param.dtype
         except StopIteration:
-            init_dtype = torch.float32
+            self.init_dtype = torch.float32
             
         if vec is not None:
-            self.vec = self.vec = vec.to(init_dtype)
+            self.vec = vec.to(self.init_dtype)
         else:
-            self.vec = torch.nn.Parameter(torch.zeros(hidden_dim, dtype=init_dtype))
+            self.vec = torch.nn.Parameter(torch.zeros(hidden_dim, dtype= self.init_dtype))
 
         self.buffer = buffer
         self.buffer_space = []
@@ -45,6 +45,9 @@ class BlockWrapper(torch.nn.Module):
 
     def set_multiplier(self, multiplier):
         self.multiplier = multiplier
+
+    def set_vector(self, vec):
+        self.vec = vec.to(self.init_dtype)
 
     def __getattr__(self, name):
         try:

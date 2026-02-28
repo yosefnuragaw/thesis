@@ -59,7 +59,7 @@ def init_model(
         model.model.layers[layer] = BlockWrapper(
                     model.model.layers[layer], 
                     hidden_dim=model.config.hidden_size, 
-                    vec=None,
+                    vec= torch.zeros(model.config.hidden_size, dtype= model.dtype),
                     buffer=buffer
                 )
         

@@ -24,6 +24,7 @@ class ScriptArguments:
         default="Qwen/Qwen3-8B",
         metadata={"help": "Supported: meta-llama/Llama-3.1-8B-Instruct, mistralai/Mistral-7B-Instruct-v0.3, google/gemma-3-1b-it"},
     )
+    id: Optional[str] = field(default="baseline", metadata={"help": "Run id"})
     learning_rate: Optional[float] = field(default=5e-4, metadata={"help": "optimizer learning rate"})
     lr_scheduler_type: Optional[str] = field(default="cosine", metadata={"help": "the lr scheduler type"})
     warmup_steps: Optional[int] = field(default=20, metadata={"help": "the number of warmup steps"})
@@ -68,8 +69,7 @@ if __name__ == "__main__":
     else:
         raise ValueError("Config file must be .yaml or .json")
 
-    layer_str = "-".join(map(str, script_args.layer))
-    run_name = f"{script_args.behavior}-Layers_{layer_str}"
+    run_name = f"{script_args.behavior}-{script_args.id}"
 
     os.environ["WANDB_NAME"] = run_name
     set_seed(seed=11)

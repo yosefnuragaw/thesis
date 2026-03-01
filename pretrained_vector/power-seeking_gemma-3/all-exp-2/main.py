@@ -13,7 +13,7 @@ def download_full_bipo_history():
     project = "BiPO-Gemma-3-1b-Power-Seeking"
 
     # The specific base path identified from your terminal success
-    base_name = "power-seeking-Layers_0-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-25-op9mero0_steering-vec-layer"
+    base_name = "power-seeking-Layers_0-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-25-9riwl1nd_steering-vec-layer"
     
     layers = range(26)  # 0 to 25
     versions = range(20) # v0 to v19

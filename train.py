@@ -57,9 +57,6 @@ class ScriptArguments:
     filter_step: Optional[int] = field(default=0, metadata={"help": "Filter step window"})
     quantile_scheduler: Optional[bool] = field(default=False, metadata={"help": "Run with quantile scheduler"})
     quantile_scheduler_type: Optional[str] = field(default='linear', metadata={"help": "Quantile scheduler type"})
-    quantile_start: Optional[float] = field(default=0., metadata={"help": "Quantile scheduler start value"})
-    quantile_end: Optional[float] = field(default=0., metadata={"help": "Quantile scheduler end value"})
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -167,11 +164,11 @@ if __name__ == "__main__":
             quantile=script_args.quantile,
             filter_step=script_args.filter_step
         )
-        
+
         if script_args.quantile_scheduler:
+            print(f"[Scheduler:] {script_args.quantile_scheduler_type} | [Start:] {script_args.quantile}")
             scheduler_callback = QuantileSchedulerCallback(
-                start_val=script_args.quantile_start, 
-                end_val=script_args.quantile_end, 
+                start_val=script_args.quantile, 
                 schedule_type= script_args.quantile_scheduler_type
             )
             dpo_trainer.add_callback(scheduler_callback)

@@ -136,7 +136,7 @@ class BiPOTrainerEXP(BiPOTrainer):
                     min_val = importance.min()
                     max_val = importance.max()
                     
-                    soft_mask = (importance - min_val) / (max_val - min_val + 1e-8)
+                    soft_mask = (importance - min_val) / (max_val - min_val)
                     mask = hard_mask * soft_mask
                     param.grad.mul_(mask)
 

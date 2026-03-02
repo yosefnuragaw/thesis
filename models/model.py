@@ -1,6 +1,14 @@
 from typing import List, Dict, Optional
 import torch
 from torch.utils.data import Dataset
+from transformers import TrainerCallback
+import math
+try:
+    import wandb
+    has_wandb = True
+except ImportError:
+    has_wandb = False
+
 
 MODEL_TEMPLATE_MAP: Dict[str, str]= {
     'meta-llama/Llama-2-7b-chat-hf': 'llama-2',
@@ -68,3 +76,31 @@ class BlockWrapper(torch.nn.Module):
     def clear_buffer(self):
         self.buffer_space = []
 
+
+class QuantileSchedulerCallback(TrainerCallback):
+    def __init__(self, start_val, end_val, schedule_type="linear"):
+        self.start_val = start_val
+        self.end_val = end_val
+        self.schedule_type = schedule_type
+
+    def on_step_begin(self, args, state, control, model, **kwargs):
+        if state.max_steps == 0:
+            return
+            
+        progress = min(1.0, state.global_step / state.max_steps)
+        
+        if self.schedule_type == "linear":
+            current_val = self.start_val + progress * (self.end_val - self.start_val)
+        elif self.schedule_type == "cosine":
+            current_val = self.end_val + 0.5 * (self.start_val - self.end_val) * (1 + math.cos(math.pi * progress))
+            
+        if hasattr(model, "quantile_threshold"):
+            model.quantile_threshold = current_val
+            
+        # Log to wandb
+        if has_wandb and wandb.run is not None:
+            if state.global_step > 0 and state.global_step % args.logging_steps == 0:
+                wandb.log(
+                    {"custom/quantile_threshold": current_val}, 
+                    step=state.global_step
+                )

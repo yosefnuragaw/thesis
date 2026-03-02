@@ -12,6 +12,7 @@ from trl import BiPOTrainer, DPOConfig, BiPOTrainerEXP
 from utils import get_data, print_trainable_parameters, set_seed
 from models.model import (
     BlockWrapper,
+    QuantileSchedulerCallback,
     MODEL_TEMPLATE_MAP,
     )
 
@@ -54,6 +55,10 @@ class ScriptArguments:
     experiment: Optional[bool] = field(default=False, metadata={"help": "Run experimentation"})
     quantile: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
     filter_step: Optional[int] = field(default=0, metadata={"help": "Filter step window"})
+    quantile_scheduler: Optional[bool] = field(default=False, metadata={"help": "Run with quantile scheduler"})
+    quantile_scheduler_type: Optional[str] = field(default='linear', metadata={"help": "Quantile scheduler type"})
+    quantile_start: Optional[float] = field(default=0., metadata={"help": "Quantile scheduler start value"})
+    quantile_end: Optional[float] = field(default=0., metadata={"help": "Quantile scheduler end value"})
 
 
 if __name__ == "__main__":
@@ -162,6 +167,15 @@ if __name__ == "__main__":
             quantile=script_args.quantile,
             filter_step=script_args.filter_step
         )
+        
+        if script_args.quantile_scheduler:
+            scheduler_callback = QuantileSchedulerCallback(
+                start_val=script_args.quantile_start, 
+                end_val=script_args.quantile_end, 
+                schedule_type= script_args.quantile_scheduler_type
+            )
+            dpo_trainer.add_callback(scheduler_callback)
+
     else:
         dpo_trainer = BiPOTrainer(
             model=model,

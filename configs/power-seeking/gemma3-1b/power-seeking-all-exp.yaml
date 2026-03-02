@@ -25,6 +25,7 @@ max_prompt_length: 2048
 # Experimentation
 experiment: True
 quantile: 0.9
+quantile_scheduler: False
 filter_step: 4
 
 # Eval

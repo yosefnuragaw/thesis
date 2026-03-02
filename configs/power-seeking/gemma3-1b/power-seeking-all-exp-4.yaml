@@ -29,7 +29,7 @@ quantile_scheduler: True
 quantile_scheduler_type: "linear"
 filter_step: 4
 quantile_start: 0.5
-quantile_start: 0.95
+quantile_end: 0.95
 
 
 # Eval

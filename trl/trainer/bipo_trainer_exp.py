@@ -110,7 +110,39 @@ class BiPOTrainerEXP(BiPOTrainer):
 
     #     return loss
 
-    # EXP 5
+    # EXP 5 AND 6
+    # @override
+    # def training_step(self, model, inputs,num_items_in_batch=None):
+    #     loss = super().training_step(model, inputs,num_items_in_batch)
+
+    #     with torch.no_grad():
+    #         for name, param in model.named_parameters():
+    #             if "vec" in name and param.grad is not None:
+    #                 self.fisher_accumulator[name] += param.grad.pow(2)
+
+    #         if self.state.global_step % self.filter_step == 0:
+    #             for name, param in model.named_parameters():
+    #                 if "vec" in name:
+    #                     self.importance_map[name] = self.fisher_accumulator[name].clone()
+    #                     self.fisher_accumulator[name].zero_()
+
+
+    #         for name, param in model.named_parameters():
+    #             if name in self.importance_map:
+    #                 importance = self.importance_map[name].float()
+    #                 threshold = torch.quantile(importance, self.quantile_threshold)
+    #                 hard_mask = (importance >= threshold).float()
+                    
+    #                 min_val = importance.min()
+    #                 max_val = importance.max()
+                    
+    #                 soft_mask = (importance - min_val) / (max_val - min_val)
+    #                 mask = hard_mask * soft_mask
+    #                 param.grad.mul_(mask)
+
+    #     return loss
+
+    # EXP 7
     @override
     def training_step(self, model, inputs,num_items_in_batch=None):
         loss = super().training_step(model, inputs,num_items_in_batch)
@@ -132,14 +164,7 @@ class BiPOTrainerEXP(BiPOTrainer):
                     importance = self.importance_map[name].float()
                     threshold = torch.quantile(importance, self.quantile_threshold)
                     hard_mask = (importance >= threshold).float()
-                    
-                    min_val = importance.min()
-                    max_val = importance.max()
-                    
-                    soft_mask = (importance - min_val) / (max_val - min_val)
-                    mask = hard_mask * soft_mask
-                    param.grad.mul_(mask)
+                    param.grad.mul_(hard_mask)
 
         return loss
-
 

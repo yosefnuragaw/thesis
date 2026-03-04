@@ -165,6 +165,7 @@ def main(baseline:bool, args: ScriptArguments)->None:
             dataset = read_dataset(
                 behavior=args.behavior,
                 tokenizer=tokenizer,
+                multiplier = multiplier
             )
 
             updated_dataset = generate_answers(
@@ -183,7 +184,6 @@ def main(baseline:bool, args: ScriptArguments)->None:
         dataset = read_dataset(
                 behavior=args.behavior,
                 tokenizer=tokenizer
-                multiplier = multiplier
             )
 
         updated_dataset = generate_answers(

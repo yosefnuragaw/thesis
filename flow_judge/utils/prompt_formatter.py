@@ -44,12 +44,9 @@ output.
 4. After comparing the output to the score descriptions, pay attention to the small details that \
 might impact the final score that you assign. Sometimes a small difference can dictate the final \
 score.
-5. Write verbal feedback justifying your evaluation that includes a detailed rationale, referring \
-to specific aspects of the output and comparing them to the rubric.
-6. Assign a final score based on the scoring rubric.
+5. Assign a final score based on the scoring rubric.
 
 ## FORMAT FOR THE EVALUATION
-- Write the verbal feedback inside <feedback> tags without any additional surrounding text.
 - Write the numeric score inside <score> tags, without any additional surrounding text and always \
 after the feedback.
 
@@ -90,12 +87,9 @@ output.
 4. After comparing the output to the score descriptions, pay attention to the small details that \
 might impact the final score that you assign. Sometimes a small difference can dictate the final \
 score.
-5. Write verbal feedback justifying your evaluation that includes a detailed rationale, referring \
-to specific aspects of the output and comparing them to the rubric.
-6. Assign a final score based on the scoring rubric.
+5. Assign a final score based on the scoring rubric.
 
 ## FORMAT FOR THE EVALUATION
-- Write the verbal feedback inside <feedback> tags without any additional surrounding text.
 - Write the numeric score inside <score> tags, without any additional surrounding text and always \
 after the feedback.
 

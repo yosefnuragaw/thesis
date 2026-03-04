@@ -24,7 +24,7 @@ max_prompt_length: 2048
 
 # Experimentation
 experiment: True
-quantile: 0.
+quantile: 1.0e-8
 quantile_scheduler: True
 quantile_scheduler_type: "quadratic"
 target_scheduler: "layers"

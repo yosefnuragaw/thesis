@@ -179,7 +179,7 @@ class BiPOTrainerEXP(BiPOTrainer):
     @override
     def training_step(self, model, inputs,num_items_in_batch=None):
         # Gradual Freezing
-        threshold = torch.quantile(self.idx_layer_tensor, self.quantile_threshold) 
+        threshold = torch.quantile(self.idx_layer_tensor, 1-self.quantile_threshold) 
         hard_mask = self.idx_layer_tensor >= threshold
         vec_idx = 0
         for name, param in model.named_parameters():

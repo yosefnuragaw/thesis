@@ -58,7 +58,6 @@ def main(baseline: bool, args: ScriptArguments) -> None:
             file_path = f"{args.answer_dir}/results_{args.behavior}_{args.model_name_or_path.replace('/', '_')}_{args.id}_{multiplier}.csv"
             datasets[multiplier] = read_answers(behavior=args.behavior, path=file_path)
             
-
     coh_criteria, coh_rubric = EVALUATION_MAP['coherence']
     coherence_metric = CustomMetric(
         name="coherence",
@@ -69,26 +68,7 @@ def main(baseline: bool, args: ScriptArguments) -> None:
     )
     coherence_judge = FlowJudge(metric=coherence_metric, model=model)
 
-
     beh_criteria, beh_rubric = EVALUATION_MAP[args.behavior]
-    
-    beh_rubric_items = []
-    for key, val in beh_rubric.items():
-        if key == 5:
-            val = val.replace("{POSITIVE_EXAMPLE}", "[See POSITIVE_EXAMPLE in the inputs]")
-        elif key == 1:
-            val = val.replace("{NEGATIVE_EXAMPLE}", "[See NEGATIVE_EXAMPLE in the inputs]")
-        beh_rubric_items.append(RubricItem(score=key, description=val))
-
-    behavior_metric = CustomMetric(
-        name=args.behavior,
-        criteria=beh_criteria,
-        rubric=beh_rubric_items,
-        required_inputs=["question", "POSITIVE_EXAMPLE", "NEGATIVE_EXAMPLE"],
-        required_output="answer"
-    )
-    behavior_judge = FlowJudge(metric=behavior_metric, model=model)
-    batch_size = 64
     
     for mul, dataset in datasets.items():
         if not dataset:
@@ -96,34 +76,45 @@ def main(baseline: bool, args: ScriptArguments) -> None:
 
         print(f"\n[Multiplier:] {mul} \n")
         
-        coherence_eval_inputs = [
-            EvalInput(inputs=[{"question": row['question']}], output={"answer": row['answer'] if row['answer'] else ''}) 
-            for row in dataset
-        ]
-        
         coherence_results = []
-        for i in tqdm(range(0, len(coherence_eval_inputs), batch_size), desc="Coherence Batches"):
-            chunk = coherence_eval_inputs[i:i + batch_size]
-            coherence_results.extend(coherence_judge.batch_evaluate(chunk))
+        for row in tqdm(dataset, desc="Coherence Evaluation"):
+            eval_input = EvalInput(
+                inputs=[{"question": row['question']}], 
+                output={"answer": row['answer'] if row['answer'] else ''}
+            )
+            res = coherence_judge.evaluate(eval_input)
+            coherence_results.append(res)
             
         coherence_likert[mul] = sum(res.score for res in coherence_results) / len(coherence_results)
 
-        behavior_eval_inputs = [
-            EvalInput(
-                inputs=[
-                    {"question": row['question']},
-                    {"POSITIVE_EXAMPLE": row['positive_example']},
-                    {"NEGATIVE_EXAMPLE": row['negative_example']}
-                ], 
-                output={"answer": row['answer'] if row['answer'] else ''}
-            ) 
-            for row in dataset
-        ]
-        
         behavior_results = []
-        for i in tqdm(range(0, len(behavior_eval_inputs), batch_size), desc="Behavior Batches"):
-            chunk = behavior_eval_inputs[i:i + batch_size]
-            behavior_results.extend(behavior_judge.batch_evaluate(chunk))
+        for row in tqdm(dataset, desc="Behavior Evaluation"):
+            
+            beh_rubric_items = []
+            for key, val in beh_rubric.items():
+                if key == 5:
+                    val = val.replace("{POSITIVE_EXAMPLE}", row['positive_example'])
+                elif key == 1:
+                    val = val.replace("{NEGATIVE_EXAMPLE}", row['negative_example'])
+                beh_rubric_items.append(RubricItem(score=key, description=val))
+
+            behavior_metric = CustomMetric(
+                name=args.behavior,
+                criteria=beh_criteria,
+                rubric=beh_rubric_items,
+                required_inputs=["question"], 
+                required_output="answer"
+            )
+            
+            behavior_judge = FlowJudge(metric=behavior_metric, model=model)
+
+            eval_input = EvalInput(
+                inputs=[{"question": row['question']}], 
+                output={"answer": row['answer'] if row['answer'] else ''}
+            )
+            
+            res = behavior_judge.evaluate(eval_input)
+            behavior_results.append(res)
             
         accuracy_likert[mul] = sum(res.score for res in behavior_results) / len(behavior_results)
 

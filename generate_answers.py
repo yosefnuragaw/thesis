@@ -58,7 +58,8 @@ class ScriptArguments:
 
 def read_dataset(
         behavior: str,
-        tokenizer: AutoTokenizer
+        tokenizer: AutoTokenizer,
+        multiplier: float
     )-> Dict[str, List]:
 
     path = f"./data/{behavior}/test_infer.csv"
@@ -89,7 +90,13 @@ def read_dataset(
         results['prompts'].append(prompt)
         results['A'].append(pos)
         results['B'].append(neg)
-        results['matching'].append(row['matching'])
+        if multiplier < 0:
+            if row['matching'] == 'A':
+                results['matching'].append('B')
+            else:
+                results['matching'].append('A')
+        else:
+            results['matching'].append(row['matching'] )
 
     return results
 
@@ -150,7 +157,8 @@ def main(baseline:bool, args: ScriptArguments)->None:
 
             dataset = read_dataset(
                 behavior=args.behavior,
-                tokenizer=tokenizer
+                tokenizer=tokenizer,
+                multiplier = multiplier
             )
 
             updated_dataset = generate_answers(

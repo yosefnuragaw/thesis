@@ -11,7 +11,7 @@ except ImportError:
 
 
 class BiPOTrainerEXP(BiPOTrainer):
-    def __init__(self, *args, quantile: Optional[float] = 0.0, num_layer: Optional[int] = 26, filter_step:int = 4,**kwargs):
+    def __init__(self, *args, quantile: Optional[float] = 0.0, num_layer: Optional[int] = 26,  filter_step:int = 4,**kwargs):
         super().__init__(*args, **kwargs)
         self.fisher_accumulator = {}
         self.importance_map = {}

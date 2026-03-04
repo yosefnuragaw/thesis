@@ -121,7 +121,7 @@ def main(baseline: bool, args: ScriptArguments) -> None:
             behavior_results.append(res)
         
 
-        clean_ans = [res.answer for res in behavior_results if res.answer > 0]
+        clean_ans = [res.score for res in behavior_results if res.score > 0]
         accuracy_likert[mul] = sum(clean_ans) / len(clean_ans)
 
         print(f'\n[Accuracy Likert (Scale 5):] {accuracy_likert}')

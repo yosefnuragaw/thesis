@@ -9,7 +9,7 @@ import wandb
 
 from flow_judge.metrics import CustomMetric, RubricItem
 from flow_judge.flow_judge import EvalInput, FlowJudge
-from flow_judge.models import Hf, Vllm
+from flow_judge.models import Hf
 
 from models.prompts import EVALUATION_MAP
 from utils import set_seed
@@ -44,8 +44,12 @@ def read_answers(behavior: str, path: str) -> List[Dict[str,str]]:
     return prompts
 
 def main(baseline: bool, args: ScriptArguments) -> None:
-    model = Vllm()
-    
+    model = Hf(
+    model_kwargs={
+        "attn_implementation": "flash_attention_2",
+        "use_cache": True  # <-- Add this here
+    }
+)
     accuracy_likert: Dict[float, float] = {}
     coherence_likert: Dict[float, float] = {}
     

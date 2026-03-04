@@ -121,12 +121,9 @@ if __name__ == "__main__":
         param.requires_grad = False
 
     
-    if script_args.target_scheduler != 'layers':
-        print('Unfreezing steering vectors...')
-        for layer in script_args.layer:
-            model.model.layers[layer].vec.requires_grad = True 
-    else:
-        print(f"[Target:] {script_args.target_scheduler} | All layer frozen")
+    print('Unfreezing steering vectors...')
+    for layer in script_args.layer:
+        model.model.layers[layer].vec.requires_grad = True 
         
 
     # 5. Load Datasets

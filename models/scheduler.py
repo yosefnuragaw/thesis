@@ -5,7 +5,7 @@ from transformers import TrainerCallback
 class QuantileSchedulerCallback(TrainerCallback):
     def __init__(self, start_val, schedule_type="linear"):
         self.start_val = start_val
-        self.end_val = 1 - 1e-8
+        self.end_val = 1.
         self.schedule_type = schedule_type
 
     def on_step_begin(self, args, state, control, model, **kwargs):

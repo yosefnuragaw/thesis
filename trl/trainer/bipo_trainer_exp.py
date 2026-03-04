@@ -51,7 +51,7 @@ class BiPOTrainerEXP(BiPOTrainer):
 
     #     return loss
     
-    # EXP 3
+    # EXP 3:
     # @override
     # def training_step(self, model, inputs,num_items_in_batch=None):
     #     loss = super().training_step(model, inputs,num_items_in_batch)
@@ -80,7 +80,7 @@ class BiPOTrainerEXP(BiPOTrainer):
 
     #     return loss
 
-    # EXP 4
+    # EXP 4: Combined soft masking based on selected neuron with hard masking
     # @override
     # def training_step(self, model, inputs,num_items_in_batch=None):
     #     loss = super().training_step(model, inputs,num_items_in_batch)
@@ -117,7 +117,7 @@ class BiPOTrainerEXP(BiPOTrainer):
 
     #     return loss
 
-    # EXP 5 AND 6
+    # EXP 5 AND 6: Combined hard masking and soft masking with scheduler
     # @override
     # def training_step(self, model, inputs,num_items_in_batch=None):
     #     loss = super().training_step(model, inputs,num_items_in_batch)
@@ -149,7 +149,7 @@ class BiPOTrainerEXP(BiPOTrainer):
 
     #     return loss
 
-    # EXP 7 AND 8
+    # EXP 7 AND 8: Hard masking with Scheduler
     # @override
     # def training_step(self, model, inputs,num_items_in_batch=None):
     #     loss = super().training_step(model, inputs,num_items_in_batch)
@@ -175,7 +175,7 @@ class BiPOTrainerEXP(BiPOTrainer):
 
     #     return loss
 
-    # EXP 9
+    # EXP 9: Gradual Unfreezing with soft masking  
     @override
     def training_step(self, model, inputs,num_items_in_batch=None):
         # Gradual Freezing
@@ -184,7 +184,7 @@ class BiPOTrainerEXP(BiPOTrainer):
         vec_idx = 0
         for name, param in model.named_parameters():
             if "vec" in name:
-                print(f"[Layer:] {vec_idx} Learning")
+                print(f"[Layer:] {vec_idx} Learning" if hard_mask[vec_idx].item() else f"[Layer:] {vec_idx} Freezing")
                 param.requires_grad = hard_mask[vec_idx].item()
                 vec_idx += 1
 
@@ -209,8 +209,7 @@ class BiPOTrainerEXP(BiPOTrainer):
 
          # Log to wandb
         if has_wandb and wandb.run is not None:
-            # Using args.logging_steps to avoid flooding the API
-            if self.state.global_step > 0 and self.state.global_step % self.logging_steps == 0:
+            if self.state.global_step > 0:
                 wandb.log(
                     {"custom/quantile_threshold": self.quantile_threshold,
                      "custom/layer_unfreezed": hard_mask.sum().item()}, 

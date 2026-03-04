@@ -59,7 +59,7 @@ def main(baseline: bool, args: ScriptArguments) -> None:
     else:
         datasets = {}
         for multiplier in args.multipliers:
-            file_path = f"{args.answer_dir}/results_{args.behavior}_{args.model_name_or_path.replace('/', '_')}_{args.id}_{multiplier}.csv"
+            file_path = f"{args.answer_dir}/results_{args.behavior}_{args.id}_{multiplier}_{args.eval_epoch}.csv"
             datasets[multiplier] = read_answers(behavior=args.behavior, path=file_path)
             
     coh_criteria, coh_rubric = EVALUATION_MAP['coherence']

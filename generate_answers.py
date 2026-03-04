@@ -176,8 +176,7 @@ def main(baseline:bool, args: ScriptArguments)->None:
                 temperature = args.temperature
             )    
             df = pd.DataFrame(updated_dataset)
-            safe_model_name = args.model_name_or_path.replace("/", "_")
-            file_name = f"results_{args.behavior}_{safe_model_name}_{args.id}_{multiplier}.csv"
+            file_name = f"results_{args.behavior}_{args.id}_{multiplier}_{args.eval_epoch}.csv"
             save(file_name, df)     
     
     else:

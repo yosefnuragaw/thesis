@@ -35,6 +35,5 @@ class QuantileSchedulerCallback(TrainerCallback):
             current_val = self.start_val
 
         # Update model attribute
-        if hasattr(model, "quantile_threshold"):
-            model.quantile_threshold = current_val
+        state.custom_quantile_threshold = current_val
             

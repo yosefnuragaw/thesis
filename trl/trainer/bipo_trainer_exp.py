@@ -179,6 +179,7 @@ class BiPOTrainerEXP(BiPOTrainer):
     @override
     def training_step(self, model, inputs,num_items_in_batch=None):
         # Gradual Freezing
+        self.quantile_threshold = getattr(self.state, "custom_quantile_threshold", self.quantile_threshold)
         threshold = torch.quantile(self.idx_layer_tensor, 1-self.quantile_threshold) 
         hard_mask = self.idx_layer_tensor >= threshold
         vec_idx = 0
@@ -204,7 +205,7 @@ class BiPOTrainerEXP(BiPOTrainer):
                     min_val = importance.min()
                     max_val = importance.max()
                     
-                    soft_mask = (importance - min_val) / (max_val - min_val)
+                    soft_mask = (importance - min_val) / (max_val - min_val+ 1e-8)
                     param.grad.mul_(soft_mask)
 
          # Log to wandb

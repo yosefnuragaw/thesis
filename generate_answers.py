@@ -20,6 +20,7 @@ from models.prompts import SYSTEM_PROMPT
 from utils import set_seed
 from evaluation import init_model
 from models.dataset import PromptDataset
+from models.model import BlockWrapper
 
 
 
@@ -144,16 +145,22 @@ def save(file_name:str,df: pd.DataFrame)->None:
 
     print(f"Results saved to: {output_path}")
 def main(baseline:bool, args: ScriptArguments)->None:
-    if not baseline:
-        for multiplier in args.multipliers:
-            model, tokenizer = init_model(
+
+    model, tokenizer = init_model(
                 model_name=args.model_name_or_path,
                 vec_dir=args.vec_dir,
                 epoch=args.eval_epoch,
                 layers=args.layer,
-                multiplier=multiplier,
+                multiplier=0,
                 total_layer = args.total_layer
             )
+    
+    if not baseline:
+        for multiplier in args.multipliers:
+            
+            for idx in args.layer:
+                if isinstance(model.model.layers[idx], BlockWrapper):
+                    model.model.layers[idx].set_multiplier(multiplier)
 
             dataset = read_dataset(
                 behavior=args.behavior,
@@ -174,14 +181,6 @@ def main(baseline:bool, args: ScriptArguments)->None:
             save(file_name, df)     
     
     else:
-        model, tokenizer = init_model(
-                model_name=args.model_name_or_path,
-                vec_dir=args.vec_dir,
-                epoch=args.eval_epoch,
-                layers=args.layer,
-                multiplier=0,
-                total_layer = args.total_layer
-            )
 
         dataset = read_dataset(
                 behavior=args.behavior,

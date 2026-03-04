@@ -199,7 +199,7 @@ class BiPOTrainerEXP(BiPOTrainer):
 
 
             for name, param in model.named_parameters():
-                if name in self.importance_map:
+                if name in self.importance_map and param.grad is not None:
                     importance = self.importance_map[name].float()
                     
                     min_val = importance.min()

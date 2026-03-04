@@ -12,9 +12,10 @@ from trl import BiPOTrainer, DPOConfig, BiPOTrainerEXP
 from utils import get_data, print_trainable_parameters, set_seed
 from models.model import (
     BlockWrapper,
-    QuantileSchedulerCallback,
     MODEL_TEMPLATE_MAP,
     )
+from models.scheduler import QuantileSchedulerCallback
+
 
 
 # --- Arguments ---
@@ -57,6 +58,7 @@ class ScriptArguments:
     filter_step: Optional[int] = field(default=0, metadata={"help": "Filter step window"})
     quantile_scheduler: Optional[bool] = field(default=False, metadata={"help": "Run with quantile scheduler"})
     quantile_scheduler_type: Optional[str] = field(default='linear', metadata={"help": "Quantile scheduler type"})
+    target_scheduler: Optional[str] = field(default='neuron', metadata={"help": "target scheduler"})
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -118,9 +120,14 @@ if __name__ == "__main__":
     for param in model.parameters():
         param.requires_grad = False
 
-    print('Unfreezing steering vectors...')
-    for layer in script_args.layer:
-        model.model.layers[layer].vec.requires_grad = True  
+    
+    if script_args.target_scheduler != 'layers':
+        print('Unfreezing steering vectors...')
+        for layer in script_args.layer:
+            model.model.layers[layer].vec.requires_grad = True 
+    else:
+        print(f"[Target:] {script_args.target_scheduler} | All layer frozen")
+        
 
     # 5. Load Datasets
     train_dataset = get_data(tokenizer = tokenizer, behavior=script_args.behavior, train=True) 
@@ -166,11 +173,11 @@ if __name__ == "__main__":
         )
 
         if script_args.quantile_scheduler:
-            print(f"[Scheduler:] {script_args.quantile_scheduler_type} | [Start:] {script_args.quantile}")
+            print(f"[Scheduler:] {script_args.quantile_scheduler_type} | [Start:] {script_args.quantile} | [Target:] {script_args.target_scheduler}")
             scheduler_callback = QuantileSchedulerCallback(
-                start_val=script_args.quantile, 
-                schedule_type= script_args.quantile_scheduler_type
-            )
+                    start_val=script_args.quantile, 
+                    schedule_type= script_args.quantile_scheduler_type
+                )
             dpo_trainer.add_callback(scheduler_callback)
 
     else:

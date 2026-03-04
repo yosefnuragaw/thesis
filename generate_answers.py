@@ -60,7 +60,7 @@ class ScriptArguments:
 def read_dataset(
         behavior: str,
         tokenizer: AutoTokenizer,
-        multiplier: float
+        multiplier: float = 0
     )-> Dict[str, List]:
 
     path = f"./data/{behavior}/test_infer.csv"
@@ -91,7 +91,8 @@ def read_dataset(
         results['prompts'].append(prompt)
         results['A'].append(pos)
         results['B'].append(neg)
-        if multiplier < 0:
+
+        if multiplier< 0:
             if row['matching'] == 'A':
                 results['matching'].append('B')
             else:
@@ -157,7 +158,6 @@ def main(baseline:bool, args: ScriptArguments)->None:
     
     if not baseline:
         for multiplier in args.multipliers:
-            
             for idx in args.layer:
                 if isinstance(model.model.layers[idx], BlockWrapper):
                     model.model.layers[idx].set_multiplier(multiplier)
@@ -165,7 +165,6 @@ def main(baseline:bool, args: ScriptArguments)->None:
             dataset = read_dataset(
                 behavior=args.behavior,
                 tokenizer=tokenizer,
-                multiplier = multiplier
             )
 
             updated_dataset = generate_answers(
@@ -184,6 +183,7 @@ def main(baseline:bool, args: ScriptArguments)->None:
         dataset = read_dataset(
                 behavior=args.behavior,
                 tokenizer=tokenizer
+                multiplier = multiplier
             )
 
         updated_dataset = generate_answers(

@@ -24,19 +24,20 @@ class EvalOutput(BaseModel):
         """Parse the evaluation response from the judge."""
         try:
             # Compile regex patterns
-            feedback_pattern = re.compile(r"<feedback>\s*(.*?)\s*</feedback>", re.DOTALL)
+            # feedback_pattern = re.compile(r"<feedback>\s*(.*?)\s*</feedback>", re.DOTALL)
             score_pattern = re.compile(r"<score>\s*(\d+)\s*</score>", re.DOTALL)
 
-            feedback_match = feedback_pattern.search(response)
+            # feedback_match = feedback_pattern.search(response)
             score_match = score_pattern.search(response)
 
-            if not feedback_match or not score_match:
+            # if not feedback_match or not score_match:
+            if  not score_match:
                 raise ValueError("Failed to parse evaluation response.")
 
-            feedback = feedback_match.group(1).strip()
+            # feedback = feedback_match.group(1).strip()
             score = int(score_match.group(1).strip())
 
-            return cls(feedback=feedback, score=score)
+            return cls(feedback="", score=score)
         except Exception as e:
             if fail_on_parse_error:
                 raise ValueError(f"Failed to parse evaluation response: {e}") from e

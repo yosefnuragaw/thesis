@@ -115,8 +115,10 @@ def main(baseline: bool, args: ScriptArguments) -> None:
             
             res = behavior_judge.evaluate(eval_input)
             behavior_results.append(res)
-            
-        accuracy_likert[mul] = sum(res.score for res in behavior_results) / len(behavior_results)
+        
+
+        clean_ans = [res.answer for res in behavior_results if res.answer > 0]
+        accuracy_likert[mul] = sum(clean_ans) / len(clean_ans)
 
         print(f'\n[Accuracy Likert (Scale 5):] {accuracy_likert}')
         print(f'[Coherence Likert (Scale 5):] {coherence_likert}')

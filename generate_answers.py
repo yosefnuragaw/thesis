@@ -108,7 +108,7 @@ def generate_answers(
     dataset: Dict[str, List], 
     max_new_tokens: int, 
     temperature: float,
-    batch_size: int = 32
+    batch_size: int = 128
 ) -> Dict[str, List]:
 
     generator = pipeline(

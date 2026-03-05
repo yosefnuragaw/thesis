@@ -211,12 +211,12 @@ class BiPOTrainerEXP(BiPOTrainer):
                         param.grad.mul_(soft_mask)
 
          # Log to wandb
-        if has_wandb and wandb.run is not None:
-            if self.state.global_step > 0:
-                wandb.log(
-                    {"custom/quantile_threshold": self.quantile_threshold,
-                     "custom/layer_unfreezed": hard_mask.sum().item()}, 
-                    step=self.state.global_step
-                )
+        # if has_wandb and wandb.run is not None:
+        #     if self.state.global_step > 0:
+        #         wandb.log(
+        #             {"custom/quantile_threshold": self.quantile_threshold,
+        #              "custom/layer_unfreezed": hard_mask.sum().item()}, 
+        #             step=self.state.global_step
+        #         )
 
         return loss

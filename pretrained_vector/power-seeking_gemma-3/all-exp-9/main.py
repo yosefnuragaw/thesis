@@ -20,8 +20,8 @@ def download_full_bipo_history():
 
     print(f"Starting download of {len(layers) * len(versions)} artifacts...")
 
-    for layer in versions:
-        for v in layers:
+    for layer in layers:
+        for v in versions:
             artifact_identifier = f"{entity}/{project}/{base_name}{layer}:v{v}"
             
             try:

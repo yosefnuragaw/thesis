@@ -11,13 +11,15 @@ except ImportError:
 
 
 class BiPOTrainerEXP(BiPOTrainer):
-    def __init__(self, *args,experiment_pipeline:str = 'both', quantile: Optional[float] = 0.0, num_layer: Optional[int] = 26,  filter_step:int = 4,**kwargs):
+    def __init__(self, *args,experiment_pipeline:str = 'both', masking_type:str = 'soft', quantile: Optional[float] = 0.0, num_layer: Optional[int] = 26,  filter_step:int = 4,**kwargs):
         super().__init__(*args, **kwargs)
         self.fisher_accumulator = {}
         self.importance_map = {}
         self.quantile_threshold = quantile
         self.filter_step = filter_step
         self.experiment_pipeline = experiment_pipeline
+        self.masking_type = masking_type
+
         self.idx_layer_tensor = torch.arange(num_layer, dtype=torch.float32)
 
         for name, p in self.model.named_parameters():
@@ -203,12 +205,20 @@ class BiPOTrainerEXP(BiPOTrainer):
                 for name, param in model.named_parameters():
                     if name in self.importance_map and param.grad is not None:
                         importance = self.importance_map[name].float()
-                        
-                        min_val = importance.min()
-                        max_val = importance.max()
-                        
-                        soft_mask = (importance - min_val) / (max_val - min_val+ 1e-8)
-                        param.grad.mul_(soft_mask)
+
+                        if self.masking_type == 'soft':
+                            min_val = importance.min()
+                            max_val = importance.max()
+                            
+                            soft_mask = (importance - min_val) / (max_val - min_val+ 1e-8)
+                            param.grad.mul_(soft_mask)
+
+                        if self.masking_type == 'hard':
+                            importance = self.importance_map[name].float()
+                            threshold = torch.quantile(importance, 0.9)
+                            hard_mask = (importance >= threshold).float()
+                            
+                            param.grad.mul_(hard_mask)
 
          # Log to wandb
         # if has_wandb and wandb.run is not None:

@@ -52,7 +52,8 @@ class ScriptArguments:
     report_to: Optional[str] = field(default="wandb", metadata={"help": "integration to report to"})
     ignore_bias_buffers: Optional[bool] = field(default=False, metadata={"help": "fix for DDP issues"})
 
-    # Experiment
+    # Experiment : 
+
     experiment: Optional[bool] = field(default=False, metadata={"help": "Run experimentation"})
     quantile: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
     filter_step: Optional[int] = field(default=0, metadata={"help": "Filter step window"})
@@ -60,6 +61,7 @@ class ScriptArguments:
     quantile_scheduler_type: Optional[str] = field(default='linear', metadata={"help": "Quantile scheduler type"})
     target_scheduler: Optional[str] = field(default='neuron', metadata={"help": "target scheduler"})
     experiment_pipeline: Optional[str] = field(default='both', metadata={"help": "experimentation pipeline both | one| two"})
+    masking_type: Optional[str] = field(default='soft', metadata={"help": "experimentation masking type hard | soft"})
 
 
 if __name__ == "__main__":
@@ -169,7 +171,8 @@ if __name__ == "__main__":
             name=template_name,
             quantile=script_args.quantile,
             filter_step=script_args.filter_step,
-            experiment_pipeline = script_args.experiment_pipeline
+            experiment_pipeline = script_args.experiment_pipeline,
+            masking_type = script_args.masking_type
         )
 
         if script_args.quantile_scheduler:

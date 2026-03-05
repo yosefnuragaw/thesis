@@ -49,7 +49,7 @@ class ScriptArguments:
         default_factory=lambda: list(range(26)), 
         metadata={"help": "the layer the steering vector extracted from"}
     )
-    num_layer: Optional[int] = field(default=26, metadata={"help": "total model layer"})
+    total_layer: Optional[int] = field(default=26, metadata={"help": "total model layer"})
 
     report_to: Optional[str] = field(default="wandb", metadata={"help": "integration to report to"})
     ignore_bias_buffers: Optional[bool] = field(default=False, metadata={"help": "fix for DDP issues"})
@@ -175,7 +175,7 @@ if __name__ == "__main__":
             filter_step=script_args.filter_step,
             experiment_pipeline = script_args.experiment_pipeline,
             masking_type = script_args.masking_type,
-            num_layer = script_args.num_layer
+            num_layer = script_args.total_layer
         )
 
         if script_args.quantile_scheduler:

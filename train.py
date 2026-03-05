@@ -172,7 +172,8 @@ if __name__ == "__main__":
             quantile=script_args.quantile,
             filter_step=script_args.filter_step,
             experiment_pipeline = script_args.experiment_pipeline,
-            masking_type = script_args.masking_type
+            masking_type = script_args.masking_type,
+            num_layer = script_args.total_layer
         )
 
         if script_args.quantile_scheduler:

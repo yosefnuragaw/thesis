@@ -59,6 +59,8 @@ class ScriptArguments:
     quantile_scheduler: Optional[bool] = field(default=False, metadata={"help": "Run with quantile scheduler"})
     quantile_scheduler_type: Optional[str] = field(default='linear', metadata={"help": "Quantile scheduler type"})
     target_scheduler: Optional[str] = field(default='neuron', metadata={"help": "target scheduler"})
+    experiment_pipeline: Optional[str] = field(default='both', metadata={"help": "experimentation pipeline both | one| two"})
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -166,7 +168,8 @@ if __name__ == "__main__":
             layer=script_args.layer,
             name=template_name,
             quantile=script_args.quantile,
-            filter_step=script_args.filter_step
+            filter_step=script_args.filter_step,
+            experiment_pipeline = script_args.experiment_pipeline
         )
 
         if script_args.quantile_scheduler:

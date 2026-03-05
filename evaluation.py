@@ -282,8 +282,8 @@ if __name__ == "__main__":
             layers=script_args.layer,
             multipliers= [-2,-1.5,-1,0,1,1.5,2],
             messages=messages,
-            max_new_tokens = args.max_new_tokens,
-            temperature = args.temperature ,
+            max_new_tokens = script_args.max_new_tokens,
+            temperature = script_args.temperature ,
         )
     
 

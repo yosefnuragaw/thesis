@@ -91,7 +91,7 @@ if __name__ == "__main__":
     template_name = MODEL_TEMPLATE_MAP.get(script_args.model_name_or_path, 'llama-2')
 
     print(f"Loaded config from {args.config}")
-    print(f"[Behavior:] {script_args.behavior} | [Layer:] {script_args.layer} | [Model:] {script_args.model_name_or_path} | [Experiment:] {script_args.experiment}")
+    print(f"[Behavior:] {script_args.behavior} | [Layer:] {script_args.layer} | [Model:] {script_args.model_name_or_path} | [Experiment:] {script_args.experiment} | Moving {script_args.moving}")
 
     # 3. Load & Configure Models
     model = AutoModelForCausalLM.from_pretrained(
@@ -181,7 +181,7 @@ if __name__ == "__main__":
         )
 
         if script_args.quantile_scheduler:
-            print(f"[Scheduler:] {script_args.quantile_scheduler_type} | [Start:] {script_args.quantile} | Moving {script_args.moving}")
+            print(f"[Scheduler:] {script_args.quantile_scheduler_type} | [Start:] {script_args.quantile} ")
             scheduler_callback = QuantileSchedulerCallback(
                     start_val=script_args.quantile, 
                     schedule_type= script_args.quantile_scheduler_type

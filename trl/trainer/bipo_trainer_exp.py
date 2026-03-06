@@ -110,9 +110,10 @@ class BiPOTrainerEXP(BiPOTrainer):
                     param.requires_grad = is_learning
                     
                     if is_learning:
-                        print(f"[Layer:] {idx} Learning")
+                        pass
+                        # print(f"[Layer:] {idx} Learning")
                     else:
-                        print(f"[Layer:] {idx} Freezing")
+                        # print(f"[Layer:] {idx} Freezing")
                         param.grad = None 
 
         return loss

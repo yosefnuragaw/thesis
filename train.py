@@ -63,6 +63,8 @@ class ScriptArguments:
     quantile_scheduler_type: Optional[str] = field(default='linear', metadata={"help": "Quantile scheduler type"})
     experiment_pipeline: Optional[str] = field(default='both', metadata={"help": "experimentation pipeline both | one| two"})
     masking_type: Optional[str] = field(default='soft', metadata={"help": "experimentation masking type hard | soft"})
+    moving: Optional[str] = field(default='backward', metadata={"help": "gradual moving backward | forward"})
+
 
 
 if __name__ == "__main__":
@@ -174,11 +176,12 @@ if __name__ == "__main__":
             filter_step=script_args.filter_step,
             experiment_pipeline = script_args.experiment_pipeline,
             masking_type = script_args.masking_type,
-            num_layer = script_args.total_layer
+            num_layer = script_args.total_layer,
+            moving= script_args.moving
         )
 
         if script_args.quantile_scheduler:
-            print(f"[Scheduler:] {script_args.quantile_scheduler_type} | [Start:] {script_args.quantile}")
+            print(f"[Scheduler:] {script_args.quantile_scheduler_type} | [Start:] {script_args.quantile} | Moving {script_args.moving}")
             scheduler_callback = QuantileSchedulerCallback(
                     start_val=script_args.quantile, 
                     schedule_type= script_args.quantile_scheduler_type

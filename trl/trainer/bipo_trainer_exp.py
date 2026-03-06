@@ -79,6 +79,8 @@ class BiPOTrainerEXP(BiPOTrainer):
      # EXP 11: Fisher Layer selection
     @override
     def training_step(self, model, inputs, num_items_in_batch=None):
+        is_filter_step = (self.state.global_step % self.filter_step == 0)
+
         # 1. Initial mapping
         if self.state.global_step == 0:  
             vec_idx = 0
@@ -87,15 +89,15 @@ class BiPOTrainerEXP(BiPOTrainer):
                     self.idx_param[vec_idx] = param
                     vec_idx += 1
 
-        if self.state.global_step % self.filter_step == 0:
+        if is_filter_step:
             for param in self.idx_param.values():
                 param.requires_grad = True
                 
+        # 3. Forward and Backward pass
         loss = super().training_step(model, inputs, num_items_in_batch)
 
-        with torch.no_grad():
-            if self.state.global_step % self.filter_step == 0:
-                
+        if is_filter_step:
+            with torch.no_grad():
                 for idx, param in self.idx_param.items():
                     if param.grad is not None:
                         self.layer_weight[idx] = param.grad.pow(2).mean()
@@ -104,17 +106,12 @@ class BiPOTrainerEXP(BiPOTrainer):
                 threshold = torch.quantile(self.layer_weight, 1 - self.quantile_threshold) 
                 hard_mask = self.layer_weight >= threshold
 
-                # Apply the freeze
+                hard_mask_list = hard_mask.tolist()
                 for idx, param in self.idx_param.items():
-                    is_learning = hard_mask[idx].item()
+                    is_learning = hard_mask_list[idx]
                     param.requires_grad = is_learning
                     
-                    if is_learning:
-                        pass
-                        # print(f"[Layer:] {idx} Learning")
-                    else:
-                        # print(f"[Layer:] {idx} Freezing")
-                        if param.grad is not None:
-                            param.grad.zero_()
+                    if not is_learning and param.grad is not None:
+                        param.grad.zero_()
 
         return loss

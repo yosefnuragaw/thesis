@@ -19,214 +19,97 @@ class BiPOTrainerEXP(BiPOTrainer):
         self.filter_step = filter_step
         self.experiment_pipeline = experiment_pipeline
         self.masking_type = masking_type
+        self.idx_param = {}
 
-        self.idx_layer_tensor = torch.arange(num_layer, dtype=torch.float32)
+        # self.idx_layer_tensor = torch.arange(num_layer, dtype=torch.float32)
+        self.layer_weight = torch.arange(num_layer, dtype=torch.float32)
 
-        for name, p in self.model.named_parameters():
-            if "vec" in name:
-                self.fisher_accumulator[name] = torch.zeros_like(p)
+        # for name, p in self.model.named_parameters():
+        #     if "vec" in name:
+        #         self.fisher_accumulator[name] = torch.zeros_like(p)
     
-    # EXP 1 AND 2
-    # @override
-    # def training_step(self, model, inputs,num_items_in_batch=None):
-    #     loss = super().training_step(model, inputs,num_items_in_batch)
-
-    #     with torch.no_grad():
-    #         for name, param in model.named_parameters():
-    #             if "vec" in name and param.grad is not None:
-    #                 self.fisher_accumulator[name] += param.grad.pow(2)
-
-    #         if self.state.global_step % self.filter_step == 0:
-    #             for name, param in model.named_parameters():
-    #                 if "vec" in name:
-    #                     self.importance_map[name] = self.fisher_accumulator[name].clone()
-    #                     self.fisher_accumulator[name].zero_()
-
-
-    #         for name, param in model.named_parameters():
-    #             if name in self.importance_map:
-    #                 importance = self.importance_map[name].float()
-    #                 threshold = torch.quantile(importance, self.quantile )
-    #                 mask = (importance >= threshold).float()
-                    
-    #                 if param.grad is not None:
-    #                     param.grad.mul_(mask)
-
-    #     return loss
-    
-    # EXP 3:
-    # @override
-    # def training_step(self, model, inputs,num_items_in_batch=None):
-    #     loss = super().training_step(model, inputs,num_items_in_batch)
-
-    #     with torch.no_grad():
-    #         for name, param in model.named_parameters():
-    #             if "vec" in name and param.grad is not None:
-    #                 self.fisher_accumulator[name] += param.grad.pow(2)
-
-    #         if self.state.global_step % self.filter_step == 0:
-    #             for name, param in model.named_parameters():
-    #                 if "vec" in name:
-    #                     self.importance_map[name] = self.fisher_accumulator[name].clone()
-    #                     self.fisher_accumulator[name].zero_()
-
-
-    #         for name, param in model.named_parameters():
-    #             if name in self.importance_map:
-    #                 importance = self.importance_map[name].float()
-                    
-    #                 min_val = importance.min()
-    #                 max_val = importance.max()
-                    
-    #                 soft_mask = (importance - min_val) / (max_val - min_val + 1e-8)
-    #                 param.grad.mul_(soft_mask)
-
-    #     return loss
-
-    # EXP 4: Combined soft masking based on selected neuron with hard masking
-    # @override
-    # def training_step(self, model, inputs,num_items_in_batch=None):
-    #     loss = super().training_step(model, inputs,num_items_in_batch)
-
-    #     with torch.no_grad():
-    #         for name, param in model.named_parameters():
-    #             if "vec" in name and param.grad is not None:
-    #                 self.fisher_accumulator[name] += param.grad.pow(2)
-
-    #         if self.state.global_step % self.filter_step == 0:
-    #             for name, param in model.named_parameters():
-    #                 if "vec" in name:
-    #                     self.importance_map[name] = self.fisher_accumulator[name].clone()
-    #                     self.fisher_accumulator[name].zero_()
-
-
-    #         for name, param in model.named_parameters():
-    #             if name in self.importance_map:
-    #                 importance = self.importance_map[name].float()
-    #                 threshold = torch.quantile(importance, self.quantile_threshold)
-                    
-    #                 bool_mask = importance >= threshold
-                    
-    #                 if bool_mask.any():
-    #                     selected_vals = importance[bool_mask]
-                        
-    #                     min_val = selected_vals.min()
-    #                     max_val = selected_vals.max()
-                        
-    #                     normalized_importance = (importance - min_val) / (max_val - min_val + 1e-8)
-    #                     soft_mask = normalized_importance * bool_mask.float()
-    #                     param.grad.mul_(soft_mask)
-               
-
-    #     return loss
-
-    # EXP 5 AND 6: Combined hard masking and soft masking with scheduler
-    # @override
-    # def training_step(self, model, inputs,num_items_in_batch=None):
-    #     loss = super().training_step(model, inputs,num_items_in_batch)
-
-    #     with torch.no_grad():
-    #         for name, param in model.named_parameters():
-    #             if "vec" in name and param.grad is not None:
-    #                 self.fisher_accumulator[name] += param.grad.pow(2)
-
-    #         if self.state.global_step % self.filter_step == 0:
-    #             for name, param in model.named_parameters():
-    #                 if "vec" in name:
-    #                     self.importance_map[name] = self.fisher_accumulator[name].clone()
-    #                     self.fisher_accumulator[name].zero_()
-
-
-    #         for name, param in model.named_parameters():
-    #             if name in self.importance_map:
-    #                 importance = self.importance_map[name].float()
-    #                 threshold = torch.quantile(importance, self.quantile_threshold)
-    #                 hard_mask = (importance >= threshold).float()
-                    
-    #                 min_val = importance.min()
-    #                 max_val = importance.max()
-                    
-    #                 soft_mask = (importance - min_val) / (max_val - min_val)
-    #                 mask = hard_mask * soft_mask
-    #                 param.grad.mul_(mask)
-
-    #     return loss
-
-    # EXP 7 AND 8: Hard masking with Scheduler
-    # @override
-    # def training_step(self, model, inputs,num_items_in_batch=None):
-    #     loss = super().training_step(model, inputs,num_items_in_batch)
-
-    #     with torch.no_grad():
-    #         for name, param in model.named_parameters():
-    #             if "vec" in name and param.grad is not None:
-    #                 self.fisher_accumulator[name] += param.grad.pow(2)
-
-    #         if self.state.global_step % self.filter_step == 0:
-    #             for name, param in model.named_parameters():
-    #                 if "vec" in name:
-    #                     self.importance_map[name] = self.fisher_accumulator[name].clone()
-    #                     self.fisher_accumulator[name].zero_()
-
-
-    #         for name, param in model.named_parameters():
-    #             if name in self.importance_map:
-    #                 importance = self.importance_map[name].float()
-    #                 threshold = torch.quantile(importance, self.quantile_threshold)
-    #                 hard_mask = (importance >= threshold).float()
-    #                 param.grad.mul_(hard_mask)
-
-    #     return loss
-
     # EXP 9: Gradual Unfreezing with soft masking  
+    # @override
+    # def training_step(self, model, inputs,num_items_in_batch=None):
+        
+    #     # Gradual Freezing
+    #     if self.experiment_pipeline != 'two':  
+    #         self.quantile_threshold = getattr(self.state, "custom_quantile_threshold", self.quantile_threshold)
+    #         threshold = torch.quantile(self.idx_layer_tensor, 1-self.quantile_threshold) 
+    #         hard_mask = self.idx_layer_tensor >= threshold
+    #         vec_idx = 0
+    #         for name, param in model.named_parameters():
+    #             if "vec" in name:
+    #                 print(f"[Layer:] {vec_idx} Learning" if hard_mask[vec_idx].item() else f"[Layer:] {vec_idx} Freezing")
+    #                 param.requires_grad = hard_mask[vec_idx].item()
+    #                 vec_idx += 1
+
+    #     loss = super().training_step(model, inputs,num_items_in_batch)
+
+
+    #     with torch.no_grad():
+    #         if self.state.global_step % self.filter_step == 0 and self.state.global_step > 0:
+    #             for name, param in model.named_parameters():
+    #                 if "vec" in name and param.grad is not None:
+    #                     self.importance_map[name] = param.grad.pow(2)
+
+    #         if self.experiment_pipeline != 'one':
+    #             for name, param in model.named_parameters():
+    #                 if name in self.importance_map and param.grad is not None:
+    #                     importance = self.importance_map[name].float()
+
+    #                     if self.masking_type == 'soft':
+    #                         min_val = importance.min()
+    #                         max_val = importance.max()
+                            
+    #                         soft_mask = (importance - min_val) / (max_val - min_val+ 1e-8)
+    #                         param.grad.mul_(soft_mask)
+
+    #                     if self.masking_type == 'hard':
+    #                         importance = self.importance_map[name].float()
+    #                         threshold = torch.quantile(importance, 0.9)
+    #                         hard_mask = (importance >= threshold).float()
+                            
+    #                         param.grad.mul_(hard_mask)
+
+  
+
+    #     return loss
+
+     # EXP 11: Fisher Layer selection
     @override
     def training_step(self, model, inputs,num_items_in_batch=None):
-        # Gradual Freezing
-        if self.experiment_pipeline != 'two':  
-            self.quantile_threshold = getattr(self.state, "custom_quantile_threshold", self.quantile_threshold)
-            threshold = torch.quantile(self.idx_layer_tensor, 1-self.quantile_threshold) 
-            hard_mask = self.idx_layer_tensor >= threshold
+        # Initial mapping
+        if self.state.global_step ==0:  
             vec_idx = 0
             for name, param in model.named_parameters():
                 if "vec" in name:
-                    print(f"[Layer:] {vec_idx} Learning" if hard_mask[vec_idx].item() else f"[Layer:] {vec_idx} Freezing")
-                    param.requires_grad = hard_mask[vec_idx].item()
+                    self.idx_param[vec_idx] = param
                     vec_idx += 1
 
+        if self.state.global_step < 4:
+            return torch.tensor(0.0, device=model.device, requires_grad=True)
+                            
         loss = super().training_step(model, inputs,num_items_in_batch)
 
         with torch.no_grad():
             if self.state.global_step % self.filter_step == 0:
-                for name, param in model.named_parameters():
-                    if "vec" in name and param.grad is not None:
-                        self.importance_map[name] = param.grad.pow(2)
+                for idx, param in self.idx_param.items():
+                    if param.grad is not None:
+                        self.layer_weight[idx] = param.grad.pow(2).mean()
 
-            if self.experiment_pipeline != 'one':
-                for name, param in model.named_parameters():
-                    if name in self.importance_map and param.grad is not None:
-                        importance = self.importance_map[name].float()
+                self.quantile_threshold = getattr(self.state, "custom_quantile_threshold", self.quantile_threshold)
+                threshold = torch.quantile(self.layer_weight, 1-self.quantile_threshold) 
+                hard_mask = self.layer_weight >= threshold
 
-                        if self.masking_type == 'soft':
-                            min_val = importance.min()
-                            max_val = importance.max()
-                            
-                            soft_mask = (importance - min_val) / (max_val - min_val+ 1e-8)
-                            param.grad.mul_(soft_mask)
+                for idx, param in self.idx_param.items():
+                    if param.grad is not None:
+                        print(f"[Layer:] {idx} Learning" if hard_mask[idx].item() else f"[Layer:] {idx} Freezing")
+                        param.requires_grad = hard_mask[idx].item()
 
-                        if self.masking_type == 'hard':
-                            importance = self.importance_map[name].float()
-                            threshold = torch.quantile(importance, 0.9)
-                            hard_mask = (importance >= threshold).float()
-                            
-                            param.grad.mul_(hard_mask)
-
-         # Log to wandb
-        # if has_wandb and wandb.run is not None:
-        #     if self.state.global_step > 0:
-        #         wandb.log(
-        #             {"custom/quantile_threshold": self.quantile_threshold,
-        #              "custom/layer_unfreezed": hard_mask.sum().item()}, 
-        #             step=self.state.global_step
-        #         )
-
-        return loss
+        # Skip learning for first step
+        if self.state.global_step == 0 :
+            print(f"[Step:] 0 Skipping Learning | Returning loss 0.0")
+            return torch.tensor(0.0, device=model.device, requires_grad=True)
+        else:
+            return loss

@@ -61,7 +61,6 @@ class ScriptArguments:
     filter_step: Optional[int] = field(default=0, metadata={"help": "Filter step window"})
     quantile_scheduler: Optional[bool] = field(default=False, metadata={"help": "Run with quantile scheduler"})
     quantile_scheduler_type: Optional[str] = field(default='linear', metadata={"help": "Quantile scheduler type"})
-    target_scheduler: Optional[str] = field(default='neuron', metadata={"help": "target scheduler"})
     experiment_pipeline: Optional[str] = field(default='both', metadata={"help": "experimentation pipeline both | one| two"})
     masking_type: Optional[str] = field(default='soft', metadata={"help": "experimentation masking type hard | soft"})
 
@@ -179,7 +178,7 @@ if __name__ == "__main__":
         )
 
         if script_args.quantile_scheduler:
-            print(f"[Scheduler:] {script_args.quantile_scheduler_type} | [Start:] {script_args.quantile} | [Target:] {script_args.target_scheduler}")
+            print(f"[Scheduler:] {script_args.quantile_scheduler_type} | [Start:] {script_args.quantile}")
             scheduler_callback = QuantileSchedulerCallback(
                     start_val=script_args.quantile, 
                     schedule_type= script_args.quantile_scheduler_type

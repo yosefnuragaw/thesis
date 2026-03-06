@@ -114,6 +114,7 @@ class BiPOTrainerEXP(BiPOTrainer):
                         # print(f"[Layer:] {idx} Learning")
                     else:
                         # print(f"[Layer:] {idx} Freezing")
-                        param.grad = None 
+                        if param.grad is not None:
+                            param.grad.zero_()
 
         return loss

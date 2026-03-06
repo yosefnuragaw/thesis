@@ -78,38 +78,37 @@ class BiPOTrainerEXP(BiPOTrainer):
 
      # EXP 11: Fisher Layer selection
     @override
-    def training_step(self, model, inputs,num_items_in_batch=None):
-        # Initial mapping
-        if self.state.global_step ==0:  
+    def training_step(self, model, inputs, num_items_in_batch=None):
+        # 1. Initial mapping
+        if self.state.global_step == 0:  
             vec_idx = 0
             for name, param in model.named_parameters():
                 if "vec" in name:
                     self.idx_param[vec_idx] = param
                     vec_idx += 1
 
-        if self.state.global_step < 4:
-            return torch.tensor(0.0, device=model.device, requires_grad=True)
-                            
-        loss = super().training_step(model, inputs,num_items_in_batch)
+        loss = super().training_step(model, inputs, num_items_in_batch)
 
         with torch.no_grad():
             if self.state.global_step % self.filter_step == 0:
+                
                 for idx, param in self.idx_param.items():
                     if param.grad is not None:
                         self.layer_weight[idx] = param.grad.pow(2).mean()
 
                 self.quantile_threshold = getattr(self.state, "custom_quantile_threshold", self.quantile_threshold)
-                threshold = torch.quantile(self.layer_weight, 1-self.quantile_threshold) 
+                threshold = torch.quantile(self.layer_weight, 1 - self.quantile_threshold) 
                 hard_mask = self.layer_weight >= threshold
 
+                # Apply the freeze
                 for idx, param in self.idx_param.items():
-                    if param.grad is not None:
-                        print(f"[Layer:] {idx} Learning" if hard_mask[idx].item() else f"[Layer:] {idx} Freezing")
-                        param.requires_grad = hard_mask[idx].item()
+                    is_learning = hard_mask[idx].item()
+                    param.requires_grad = is_learning
+                    
+                    if is_learning:
+                        print(f"[Layer:] {idx} Learning")
+                    else:
+                        print(f"[Layer:] {idx} Freezing")
+                        param.grad = None 
 
-        # Skip learning for first step
-        if self.state.global_step == 0 :
-            print(f"[Step:] 0 Skipping Learning | Returning loss 0.0")
-            return torch.tensor(0.0, device=model.device, requires_grad=True)
-        else:
-            return loss
+        return loss

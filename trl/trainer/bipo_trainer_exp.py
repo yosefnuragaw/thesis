@@ -87,6 +87,10 @@ class BiPOTrainerEXP(BiPOTrainer):
                     self.idx_param[vec_idx] = param
                     vec_idx += 1
 
+        if self.state.global_step % self.filter_step == 0:
+            for param in self.idx_param.values():
+                param.requires_grad = True
+                
         loss = super().training_step(model, inputs, num_items_in_batch)
 
         with torch.no_grad():

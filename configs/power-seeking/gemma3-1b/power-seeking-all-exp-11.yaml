@@ -27,7 +27,7 @@ experiment: True
 quantile: 1.0e-8
 quantile_scheduler: True
 quantile_scheduler_type: "linear"
-filter_step: 4
+filter_step: 64
 
 # Eval
 vec_dir: "pretrained_vector/power-seeking_gemma-3/all-exp-11"

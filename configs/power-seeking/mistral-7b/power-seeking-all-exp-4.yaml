@@ -30,6 +30,7 @@ quantile_scheduler_type: "linear"
 target_scheduler: "layers"
 filter_step: 4
 experiment_pipeline: "both"
+masking_type: "hard"
 
 
 # Eval

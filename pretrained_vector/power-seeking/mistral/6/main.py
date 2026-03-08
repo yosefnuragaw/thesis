@@ -12,7 +12,7 @@ def download_best_bipo_step():
     
     entity = "yosefnuragaw"
     project = "Power-Seeking"
-    run_id = "o0g7whok" 
+    run_id = "6e76hs8q" 
     
     print("Fetching run history (Max 10,000 rows)...")
     run = api.run(f"{entity}/{project}/{run_id}")
@@ -59,7 +59,7 @@ def download_best_bipo_step():
     print(f"-------------------------\n")
 
     # 6. Download the artifacts
-    base_name = f"power-seeking-gemma3-1b-3-{run_id}_steering-vec-layer"
+    base_name = f"power-seeking-mistral-7b-6-{run_id}_steering-vec-layer"
     layers = range(32)
     
     print(f"Starting download of {len(layers)} artifacts...")

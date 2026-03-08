@@ -200,7 +200,7 @@ def main(baseline:bool, args: ScriptArguments)->None:
         df = pd.DataFrame(updated_dataset)
         safe_model_name = args.model_name_or_path.replace("/", "_")
         file_name = f"results_{args.behavior}_{safe_model_name}_{args.behavior}-baseline.csv"
-        save(file_name, df)
+        save(args.answer_dir,file_name, df)
 
 
 if __name__ == "__main__":

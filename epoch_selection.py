@@ -52,7 +52,7 @@ if __name__ == "__main__":
     else:
         raise ValueError("Config file must be .yaml or .json")
 
-    set_seed(seed=11)
+    set_seed(seed=42)
     model, tokenizer = init_model(
         model_name=script_args.model_name_or_path,
         vec_dir=script_args.vec_dir,

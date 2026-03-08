@@ -83,7 +83,7 @@ if __name__ == "__main__":
     run_name = f"{script_args.behavior}-{script_args.id}"
 
     os.environ["WANDB_NAME"] = run_name
-    set_seed(seed=11)
+    set_seed(seed=42)
     
     # 2. Determine Template Name
     if script_args.model_name_or_path not in MODEL_TEMPLATE_MAP:

@@ -128,7 +128,7 @@ def main(baseline: bool, args: ScriptArguments) -> None:
         print(f'[Coherence Likert (Scale 5):] {coherence_likert}')
 
 if __name__ == "__main__":
-    set_seed(seed=11)
+    set_seed(seed=42)
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", "-c", type=str, required=True, help="Path to your YAML config file")
     parser.add_argument("--baseline", action='store_true', help="Run only the baseline (multiplier 0)")

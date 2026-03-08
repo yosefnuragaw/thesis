@@ -223,7 +223,7 @@ def eval_generation(
     return results
 
 if __name__ == "__main__":
-    set_seed(seed=11)
+    set_seed(seed=42)
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", "-c", type=str, required=True, help="Path to your YAML config file")
     parser.add_argument("--verbose", "-v", type=bool, required=False, default=True, help="Visualize eval progress")

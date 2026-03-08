@@ -13,7 +13,7 @@ def download_full_bipo_history():
     project = "BiPO-Mistral-7b-Power-Seeking"
 
     # The specific base path identified from your terminal success
-    base_name = "power-seeking-power-seeking-all-exp-10-904ejtxw_steering-vec-layer"
+    base_name = 'power-seeking-power-seeking-all-exp-11-vtdp5xn6_steering-vec-layer'
     
     layers = range(32)  # 0 to 25
     versions = [19] # v0 to v19

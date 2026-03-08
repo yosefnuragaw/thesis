@@ -13,10 +13,10 @@ def download_full_bipo_history():
     project = "BiPO-Mistral-7b-Power-Seeking"
 
     # The specific base path identified from your terminal success
-    base_name = "power-seeking-power-seeking-all-8px2fth1_steering-vec-layer"
+    base_name = "power-seeking-power-seeking-all-3cn15byq_steering-vec-layer"
     
     layers = range(32)  # 0 to 25
-    versions = range(20) # v0 to v19
+    versions = [19] # v0 to v19
 
     print(f"Starting download of {len(layers) * len(versions)} artifacts...")
 

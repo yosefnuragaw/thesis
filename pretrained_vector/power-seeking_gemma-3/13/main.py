@@ -1,57 +1,18 @@
 import wandb
 import os
 
-# # Your API Key and login
-# WANDB_API_KEY = "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"
-# wandb.login(key=WANDB_API_KEY)
-# os.environ["WANDB_API_KEY"] = WANDB_API_KEY
-
-# def download_steering_vectors_flat(entity, project, artifact_base_name, versions):
-#     api = wandb.Api()
-#     downloaded_files = []
-
-#     for v in versions:
-#         artifact_path = f"{entity}/{project}/{artifact_base_name}:v{v}"
-#         print(f"Downloading {artifact_path}...")
-        
-#         try:
-#             artifact = api.artifact(artifact_path)
-#             datadir = artifact.download(root=".") 
-#             downloaded_files.append(datadir)
-#         except Exception as e:
-#             print(f"Error downloading v{v}: {e}")
-
-#     return downloaded_files
-
-# ENTITY = "yosefnuragaw" 
-# PROJECT = "BiPO-Gemma-3-1b-Power-Seeking"
-# ARTIFACT_NAME = "power-seeking-Layers_13-kwphre41_steering-vec-layer13"
-
-# versions_to_get = list(range(20)) 
-
-# paths = download_steering_vectors_flat(ENTITY, PROJECT, ARTIFACT_NAME, versions_to_get)
-
-# print(f"\nFinished. Files are in: {os.getcwd()}")
-
-
-# ARTIFACT_NAME = "power-seeking-power-seeking-16-yhoazypm_steering-vec-layer16"
-
-
-import wandb
-import os
-import pandas as pd
-
-# Friendly reminder: Please revoke the API key you pasted earlier in your W&B settings!
+# Your API Key and login
 WANDB_API_KEY = "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"
 wandb.login(key=WANDB_API_KEY)
 os.environ["WANDB_API_KEY"] = WANDB_API_KEY
+
 
 def download_best_bipo_step():
     api = wandb.Api()
     
     entity = "yosefnuragaw"
-    project = "BiPO-Gemma-3-1b-Power-Seeking"
-    run_id = "kwphre41" 
+    project = "Power-Seeking"
+    run_id = "nro16x5n" 
     
     print("Fetching run history (Max 10,000 rows)...")
     run = api.run(f"{entity}/{project}/{run_id}")
@@ -98,7 +59,7 @@ def download_best_bipo_step():
     print(f"-------------------------\n")
 
     # 6. Download the artifacts
-    base_name = f"power-seeking-Layers_13-{run_id}_steering-vec-layer"
+    base_name = f"power-seeking-gemma3-1b-13-{run_id}_steering-vec-layer"
     layers = range(32)
     
     print(f"Starting download of {len(layers)} artifacts...")
@@ -111,6 +72,7 @@ def download_best_bipo_step():
             print(f"Successfully downloaded Layer {layer} ({best_version_str})")
         except Exception as e:
             # We pass silently because not all layers might be saved
+            print(f"Error downloading layer {layer}: {e}")
             pass
 
 if __name__ == "__main__":

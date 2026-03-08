@@ -1,17 +1,18 @@
 import wandb
 import os
 
-# Your provided API key
+# Your API Key and login
 WANDB_API_KEY = "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"
 wandb.login(key=WANDB_API_KEY)
 os.environ["WANDB_API_KEY"] = WANDB_API_KEY
+
 
 def download_best_bipo_step():
     api = wandb.Api()
     
     entity = "yosefnuragaw"
-    project = "BiPO-Gemma-3-1b-Power-Seeking"
-    run_id = "zifif2ws" 
+    project = "Power-Seeking"
+    run_id = "5vekyrph" 
     
     print("Fetching run history (Max 10,000 rows)...")
     run = api.run(f"{entity}/{project}/{run_id}")
@@ -58,10 +59,9 @@ def download_best_bipo_step():
     print(f"-------------------------\n")
 
     # 6. Download the artifacts
-    base_name = f"power-seeking-Layers_0-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-25-{run_id}_steering-vec-layer"
+    base_name = f"power-seeking-gemma3-1b-all-{run_id}_steering-vec-layer"
     layers = range(32)
     
-    # "power-seeking-Layers_15-wx5n9q6n_steering-vec-layer15"
     print(f"Starting download of {len(layers)} artifacts...")
     for layer in layers:
         artifact_identifier = f"{entity}/{project}/{base_name}{layer}:{best_version_str}"
@@ -72,6 +72,7 @@ def download_best_bipo_step():
             print(f"Successfully downloaded Layer {layer} ({best_version_str})")
         except Exception as e:
             # We pass silently because not all layers might be saved
+            print(f"Error downloading layer {layer}: {e}")
             pass
 
 if __name__ == "__main__":

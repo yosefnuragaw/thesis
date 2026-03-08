@@ -54,6 +54,10 @@ class ScriptArguments:
         default="/kaggle/working/BiPO/vector/power-seeking_gemma-3",
         metadata={"help": "Directory where .pt vectors are saved"}
     )
+    answer_dir: Optional[str] = field(
+        default="/kaggle/working/BiPO/vector/power-seeking_gemma-3",
+        metadata={"help": "Directory where .csw will be saved"}
+    )
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
     max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
     temperature: Optional[float] = field(default=0.7, metadata={"help": "LLM generation temperature"})
@@ -139,8 +143,7 @@ def generate_answers(
     del dataset['prompts']
     return dataset
 
-def save(file_name:str,df: pd.DataFrame)->None:
-    output_dir = "generation_results"
+def save(output_dir:str,file_name:str,df: pd.DataFrame)->None:
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     output_path = os.path.join(output_dir, file_name)
     df.to_csv(output_path, index=False)
@@ -178,7 +181,7 @@ def main(baseline:bool, args: ScriptArguments)->None:
             )    
             df = pd.DataFrame(updated_dataset)
             file_name = f"results_{args.behavior}_{args.id}_{multiplier}_{args.eval_epoch}.csv"
-            save(file_name, df)     
+            save(args.answer_dir,file_name, df)     
     
     else:
 

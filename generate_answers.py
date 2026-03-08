@@ -46,7 +46,7 @@ class ScriptArguments:
     total_layer: Optional[int] = field(default=200, metadata={"help": "LLM total number of layers"})
 
     multipliers: Optional[List[float]] = field(
-        default_factory=lambda: [-2,-1.5,-1,-0.5,0.5,1,1.5,2], 
+        default_factory=lambda: [2,1.5,1,0.5,-0.5,-1,-1.5,-2], 
         metadata={"help": "the layer the steering vector extracted from"}
     )
     vec_dir: Optional[str] = field(

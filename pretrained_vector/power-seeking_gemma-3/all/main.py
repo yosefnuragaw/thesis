@@ -6,33 +6,73 @@ WANDB_API_KEY = "wandb_v1_JP9a7bMtFNXV0kk3J4IF3wrYujJ_34ZfEkOSZRjcawy0EFg1F41p9D
 wandb.login(key=WANDB_API_KEY)
 os.environ["WANDB_API_KEY"] = WANDB_API_KEY
 
-def download_full_bipo_history():
+def download_best_bipo_step():
     api = wandb.Api()
     
     entity = "yosefnuragaw"
     project = "BiPO-Gemma-3-1b-Power-Seeking"
-    # The specific base path identified from your terminal success
-    base_name = "power-seeking-Layers_0-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-25-zifif2ws_steering-vec-layer"
+    run_id = "zifif2ws" 
     
-    layers = range(26)  # 0 to 25
-    versions = range(20) # v0 to v19
+    print("Fetching run history (Max 10,000 rows)...")
+    run = api.run(f"{entity}/{project}/{run_id}")
+    
+    # 1. Fetch exactly the columns we need, up to 10,000 rows maximum
+    history = run.history(
+        samples=10000, 
+        keys=["_step", "eval/test_dataset_sub_loss", "eval/test_dataset_add_loss"]
+    )
+    
+    # 2. Clean the data: Drop missing values and duplicates
+    df = history.dropna(subset=["eval/test_dataset_sub_loss", "eval/test_dataset_add_loss"]).copy()
+    df = df.drop_duplicates(subset=["_step"], keep="last")
+    df = df[df["_step"] > 0].sort_values(by="_step").reset_index(drop=True)
+    
+    print(df[['_step', 'eval/test_dataset_sub_loss', 'eval/test_dataset_add_loss']])
+    if df.empty:
+        print("[ERROR] DataFrame is empty. Check if eval metrics were logged in these 10k rows.")
+        return
 
-    print(f"Starting download of {len(layers) * len(versions)} artifacts...")
+    # 3. Find the sweet spot using Minimax
+    df['worst_loss'] = df[['eval/test_dataset_sub_loss', 'eval/test_dataset_add_loss']].max(axis=1)
+    best_idx = df['worst_loss'].idxmin()
+    best_row = df.loc[best_idx]
+    best_step = int(best_row['_step'])
+    
+    # 4. Calculate the true evaluation interval (delta_step)
+    if len(df) >= 2:
+        delta_step = int(df["_step"].iloc[1] - df["_step"].iloc[0])
+    else:
+        delta_step = int(df["_step"].iloc[0])
+    
+    # 5. Mathematically determine the version
+    calculated_version = (best_step // delta_step)
+    best_version_str = f"v{calculated_version}"
+    
+    print(f"\n--- Sweet Spot Found! ---")
+    print(f"Global Step: {best_step}")
+    print(f"Eval Interval: Every {delta_step} steps")
+    print(f"Target Artifact: {best_version_str}")
+    print(f"Worst Loss:  {best_row['worst_loss']:.4f}")
+    print(f"Sub Loss:    {best_row['eval/test_dataset_sub_loss']:.4f}")
+    print(f"Add Loss:    {best_row['eval/test_dataset_add_loss']:.4f}")
+    print(f"-------------------------\n")
 
+    # 6. Download the artifacts
+    base_name = f"power-seeking-Layers_0-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-25-{run_id}_steering-vec-layer"
+    layers = range(32)
+    
+    # "power-seeking-Layers_15-wx5n9q6n_steering-vec-layer15"
+    print(f"Starting download of {len(layers)} artifacts...")
     for layer in layers:
-        for v in versions:
-            artifact_identifier = f"{entity}/{project}/{base_name}{layer}:v{v}"
-            
-            try:
-                artifact = api.artifact(artifact_identifier)
-                # Download to current directory
-                artifact.download(root=".")
-                
-                print(f"Successfully downloaded Layer {layer} Version v{v}")
-                        
-            except Exception as e:
-                # Silently skip if a specific version doesn't exist for a layer
-                continue
+        artifact_identifier = f"{entity}/{project}/{base_name}{layer}:{best_version_str}"
+        try:
+            artifact = api.artifact(artifact_identifier)
+            save_path = f"./"
+            artifact.download(root=save_path)
+            print(f"Successfully downloaded Layer {layer} ({best_version_str})")
+        except Exception as e:
+            # We pass silently because not all layers might be saved
+            pass
 
 if __name__ == "__main__":
-    download_full_bipo_history()
+    download_best_bipo_step()

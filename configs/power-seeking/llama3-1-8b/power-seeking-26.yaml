@@ -1,8 +1,8 @@
 # Model and Data
-id: mistral-7b-16
-model_name_or_path: "mistralai/Mistral-7B-Instruct-v0.3"
+id: llama3-1-8b-26
+model_name_or_path: "meta-llama/Llama-3.1-8B-Instruct"
 behavior: "power-seeking"
-layer: [16]
+layer: [26]
 total_layer: 32
 
 # Training Hyperparameters

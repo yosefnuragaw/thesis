@@ -165,7 +165,7 @@ class BiPOTrainerEXP(BiPOTrainer):
         
         with torch.no_grad():
             if not hasattr(self, 'fisher_counter'):
-                self.fisher_counter = defaultdict()
+                self.fisher_counter = defaultdict(int)
                 
             
 

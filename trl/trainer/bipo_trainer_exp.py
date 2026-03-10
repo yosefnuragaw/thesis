@@ -143,8 +143,25 @@ class BiPOTrainerEXP(BiPOTrainer):
     # https://arxiv.org/pdf/2503.11164
     # Layer sensitivity analysis using Fisher Information Matrix to Approximate Hessian matrix trace
     def _training_step_two(self,model, inputs,num_items_in_batch):
+        if self.moving == 'backward' or self.moving =='forward':
+            self.quantile_threshold = getattr(self.state, "custom_quantile_threshold", self.quantile_threshold)
+            if self.moving == 'backward':
+                threshold = torch.quantile(self.idx_layer_tensor, 1-self.quantile_threshold) 
+                hard_mask = self.idx_layer_tensor >= threshold
+            else:
+                threshold = torch.quantile(self.idx_layer_tensor, self.quantile_threshold) 
+                hard_mask = self.idx_layer_tensor <= threshold
+        
+            vec_idx = 0
+            for name, param in model.named_parameters():
+                if "vec" in name:
+                    print(f"[Layer:] {vec_idx} Learning" if hard_mask[vec_idx].item() else f"[Layer:] {vec_idx} Freezing")
+                    param.requires_grad = hard_mask[vec_idx].item()
+                    vec_idx += 1
+
         loss = super().training_step(model, inputs,num_items_in_batch)
 
+        
         with torch.no_grad():
             if not hasattr(self, 'fisher_counter'):
                 self.fisher_counter = 0

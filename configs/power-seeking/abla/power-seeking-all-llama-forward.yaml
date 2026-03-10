@@ -25,7 +25,7 @@ max_prompt_length: 2048
 # Experiment
 experiment: True
 pipeline: "trace_analysis"
-moving: "default"
+moving: "forward"
 
 # Evaluation
 vec_dir: "pretrained_vector/power-seeking/llama-3/all"

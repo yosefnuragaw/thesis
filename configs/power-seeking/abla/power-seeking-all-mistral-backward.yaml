@@ -26,6 +26,10 @@ max_prompt_length: 2048
 experiment: True
 pipeline: "trace_analysis"
 moving: "backward"
+quantile: 1.0e-8
+quantile_scheduler: True
+quantile_scheduler_type: "linear"
+target_scheduler: "layers"
 
 
 # Evaluation

@@ -142,6 +142,7 @@ class BiPOTrainerEXP(BiPOTrainer):
     # https://arxiv.org/pdf/2503.11164
     # Layer sensitivity analysis using Fisher Information Matrix to Approximate Hessian matrix trace
     def _training_step_two(self,model, inputs,num_items_in_batch):
+        loss = super().training_step(model, inputs,num_items_in_batch)
         if not hasattr(self, 'fisher_counter'):
             self.fisher_counter = 0
             
@@ -159,5 +160,8 @@ class BiPOTrainerEXP(BiPOTrainer):
                 
                 trace = self.fisher_accumulator[name].sum().item()
                 print(f"Layer: {name} | trace: {trace:.6f}")
+
+        return loss
+
 
         

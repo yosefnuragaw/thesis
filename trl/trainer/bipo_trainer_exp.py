@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Optional, override
 import torch
 from .bipo_trainer import BiPOTrainer
@@ -164,19 +165,20 @@ class BiPOTrainerEXP(BiPOTrainer):
         
         with torch.no_grad():
             if not hasattr(self, 'fisher_counter'):
-                self.fisher_counter = 0
+                self.fisher_counter = defaultdict()
                 
-            self.fisher_counter += 1
+            
 
             for name, param in model.named_parameters():
                 if "vec" in name and param.grad is not None:
                     self.fisher_accumulator[name] += param.grad.pow(2)
+                    self.fisher_counter[name] += 1
 
             if self.state.global_step == self.state.max_steps-1:
                 print(f"{self.state.global_step }-------")
                 
                 for name in self.fisher_accumulator:
-                    self.fisher_accumulator[name] /= self.fisher_counter
+                    self.fisher_accumulator[name] /= self.fisher_counter[name]
                     
                     trace = self.fisher_accumulator[name].sum().item()
                     print(f"Layer: {name} | trace: {trace:.6f}")

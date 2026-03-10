@@ -156,7 +156,7 @@ class BiPOTrainerEXP(BiPOTrainer):
             vec_idx = 0
             for name, param in model.named_parameters():
                 if "vec" in name:
-                    print(f"[Layer:] {vec_idx} Learning" if hard_mask[vec_idx].item() else f"[Layer:] {vec_idx} Freezing")
+                    # print(f"[Layer:] {vec_idx} Learning" if hard_mask[vec_idx].item() else f"[Layer:] {vec_idx} Freezing")
                     param.requires_grad = hard_mask[vec_idx].item()
                     vec_idx += 1
 
@@ -166,8 +166,6 @@ class BiPOTrainerEXP(BiPOTrainer):
         with torch.no_grad():
             if not hasattr(self, 'fisher_counter'):
                 self.fisher_counter = defaultdict(int)
-                
-            
 
             for name, param in model.named_parameters():
                 if "vec" in name and param.grad is not None:

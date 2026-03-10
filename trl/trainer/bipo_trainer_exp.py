@@ -162,26 +162,47 @@ class BiPOTrainerEXP(BiPOTrainer):
 
         loss = super().training_step(model, inputs,num_items_in_batch)
 
-        
         with torch.no_grad():
             if not hasattr(self, 'fisher_counter'):
+                self.epoch_traces = {} 
                 self.fisher_counter = defaultdict(int)
+                self.last_recorded_epoch = 0
 
             for name, param in model.named_parameters():
                 if "vec" in name and param.grad is not None:
-                    self.fisher_accumulator[name] += param.grad.pow(2)
+                    self.fisher_accumulator[name] += param.grad.to(torch.float32).pow(2)
                     self.fisher_counter[name] += 1
 
-            if self.state.global_step == self.state.max_steps-1:
-                print(f"{self.state.global_step }-------")
+            current_epoch = int(self.state.epoch) if self.state.epoch is not None else 0
+            is_last_step = (self.state.global_step == self.state.max_steps - 1)
+
+            if current_epoch > self.last_recorded_epoch or is_last_step:
+                print(f"\n--- Saving Traces for Epoch {self.last_recorded_epoch} (Step {self.state.global_step}) ---")
                 
+                epoch_data = {}
                 for name in self.fisher_accumulator:
-                    self.fisher_accumulator[name] /= self.fisher_counter[name]
+                    if self.fisher_counter[name] > 0:
+                        avg_squared_grad = self.fisher_accumulator[name] / self.fisher_counter[name]
+                        trace = avg_squared_grad.sum().item()
+                    else:
+                        trace = 0.0
                     
-                    trace = self.fisher_accumulator[name].sum().item()
+                    epoch_data[name] = trace
                     print(f"Layer: {name} | trace: {trace:.6f}")
 
+                self.epoch_traces[self.last_recorded_epoch] = epoch_data
+                
+                for name in self.fisher_accumulator:
+                    self.fisher_accumulator[name].zero_()
+                    self.fisher_counter[name] = 0
+                    
+                self.last_recorded_epoch = current_epoch
+
+            if is_last_step:
+                for epoch, traces in self.epoch_traces.items():
+                    print(f"\n--- Traces for Epoch {epoch} ---")
+                    for name, trace in traces.items():
+                        print(f"Layer: {name} | trace: {trace:.6f}")                    
+
         return loss
-
-
         

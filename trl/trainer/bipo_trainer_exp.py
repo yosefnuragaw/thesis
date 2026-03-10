@@ -155,8 +155,8 @@ class BiPOTrainerEXP(BiPOTrainer):
                 if "vec" in name and param.grad is not None:
                     self.fisher_accumulator[name] += param.grad.pow(2)
 
-            if self.state.global_step % 30 == 0 or self.state.global_step == self.state.max_steps:
-                print(f"\n-------")
+            if self.state.global_step == self.state.max_steps-1:
+                print(f"{self.state.global_step }-------")
                 
                 for name in self.fisher_accumulator:
                     self.fisher_accumulator[name] /= self.fisher_counter

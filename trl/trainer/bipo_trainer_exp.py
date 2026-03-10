@@ -143,23 +143,25 @@ class BiPOTrainerEXP(BiPOTrainer):
     # Layer sensitivity analysis using Fisher Information Matrix to Approximate Hessian matrix trace
     def _training_step_two(self,model, inputs,num_items_in_batch):
         loss = super().training_step(model, inputs,num_items_in_batch)
-        if not hasattr(self, 'fisher_counter'):
-            self.fisher_counter = 0
-            
-        self.fisher_counter += 1
-
-        for name, param in model.named_parameters():
-            if "vec" in name and param.grad is not None:
-                self.fisher_accumulator[name] += param.grad.pow(2)
-
-        if self.state.global_step % 30 == 0:
-            print(f"\n-------")
-            
-            for name in self.fisher_accumulator:
-                self.fisher_accumulator[name] /= self.fisher_counter
+        
+        with torch.no_grad():
+            if not hasattr(self, 'fisher_counter'):
+                self.fisher_counter = 0
                 
-                trace = self.fisher_accumulator[name].sum().item()
-                print(f"Layer: {name} | trace: {trace:.6f}")
+            self.fisher_counter += 1
+
+            for name, param in model.named_parameters():
+                if "vec" in name and param.grad is not None:
+                    self.fisher_accumulator[name] += param.grad.pow(2)
+
+            if self.state.global_step % 30 == 0:
+                print(f"\n-------")
+                
+                for name in self.fisher_accumulator:
+                    self.fisher_accumulator[name] /= self.fisher_counter
+                    
+                    trace = self.fisher_accumulator[name].sum().item()
+                    print(f"Layer: {name} | trace: {trace:.6f}")
 
         return loss
 

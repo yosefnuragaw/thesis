@@ -37,13 +37,14 @@ class BiPOTrainerEXP(BiPOTrainer):
     def training_step(self, model, inputs,num_items_in_batch=None):
         if self.pipeline == 'default':
             loss = super().training_step(model, inputs, num_items_in_batch)
-            return loss
         
         elif self.pipeline == 'one':
-            self._training_step_one(model, inputs,num_items_in_batch)
+            loss = self._training_step_one(model, inputs,num_items_in_batch)
         
         elif self.pipeline == 'trace_analysis':
-            self._training_step_two(model, inputs,num_items_in_batch)
+            loss = self._training_step_two(model, inputs,num_items_in_batch)
+
+        return loss
         
 
         
@@ -143,7 +144,7 @@ class BiPOTrainerEXP(BiPOTrainer):
     # Layer sensitivity analysis using Fisher Information Matrix to Approximate Hessian matrix trace
     def _training_step_two(self,model, inputs,num_items_in_batch):
         loss = super().training_step(model, inputs,num_items_in_batch)
-        
+
         with torch.no_grad():
             if not hasattr(self, 'fisher_counter'):
                 self.fisher_counter = 0

@@ -24,6 +24,8 @@ max_prompt_length: 2048
 
 # Experiment
 experiment: False
+pipeline: "trace_analysis"
+
 
 # Evaluation
 vec_dir: "pretrained_vector/power-seeking/mistral/all"

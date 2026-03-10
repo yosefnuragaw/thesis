@@ -61,7 +61,7 @@ class ScriptArguments:
     filter_step: Optional[int] = field(default=0, metadata={"help": "Filter step window"})
     quantile_scheduler: Optional[bool] = field(default=False, metadata={"help": "Run with quantile scheduler"})
     quantile_scheduler_type: Optional[str] = field(default='linear', metadata={"help": "Quantile scheduler type"})
-    experiment_pipeline: Optional[str] = field(default='both', metadata={"help": "experimentation pipeline both | one| two"})
+    pipeline: Optional[str] = field(default='default', metadata={"help": "experimentation pipeline both | one| two"})
     masking_type: Optional[str] = field(default='soft', metadata={"help": "experimentation masking type hard | soft"})
     moving: Optional[str] = field(default='backward', metadata={"help": "gradual moving backward | forward"})
 
@@ -174,7 +174,7 @@ if __name__ == "__main__":
             name=template_name,
             quantile=script_args.quantile,
             filter_step=script_args.filter_step,
-            experiment_pipeline = script_args.experiment_pipeline,
+            pipeline = script_args.pipeline,
             masking_type = script_args.masking_type,
             num_layer = script_args.total_layer,
             moving= script_args.moving

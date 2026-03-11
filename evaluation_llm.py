@@ -119,12 +119,12 @@ def main(baseline: bool, args: ScriptArguments) -> None:
     coherence_likert: Dict[float, float] = {}
 
     if baseline:
-        file_path = f"{args.answer_dir}/results_{args.behavior}_{args.model_name_or_path.replace('/', '_')}_{args.behavior}-baseline.csv"
+        file_path = f"reasoning_results/results_{args.behavior}_{args.model_name_or_path.replace('/', '_')}_{args.behavior}-baseline.csv"
         datasets = {0: read_answers(behavior=args.behavior, path=file_path)}  
     else:
         datasets = {}
         for multiplier in args.multipliers:
-            file_path = f"{args.answer_dir}/results_{args.behavior}_{args.id}_{multiplier}_{args.eval_epoch}.csv"
+            file_path = f"reasoning_results/results_{args.behavior}_{args.id}_{multiplier}_{args.eval_epoch}.csv"
             datasets[multiplier] = read_answers(behavior=args.behavior, path=file_path)
             
     for mul, dataset in datasets.items():

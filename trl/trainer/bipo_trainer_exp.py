@@ -26,9 +26,11 @@ class BiPOTrainerEXP(BiPOTrainer):
         self.idx_layer_tensor = torch.arange(num_layer, dtype=torch.float32)
         self.layer_weight = torch.arange(num_layer, dtype=torch.float32)
 
+        idx = 0
         for name, p in self.model.named_parameters():
             if "vec" in name:
-                self.fisher_accumulator[name] = torch.zeros_like(p)
+                self.fisher_accumulator[idx] = torch.zeros_like(p)
+                idx+=1
 
         print('[Pipeline:]',pipeline)
     

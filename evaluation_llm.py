@@ -141,7 +141,7 @@ def main(baseline: bool, args: ScriptArguments) -> None:
         
         for row in dataset:
             c_prompt = coherence_factory.produce_prompt(
-                behavior="coherence", 
+                behavior="utility", 
                 question=row['question'], 
                 answer=row['answer'],
                 positive_example = None,
@@ -158,9 +158,9 @@ def main(baseline: bool, args: ScriptArguments) -> None:
             )
             behavior_raw_prompts.append(b_prompt)
 
-        c_score = evaluate_batch(judge_pipe, tokenizer, coherence_factory, coherence_raw_prompts, "Coherence")
+        c_score = evaluate_batch(judge_pipe, tokenizer, coherence_factory, coherence_raw_prompts, "Utility")
         coherence_likert[mul] = c_score
-        coherence_factory.save(f"{args.answer_dir}/reasoning_{args.behavior}_coherence_mul{mul}.csv")
+        coherence_factory.save(f"{args.answer_dir}/reasoning_{args.behavior}_utility_mul{mul}.csv")
 
         b_score = evaluate_batch(judge_pipe, tokenizer, behavior_factory, behavior_raw_prompts, "Behavior")
         accuracy_likert[mul] = b_score
@@ -168,7 +168,7 @@ def main(baseline: bool, args: ScriptArguments) -> None:
 
         print(f'\n[Multiplier {mul} Complete]')
         print(f'Accuracy Likert (Scale 5): {accuracy_likert[mul]:.2f}')
-        print(f'Coherence Likert (Scale 5): {coherence_likert[mul]:.2f}')
+        print(f'Utility Likert (Scale 5): {coherence_likert[mul]:.2f}')
 
 
 

@@ -90,7 +90,7 @@ def evaluate_batch(
 
     outputs = pipe(
         chat_prompts, 
-        max_new_tokens=1024, 
+        max_new_tokens=512, 
         return_full_text=False, 
         do_sample=False, 
         batch_size=pipe._batch_size 
@@ -170,6 +170,9 @@ def main(baseline: bool, args: ScriptArguments) -> None:
         print(f'\n[Multiplier {mul} Complete]')
         print(f'Accuracy Likert (Scale 5): {accuracy_likert[mul]:.2f}')
         print(f'Utility Likert (Scale 5): {coherence_likert[mul]:.2f}')
+
+    print(f'Accuracy Likert (Scale 5): {accuracy_likert}')
+    print(f'Utility Likert (Scale 5): {coherence_likert}')
 
 
 

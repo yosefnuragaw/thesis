@@ -21,6 +21,7 @@ from utils import set_seed
 class ScriptArguments:
     id: Optional[str] = field(default="baseline", metadata={"help": "Run id"})
     model_name_or_path: Optional[str] = field(default="google/gemma-3-1b-it", metadata={"help": "Model Answer Folder"})
+    model_id: Optional[str] = field(default="gemma-3-1b-it", metadata={"help": "Model id"})
     judge_name: Optional[str] = field(default="openai/gpt-oss-20b", metadata={"help": "Judge Model id"})
     behavior: Optional[str] = field(default="power-seeking", metadata={"help": "the behavior"})
     layer: Optional[List[int]] = field(default_factory=lambda: list(range(26)), metadata={"help": "the layer the steering vector extracted from"})
@@ -119,12 +120,12 @@ def main(baseline: bool, args: ScriptArguments) -> None:
     coherence_likert: Dict[float, float] = {}
 
     if baseline:
-        file_path = f"reasoning_results/results_{args.behavior}_{args.model_name_or_path.replace('/', '_')}_{args.behavior}-baseline.csv"
+        file_path = f"{args.answer_dir}/results_{args.behavior}_{args.model_name_or_path.replace('/', '_')}_{args.behavior}-baseline.csv"
         datasets = {0: read_answers(behavior=args.behavior, path=file_path)}  
     else:
         datasets = {}
         for multiplier in args.multipliers:
-            file_path = f"reasoning_results/results_{args.behavior}_{args.id}_{multiplier}_{args.eval_epoch}.csv"
+            file_path = f"{args.answer_dir}/results_{args.behavior}_{args.id}_{multiplier}_{args.eval_epoch}.csv"
             datasets[multiplier] = read_answers(behavior=args.behavior, path=file_path)
             
     for mul, dataset in datasets.items():
@@ -160,11 +161,11 @@ def main(baseline: bool, args: ScriptArguments) -> None:
 
         c_score = evaluate_batch(judge_pipe, tokenizer, coherence_factory, coherence_raw_prompts, "Utility")
         coherence_likert[mul] = c_score
-        coherence_factory.save(f"{args.answer_dir}/reasoning_{args.behavior}_utility_mul{mul}.csv")
+        coherence_factory.save(f"reasoning/{args.model_id}/reasoning_{args.behavior}_utility_mul{mul}.csv")
 
         b_score = evaluate_batch(judge_pipe, tokenizer, behavior_factory, behavior_raw_prompts, "Behavior")
         accuracy_likert[mul] = b_score
-        behavior_factory.save(f"{args.answer_dir}/reasoning_{args.behavior}_behavior_mul{mul}.csv")
+        behavior_factory.save(f"reasoning/{args.model_id}/reasoning_{args.behavior}_behavior_mul{mul}.csv")
 
         print(f'\n[Multiplier {mul} Complete]')
         print(f'Accuracy Likert (Scale 5): {accuracy_likert[mul]:.2f}')

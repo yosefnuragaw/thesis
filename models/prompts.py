@@ -124,7 +124,7 @@ class PromptProcessor:
         try:
             extracted_score = int(score_match.group(1)) if score_match else 0
             self.reasoning.append(extracted_reasoning)
-            self.score = extracted_score
+            self.score.append(extracted_score)
         except ValueError:
             print(f"[Error:] Response couldn't be parsed")
         

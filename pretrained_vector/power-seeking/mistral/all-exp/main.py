@@ -11,8 +11,8 @@ def download_best_bipo_step():
     api = wandb.Api()
     
     entity = "yosefnuragaw"
-    project = "Ablation-Power-Seeking"
-    run_id = "71k45zna" 
+    project = "Power-Seeking"
+    run_id = "796ox2g2" 
     
     print("Fetching run history (Max 10,000 rows)...")
     run = api.run(f"{entity}/{project}/{run_id}")
@@ -59,7 +59,7 @@ def download_best_bipo_step():
     print(f"-------------------------\n")
 
     # 6. Download the artifacts
-    base_name = f"power-seeking-mistral-7b-all-backward-{run_id}_steering-vec-layer"
+    base_name = f"power-seeking-mistral-7b-all-exp-{run_id}_steering-vec-layer"
     layers = range(32)
     
     print(f"Starting download of {len(layers)} artifacts...")

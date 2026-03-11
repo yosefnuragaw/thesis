@@ -143,7 +143,9 @@ def main(baseline: bool, args: ScriptArguments) -> None:
             c_prompt = coherence_factory.produce_prompt(
                 behavior="coherence", 
                 question=row['question'], 
-                answer=row['answer']
+                answer=row['answer'],
+                positive_example = None,
+                negative_example = None
             )
             coherence_raw_prompts.append(c_prompt)
             

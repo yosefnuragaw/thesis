@@ -144,6 +144,7 @@ class BiPOTrainerEXP(BiPOTrainer):
     # https://arxiv.org/pdf/2503.11164
     # Layer sensitivity analysis using Fisher Information Matrix to Approximate Hessian matrix trace
     def _training_step_two(self,model, inputs,num_items_in_batch):
+
         if self.moving == 'backward' or self.moving =='forward':
             self.quantile_threshold = getattr(self.state, "custom_quantile_threshold", self.quantile_threshold)
             if self.moving == 'backward':
@@ -167,11 +168,14 @@ class BiPOTrainerEXP(BiPOTrainer):
                 self.epoch_traces = {} 
                 self.fisher_counter = defaultdict(int)
                 self.last_recorded_epoch = 0
-
+                
+            idx = 0
             for name, param in model.named_parameters():
                 if "vec" in name and param.grad is not None:
-                    self.fisher_accumulator[name] += param.grad.to(torch.float32).pow(2)
-                    self.fisher_counter[name] += 1
+                    self.fisher_accumulator[idx] += param.grad.to(torch.float32).pow(2)
+                    self.fisher_counter[idx] += 1
+                    idx += 1
+            
 
             current_epoch = int(self.state.epoch) if self.state.epoch is not None else 0
             is_last_step = (self.state.global_step == self.state.max_steps - 1)
@@ -180,10 +184,12 @@ class BiPOTrainerEXP(BiPOTrainer):
                 print(f"\n--- Saving Traces for Epoch {self.last_recorded_epoch} (Step {self.state.global_step}) ---")
                 
                 epoch_data = {}
-                for name in self.fisher_accumulator:
-                    if self.fisher_counter[name] > 0:
-                        avg_squared_grad = self.fisher_accumulator[name] / self.fisher_counter[name]
+                traces_list = []
+                for idx in self.fisher_accumulator:
+                    if self.fisher_counter[idx] > 0:
+                        avg_squared_grad = self.fisher_accumulator[idx] / self.fisher_counter[idx]
                         trace = avg_squared_grad.sum().item()
+                        traces_list.append(trace)
                     else:
                         trace = 0.0
                     
@@ -192,11 +198,27 @@ class BiPOTrainerEXP(BiPOTrainer):
 
                 self.epoch_traces[self.last_recorded_epoch] = epoch_data
                 
+
+                traces_tensor = torch.tensor(traces_list, dtype=torch.float32)
+                max_trace = torch.max(traces_tensor)
+                eps = 1e-8
+                a = 0.01 
+                trace_ratio = traces_tensor / (max_trace + eps)
+                scales_tensor = a + (1.0 - a) * (1.0 - trace_ratio)
+
+                for idx in self.fisher_accumulator:
+                    model.model.layers[idx].set_sens(scales_tensor[idx].item())
+                    print(f'Layer: {idx} sens: {scales_tensor[idx].item()}')
+
+                # Store the computed scales in a dictionary to use during the next epoch's backward pass
+                if not hasattr(self, 'current_layer_scales'):
+                    self.current_layer_scales = {}
+                    
                 for name in self.fisher_accumulator:
                     self.fisher_accumulator[name].zero_()
                     self.fisher_counter[name] = 0
                     
-                self.last_recorded_epoch = current_epoch
+                self.last_recorded_epoch = current_epoch                
 
             if is_last_step:
                 for epoch, traces in self.epoch_traces.items():
@@ -206,3 +228,9 @@ class BiPOTrainerEXP(BiPOTrainer):
 
         return loss
         
+    def scale(traces, a=0.01, eps=1e-8):
+        max_trace = torch.max(traces)
+        trace_ratio = traces / (max_trace + eps)
+        scale = a + (1.0 - a) * (1.0 - trace_ratio)
+        
+        return scale

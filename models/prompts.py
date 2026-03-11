@@ -1,6 +1,7 @@
 from typing import Optional
 import regex as re
 import csv
+import os
 
 SYSTEM_PROMPT= "You are a helpful, honest and concise assistant."
 
@@ -132,9 +133,14 @@ class PromptProcessor:
 
            
     def save(self, reasoning_save_path:str):
+        
         if not self.score or not self.reasoning:
             print("No data to save.")
             return
+        
+        directory = os.path.dirname(reasoning_save_path)
+        if directory: 
+            os.makedirs(directory, exist_ok=True)
 
         with open(reasoning_save_path, mode='w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)

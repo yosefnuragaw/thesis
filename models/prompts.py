@@ -1,3 +1,4 @@
+from typing import Optional
 import regex as re
 import csv
 
@@ -94,7 +95,7 @@ class PromptProcessor:
         self.score = []
     
     def produce_prompt(
-        self,behavior:str, question:str, answer:str, positive_example:str, negative_example:str
+        self,behavior:str, question:str, answer:str, positive_example:Optional[str], negative_example:Optional[str]
     )->str:
         eval_criteria, rubric = EVALUATION_MAP[behavior]
         if behavior == 'utility':

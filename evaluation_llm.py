@@ -133,8 +133,8 @@ def main(baseline: bool, args: ScriptArguments) -> None:
 
         print(f"[Evaluating Multiplier:] {mul}")
         
-        coherence_factory = PromptProcessor(f"{args.answer_dir}/reasoning_{args.behavior}_coherence_mul{mul}.csv")
-        behavior_factory = PromptProcessor(f"{args.answer_dir}/reasoning_{args.behavior}_behavior_mul{mul}.csv")
+        coherence_factory = PromptProcessor()
+        behavior_factory = PromptProcessor()
 
         coherence_raw_prompts = []
         behavior_raw_prompts = []
@@ -158,11 +158,11 @@ def main(baseline: bool, args: ScriptArguments) -> None:
 
         c_score = evaluate_batch(judge_pipe, tokenizer, coherence_factory, coherence_raw_prompts, "Coherence")
         coherence_likert[mul] = c_score
-        coherence_factory.save()
+        coherence_factory.save(f"{args.answer_dir}/reasoning_{args.behavior}_coherence_mul{mul}.csv")
 
         b_score = evaluate_batch(judge_pipe, tokenizer, behavior_factory, behavior_raw_prompts, "Behavior")
         accuracy_likert[mul] = b_score
-        behavior_factory.save()
+        behavior_factory.save(f"{args.answer_dir}/reasoning_{args.behavior}_behavior_mul{mul}.csv")
 
         print(f'\n[Multiplier {mul} Complete]')
         print(f'Accuracy Likert (Scale 5): {accuracy_likert[mul]:.2f}')

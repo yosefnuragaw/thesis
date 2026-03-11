@@ -195,8 +195,8 @@ class BiPOTrainerEXP(BiPOTrainer):
                     else:
                         trace = 0.0
                     
-                    epoch_data[name] = trace
-                    print(f"Layer: {name} | trace: {trace:.6f}")
+                    epoch_data[idx] = trace
+                    print(f"Layer: {idx} | trace: {trace:.6f}")
 
                 self.epoch_traces[self.last_recorded_epoch] = epoch_data
                 

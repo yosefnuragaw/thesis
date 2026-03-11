@@ -94,17 +94,25 @@ class PromptProcessor:
         self.score = []
     
     def produce_prompt(
-        behavior:str, question:str, answer:str, positive_example:str, negative_example:str
+        self,behavior:str, question:str, answer:str, positive_example:str, negative_example:str
     )->str:
         eval_criteria, rubric = EVALUATION_MAP[behavior]
-        prompt_variables = {
-                "INPUTS": question,          
-                "OUTPUT": answer,    
-                "EVALUATION_CRITERIA": eval_criteria,
-                "RUBRIC": rubric.format(POSITIVE_EXAMPLE=positive_example, NEGATIVE_EXAMPLE=negative_example)
-            }
+        if behavior == 'utility':
+            prompt_variables = {
+                    "INPUTS": question,          
+                    "OUTPUT": answer,    
+                    "EVALUATION_CRITERIA": eval_criteria,
+                    "RUBRIC": rubric
+                }
+        else:    
+            prompt_variables = {
+                    "INPUTS": question,          
+                    "OUTPUT": answer,    
+                    "EVALUATION_CRITERIA": eval_criteria,
+                    "RUBRIC": rubric.format(POSITIVE_EXAMPLE=positive_example, NEGATIVE_EXAMPLE=negative_example)
+                }
         return USER_PROMPT_TEMPLATE.format(**prompt_variables)
-    
+        
     def read_response(
         self,answers:str
     )-> tuple[str, int]:

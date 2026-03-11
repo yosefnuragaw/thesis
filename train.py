@@ -63,7 +63,7 @@ class ScriptArguments:
     quantile_scheduler_type: Optional[str] = field(default='linear', metadata={"help": "Quantile scheduler type"})
     pipeline: Optional[str] = field(default='default', metadata={"help": "experimentation pipeline both | one| two"})
     masking_type: Optional[str] = field(default='soft', metadata={"help": "experimentation masking type hard | soft"})
-    moving: Optional[str] = field(default='backward', metadata={"help": "gradual moving backward | forward"})
+    moving: Optional[str] = field(default='default', metadata={"help": "gradual moving backward | forward"})
 
 
 

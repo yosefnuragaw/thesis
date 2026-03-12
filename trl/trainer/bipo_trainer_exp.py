@@ -186,12 +186,12 @@ class BiPOTrainerEXP(BiPOTrainer):
                 print(f"\n--- Saving Traces for Epoch {self.last_recorded_epoch} (Step {self.state.global_step}) ---")
                 
                 epoch_data = {}
-                traces_list = []
+                # traces_list = []
                 for idx in self.fisher_accumulator:
                     if self.fisher_counter[idx] > 0:
                         avg_squared_grad = self.fisher_accumulator[idx] / self.fisher_counter[idx]
                         trace = avg_squared_grad.sum().item()
-                        traces_list.append(trace)
+                        # traces_list.append(trace)
                     else:
                         trace = 0.0
                     
@@ -201,20 +201,20 @@ class BiPOTrainerEXP(BiPOTrainer):
                 self.epoch_traces[self.last_recorded_epoch] = epoch_data
                 
 
-                traces_tensor = torch.tensor(traces_list, dtype=torch.float32)
-                max_trace = torch.max(traces_tensor)
-                eps = 1e-8
-                a = 0.01 
-                trace_ratio = traces_tensor / (max_trace + eps)
-                scales_tensor = a + (1.0 - a) * (1.0 - trace_ratio)
+                # traces_tensor = torch.tensor(traces_list, dtype=torch.float32)
+                # max_trace = torch.max(traces_tensor)
+                # eps = 1e-8
+                # a = 0.01 
+                # trace_ratio = traces_tensor / (max_trace + eps)
+                # scales_tensor = a + (1.0 - a) * (1.0 - trace_ratio)
 
-                for idx in self.fisher_accumulator:
-                    model.model.layers[idx].set_sens(scales_tensor[idx].item())
-                    print(f'Layer: {idx} sens: {scales_tensor[idx].item()}')
+                # for idx in self.fisher_accumulator:
+                #     model.model.layers[idx].set_sens(scales_tensor[idx].item())
+                #     print(f'Layer: {idx} sens: {scales_tensor[idx].item()}')
 
                 # Store the computed scales in a dictionary to use during the next epoch's backward pass
-                if not hasattr(self, 'current_layer_scales'):
-                    self.current_layer_scales = {}
+                # if not hasattr(self, 'current_layer_scales'):
+                #     self.current_layer_scales = {}
                     
                 for name in self.fisher_accumulator:
                     self.fisher_accumulator[name].zero_()
@@ -230,9 +230,9 @@ class BiPOTrainerEXP(BiPOTrainer):
 
         return loss
         
-    def scale(traces, a=0.01, eps=1e-8):
-        max_trace = torch.max(traces)
-        trace_ratio = traces / (max_trace + eps)
-        scale = a + (1.0 - a) * (1.0 - trace_ratio)
+    # def scale(traces, a=0.01, eps=1e-8):
+    #     max_trace = torch.max(traces)
+    #     trace_ratio = traces / (max_trace + eps)
+    #     scale = a + (1.0 - a) * (1.0 - trace_ratio)
         
-        return scale
+    #     return scale

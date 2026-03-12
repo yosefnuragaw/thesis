@@ -15,7 +15,6 @@ class BlockWrapper(torch.nn.Module):
     def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False):
         super().__init__()
         self.multiplier = 1.0
-        self.sens = 1.0
         
         self.block = block
 
@@ -35,7 +34,7 @@ class BlockWrapper(torch.nn.Module):
 
     def forward(self, *args, **kwargs):
         output = self.block(*args, **kwargs)
-        scale = self.multiplier * self.sens
+        scale = self.multiplier
 
         if isinstance(output, tuple):
             self.buffer_space.append(output[0].detach().mean(dim=1).cpu())
@@ -51,8 +50,8 @@ class BlockWrapper(torch.nn.Module):
     def set_multiplier(self, multiplier):
         self.multiplier = multiplier
 
-    def set_sens(self, sens):
-        self.sens = sens
+    # def set_sens(self, sens):
+    #     self.sens = sens
 
     def set_vector(self, vec):
         self.vec = vec.to(self.init_dtype)

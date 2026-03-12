@@ -159,7 +159,6 @@ class BiPOTrainerEXP(BiPOTrainer):
             vec_idx = 0
             for name, param in model.named_parameters():
                 if "vec" in name:
-                    # print(f"[Layer:] {vec_idx} Learning" if hard_mask[vec_idx].item() else f"[Layer:] {vec_idx} Freezing")
                     param.requires_grad = hard_mask[vec_idx].item()
                     vec_idx += 1
 
@@ -199,23 +198,7 @@ class BiPOTrainerEXP(BiPOTrainer):
                     print(f"Layer: {idx} | trace: {trace:.6f}")
 
                 self.epoch_traces[self.last_recorded_epoch] = epoch_data
-                
 
-                # traces_tensor = torch.tensor(traces_list, dtype=torch.float32)
-                # max_trace = torch.max(traces_tensor)
-                # eps = 1e-8
-                # a = 0.01 
-                # trace_ratio = traces_tensor / (max_trace + eps)
-                # scales_tensor = a + (1.0 - a) * (1.0 - trace_ratio)
-
-                # for idx in self.fisher_accumulator:
-                #     model.model.layers[idx].set_sens(scales_tensor[idx].item())
-                #     print(f'Layer: {idx} sens: {scales_tensor[idx].item()}')
-
-                # Store the computed scales in a dictionary to use during the next epoch's backward pass
-                # if not hasattr(self, 'current_layer_scales'):
-                #     self.current_layer_scales = {}
-                    
                 for name in self.fisher_accumulator:
                     self.fisher_accumulator[name].zero_()
                     self.fisher_counter[name] = 0

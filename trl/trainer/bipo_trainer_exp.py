@@ -30,7 +30,7 @@ class BiPOTrainerEXP(BiPOTrainer):
         for name, p in self.model.named_parameters():
             if "vec" in name:
                 self.fisher_accumulator[name] = torch.zeros_like(p)
-                idx+=1
+                # idx+=1
 
         print('[Pipeline:]',pipeline)
     

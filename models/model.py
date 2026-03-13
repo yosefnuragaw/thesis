@@ -20,7 +20,12 @@ class MaskGate(torch.nn.Module):
         func_map = {
             "sigmoid": torch.nn.Sigmoid(),
             "tanh": torch.nn.Tanh(),
+            "softplus": torch.nn.Softplus()
         }
+        
+        if function not in func_map:
+            raise ValueError(f"Function {function} not supported. Choose from {list(func_map.keys())}")
+        
         self.func = func_map[function]
 
     def forward(self, x):

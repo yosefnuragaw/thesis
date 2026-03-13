@@ -83,7 +83,6 @@ def init_model(
                 if gate_dir is not None:
                     gate_path = f"{gate_dir}/gate_ep{epoch}_layer{layer}.pt"
                     if os.path.exists(gate_path):
-                        print(f'Loading gate: {gate_path}')
                         model.model.layers[layer].set_gate(gate_path)
 
             else:

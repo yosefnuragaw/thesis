@@ -77,10 +77,13 @@ class BlockWrapper(torch.nn.Module):
     
     def set_gate(self, path):
         if self.gate:
-            self.gate.load_state_dict(torch.load(path))
+            device = next(self.gate.parameters()).device
+            state_dict = torch.load(path, map_location=device, weights_only=True)
+            
+            self.gate.load_state_dict(state_dict)
             self.gate.eval()
         else:
-            raise ValueError("Gate not initialized")
+            raise ValueError("Gate not initialized. Please define the model architecture first.")
 
 
     def set_vector(self, vec):

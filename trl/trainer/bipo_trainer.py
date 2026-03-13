@@ -2043,7 +2043,7 @@ class BiPOTrainer(BaseTrainer):
                         }
                     )
 
-                    artifact_vec = wandb.Artifact(
+                    artifact_gate = wandb.Artifact(
               
                     name=f"{run_name}-{run_id}_gate-layer{layer}", 
                     type=f"{run_name}-{run_id}_gate",
@@ -2054,8 +2054,10 @@ class BiPOTrainer(BaseTrainer):
                         }
                     )
 
-                    artifact_vec.add_file(filepath_gate)
+                    artifact_vec.add_file(filepath)
+                    artifact_gate.add_file(filepath_gate)
                     wandb.log_artifact(artifact_vec)
+                    wandb.log_artifact(artifact_gate)
 
         if self.generate_during_eval:
             num_samples = len(dataloader.dataset)

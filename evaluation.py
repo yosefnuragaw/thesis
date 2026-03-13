@@ -47,9 +47,10 @@ class ScriptArguments:
     prompt: Optional[str] = field(default="", metadata={"help": "What prompts for generation eval"})
     max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
     temperature: Optional[float] = field(default=0.7, metadata={"help": "LLM generation temperature"})
+    gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
 
 def init_model(
-        model_name: str, vec_dir: str, gate_dir:str, layers: List[int], multiplier: int, epoch: int|None = None, buffer:bool = False, total_layer:int = 26
+        model_name: str, vec_dir: str, gate_dir:str, layers: List[int], multiplier: int, epoch: int|None = None, gate_function:Optional[str]=None, buffer:bool = False, total_layer:int = 26
     )->tuple[AutoModelForCausalLM, AutoTokenizer]:
 
     model = AutoModelForCausalLM.from_pretrained(
@@ -66,7 +67,8 @@ def init_model(
                     model.model.layers[layer], 
                     hidden_dim=model.config.hidden_size, 
                     vec= torch.zeros(model.config.hidden_size, dtype= model.dtype),
-                    buffer=buffer
+                    buffer=buffer,
+                    gate_function=gate_function
                 )
         
         if epoch != None and layer in layers:
@@ -257,7 +259,8 @@ if __name__ == "__main__":
         layers=script_args.layer,
         multiplier= 0,
         buffer = args.save,
-        total_layer = script_args.total_layer
+        total_layer = script_args.total_layer,
+        gate_function = script_args.gate_function
     )
 
     eval_loader = produce_dataloader(

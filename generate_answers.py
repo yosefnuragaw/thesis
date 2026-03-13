@@ -65,6 +65,7 @@ class ScriptArguments:
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
     max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
     temperature: Optional[float] = field(default=0.7, metadata={"help": "LLM generation temperature"})
+    gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
 
 def read_dataset(
         behavior: str,
@@ -162,7 +163,8 @@ def main(baseline:bool, args: ScriptArguments)->None:
                 epoch=args.eval_epoch,
                 layers=args.layer,
                 multiplier=0,
-                total_layer = args.total_layer
+                total_layer = args.total_layer,
+                gate_function = args.gate_function
             )
     
     if not baseline:

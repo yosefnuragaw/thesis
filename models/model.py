@@ -47,6 +47,7 @@ class BlockWrapper(torch.nn.Module):
 
         if gate_function is not None:
             self.gate = MaskGate(hidden_dim = hidden_dim, dtype=self.init_dtype, function=gate_function)
+            
         else:
             self.gate = None
         
@@ -77,7 +78,7 @@ class BlockWrapper(torch.nn.Module):
     
     def set_gate(self, path):
         if self.gate:
-            device = next(self.gate.parameters()).device
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             state_dict = torch.load(path, map_location=device, weights_only=True)
             
             self.gate.load_state_dict(state_dict)

@@ -2043,6 +2043,7 @@ class BiPOTrainer(BaseTrainer):
                         "run_id": run_id 
                         }
                     )
+                    artifact_vec.add_file(filepath)
                     wandb.log_artifact(artifact_vec)
                     
                     if gate is not None:
@@ -2057,7 +2058,7 @@ class BiPOTrainer(BaseTrainer):
                             }
                         )
 
-                        artifact_vec.add_file(filepath)
+                        
                         artifact_gate.add_file(filepath_gate)
                         wandb.log_artifact(artifact_gate)
                    

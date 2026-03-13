@@ -12,10 +12,10 @@ MODEL_TEMPLATE_MAP: Dict[str, str]= {
 }
 
 class MaskGate(torch.nn.Module):
-    def __init__(self, hidden_dim: int, function: str = "sigmoid"):
+    def __init__(self, hidden_dim: int, dtype: torch.dtype = torch.float32, function: str = "sigmoid"):
         super().__init__()
 
-        self.gate = torch.nn.Linear(hidden_dim, hidden_dim)
+        self.gate = torch.nn.Linear(hidden_dim, hidden_dim, dtype=dtype)
 
         func_map = {
             "sigmoid": torch.nn.Sigmoid(),
@@ -32,10 +32,6 @@ class BlockWrapper(torch.nn.Module):
         super().__init__()
         self.multiplier = 1.0
         self.block = block
-        if gate_function is not None:
-            self.gate = MaskGate(hidden_dim)
-        else:
-            self.gate = None
 
         try:
             ref_param = next(block.parameters())
@@ -48,6 +44,12 @@ class BlockWrapper(torch.nn.Module):
         else:
             self.vec = torch.nn.Parameter(torch.zeros(hidden_dim, dtype= self.init_dtype))
 
+
+        if gate_function is not None:
+            self.gate = MaskGate(hidden_dim = hidden_dim, dtype=self.init_dtype, function=gate_function)
+        else:
+            self.gate = None
+        
         self.buffer = buffer
         self.buffer_space = []
 

@@ -2045,6 +2045,9 @@ class BiPOTrainer(BaseTrainer):
                     )
                     artifact_vec.add_file(filepath)
                     wandb.log_artifact(artifact_vec)
+
+                    if os.path.exists(filepath):
+                        os.remove(filepath)
                     
                     if gate is not None:
                         artifact_gate = wandb.Artifact(
@@ -2061,6 +2064,9 @@ class BiPOTrainer(BaseTrainer):
                         
                         artifact_gate.add_file(filepath_gate)
                         wandb.log_artifact(artifact_gate)
+
+                        if os.path.exists(filepath_gate):
+                            os.remove(filepath_gate)
                    
                     
 

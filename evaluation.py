@@ -36,8 +36,12 @@ class ScriptArguments:
     )
 
     vec_dir: Optional[str] = field(
-        default="/kaggle/working/BiPO/vector/power-seeking_gemma-3",
+        default=None,
         metadata={"help": "Directory where .pt vectors are saved"}
+    )
+    gate_dir: Optional[str] = field(
+        default=None,
+        metadata={"help": "Directory where .pt gate vectors are saved"}
     )
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
     prompt: Optional[str] = field(default="", metadata={"help": "What prompts for generation eval"})
@@ -45,7 +49,7 @@ class ScriptArguments:
     temperature: Optional[float] = field(default=0.7, metadata={"help": "LLM generation temperature"})
 
 def init_model(
-        model_name: str, vec_dir: str, layers: List[int], multiplier: int, epoch: int|None = None, buffer:bool = False, total_layer:int = 26
+        model_name: str, vec_dir: str, gate_dir:str, layers: List[int], multiplier: int, epoch: int|None = None, buffer:bool = False, total_layer:int = 26
     )->tuple[AutoModelForCausalLM, AutoTokenizer]:
 
     model = AutoModelForCausalLM.from_pretrained(
@@ -73,6 +77,12 @@ def init_model(
                 
                 model.model.layers[layer].set_vector(steering_vector)
                 model.model.layers[layer].set_multiplier(multiplier)
+
+                if gate_dir is not None:
+                    gate_path = f"{gate_dir}/gate_ep{epoch}_layer{layer}.pt"
+                    if os.path.exists(gate_path):
+                        print(f'Loading gate: {gate_path}')
+                        model.model.layers[layer].set_gate(gate_path)
 
             else:
                 raise ValueError(f"Vector not found at {vec_path}")
@@ -242,6 +252,7 @@ if __name__ == "__main__":
     model, tokenizer = init_model(
         model_name=script_args.model_name_or_path,
         vec_dir=script_args.vec_dir,
+        gate_dir=script_args.gate_dir,
         epoch=script_args.eval_epoch,
         layers=script_args.layer,
         multiplier= 0,

@@ -2022,11 +2022,12 @@ class BiPOTrainer(BaseTrainer):
                 filename = f"vec_ep{self.epoch_for_saving_vec}_layer{layer}.pt"
                 filepath = f"{self.vec_dir}/{filename}"
                 
-                filename_gate = f"gate_ep{self.epoch_for_saving_vec}_layer{layer}.pt"
-                filepath_gate = f"{self.gate_dir}/{filename_gate}"
+                
 
                 torch.save(steer_vec, filepath)
                 if gate is not None:
+                    filename_gate = f"gate_ep{self.epoch_for_saving_vec}_layer{layer}.pt"
+                    filepath_gate = f"{self.gate_dir}/{filename_gate}"
                     torch.save(gate.state_dict(), filepath_gate)
 
                 if wandb.run is not None:
@@ -2042,22 +2043,25 @@ class BiPOTrainer(BaseTrainer):
                         "run_id": run_id 
                         }
                     )
-
-                    artifact_gate = wandb.Artifact(
-              
-                    name=f"{run_name}-{run_id}_gate-layer{layer}", 
-                    type=f"{run_name}-{run_id}_gate",
-                    metadata={
-                        "epoch": self.epoch_for_saving_vec, 
-                        "layer": layer,
-                        "run_id": run_id 
-                        }
-                    )
-
-                    artifact_vec.add_file(filepath)
-                    artifact_gate.add_file(filepath_gate)
                     wandb.log_artifact(artifact_vec)
-                    wandb.log_artifact(artifact_gate)
+                    
+                    if gate is not None:
+                        artifact_gate = wandb.Artifact(
+                
+                        name=f"{run_name}-{run_id}_gate-layer{layer}", 
+                        type=f"{run_name}-{run_id}_gate",
+                        metadata={
+                            "epoch": self.epoch_for_saving_vec, 
+                            "layer": layer,
+                            "run_id": run_id 
+                            }
+                        )
+
+                        artifact_vec.add_file(filepath)
+                        artifact_gate.add_file(filepath_gate)
+                        wandb.log_artifact(artifact_gate)
+                   
+                    
 
         if self.generate_during_eval:
             num_samples = len(dataloader.dataset)

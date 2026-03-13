@@ -51,7 +51,11 @@ class ScriptArguments:
         metadata={"help": "the layer the steering vector extracted from"}
     )
     vec_dir: Optional[str] = field(
-        default="/kaggle/working/BiPO/vector/power-seeking_gemma-3",
+        default= None,
+        metadata={"help": "Directory where .pt vectors are saved"}
+    )
+    gate_dir: Optional[str] = field(
+        default= None,
         metadata={"help": "Directory where .pt vectors are saved"}
     )
     answer_dir: Optional[str] = field(
@@ -154,6 +158,7 @@ def main(baseline:bool, args: ScriptArguments)->None:
     model, tokenizer = init_model(
                 model_name=args.model_name_or_path,
                 vec_dir=args.vec_dir,
+                gate_dir=args.gate_dir,
                 epoch=args.eval_epoch,
                 layers=args.layer,
                 multiplier=0,

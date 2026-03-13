@@ -11,12 +11,31 @@ MODEL_TEMPLATE_MAP: Dict[str, str]= {
     'Qwen/Qwen3-8B': 'qwen-7b'
 }
 
+class MaskGate(torch.nn.Module):
+    def __init__(self, hidden_dim: int, function: str = "sigmoid"):
+        super().__init__()
+
+        self.gate = torch.nn.Linear(hidden_dim, hidden_dim)
+
+        func_map = {
+            "sigmoid": torch.nn.Sigmoid(),
+            "tanh": torch.nn.Tanh(),
+        }
+        self.func = func_map[function]
+
+    def forward(self, x):
+        return self.func(self.gate(x))
+
+
 class BlockWrapper(torch.nn.Module):
-    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False):
+    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False, gate_function:Optional[str] = None):
         super().__init__()
         self.multiplier = 1.0
-        
         self.block = block
+        if gate_function is not None:
+            self.gate = MaskGate(hidden_dim)
+        else:
+            self.gate = None
 
         try:
             ref_param = next(block.parameters())
@@ -32,26 +51,35 @@ class BlockWrapper(torch.nn.Module):
         self.buffer = buffer
         self.buffer_space = []
 
-    def forward(self, *args, **kwargs):
-        output = self.block(*args, **kwargs)
-        scale = self.multiplier
+    def forward(self, hidden_states, *args, **kwargs):
+        output = self.block(hidden_states, *args, **kwargs)
 
+        mask = self.multiplier 
+        if self.gate:
+            mask = mask * self.gate(hidden_states)
+    
         if isinstance(output, tuple):
             self.buffer_space.append(output[0].detach().mean(dim=1).cpu())
-            modified_hidden = output[0] + (scale* self.vec.to(output[0].device))
+            modified_hidden = output[0] + (mask * self.vec.to(output[0].device))
             output = (modified_hidden,) + output[1:]
             
         elif isinstance(output, torch.Tensor):
             self.buffer_space.append(output.detach().mean(dim=1).cpu())
-            output = output + (scale * self.vec.to(output.device))
+            output = output + (mask * self.vec.to(output.device))
         
         return output
 
     def set_multiplier(self, multiplier):
         self.multiplier = multiplier
 
-    # def set_sens(self, sens):
-    #     self.sens = sens
+    
+    def set_gate(self, path):
+        if self.gate:
+            self.gate.load_state_dict(torch.load(path))
+            self.gate.eval()
+        else:
+            raise ValueError("Gate not initialized")
+
 
     def set_vector(self, vec):
         self.vec = vec.to(self.init_dtype)

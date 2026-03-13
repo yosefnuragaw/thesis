@@ -64,6 +64,7 @@ class ScriptArguments:
     pipeline: Optional[str] = field(default='default', metadata={"help": "experimentation pipeline both | one| two"})
     masking_type: Optional[str] = field(default='soft', metadata={"help": "experimentation masking type hard | soft"})
     moving: Optional[str] = field(default='default', metadata={"help": "gradual moving backward | forward"})
+    gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
 
 
 
@@ -104,7 +105,7 @@ if __name__ == "__main__":
 
     # Inject BlockWrappers
     for layer in script_args.layer:
-        model.model.layers[layer] = BlockWrapper(model.model.layers[layer], hidden_dim=model.config.hidden_size)
+        model.model.layers[layer] = BlockWrapper(model.model.layers[layer], hidden_dim=model.config.hidden_size, gate_function=script_args.gate_function)
 
     if script_args.ignore_bias_buffers:
         model._ddp_params_and_buffers_to_ignore = [

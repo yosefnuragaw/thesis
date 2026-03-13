@@ -305,13 +305,22 @@ class BiPOTrainer(BaseTrainer):
 
         if self.name is None:
             self.vec_dir = f"./vector/{self.behavior}"
+            self.gate_dir = f"./gate/{self.behavior}"
         else:
             self.vec_dir = f"./vector/{self.behavior}_{self.name}"
+            self.gate_dir = f"./gate/{self.behavior}_{self.name}"
+
         if not os.path.exists(self.vec_dir):
             os.makedirs(self.vec_dir)
             print('Create vector dir: ', self.vec_dir)
         else:
             print('vector dir: ', self.vec_dir)
+
+        if not os.path.exists(self.gate_dir):
+            os.makedirs(self.gate_dir)
+            print('Create gate dir: ', self.gate_dir)
+        else:
+            print('gate dir: ', self.gate_dir)
         
         self.epoch_for_saving_vec = 0
         self.multiplier_counts = {-1.0: 0, 1.0: 0}
@@ -2006,16 +2015,24 @@ class BiPOTrainer(BaseTrainer):
             
             if self.model.model.layers[layer].multiplier > 0:
                 steer_vec = self.model.model.layers[layer].vec.detach().cpu()
+                gate = self.model.model.layers[layer].gate
+
                 print(f'Steer vec at epoch {self.epoch_for_saving_vec} layer {layer}: ', steer_vec[:10], steer_vec.dtype)
                 
                 filename = f"vec_ep{self.epoch_for_saving_vec}_layer{layer}.pt"
                 filepath = f"{self.vec_dir}/{filename}"
                 
+                filename_gate = f"gate_ep{self.epoch_for_saving_vec}_layer{layer}.pt"
+                filepath_gate = f"{self.gate_dir}/{filename_gate}"
+
                 torch.save(steer_vec, filepath)
+                if gate is not None:
+                    torch.save(gate.state_dict(), filepath_gate)
+
                 if wandb.run is not None:
                     run_id = wandb.run.id 
                     run_name = wandb.run.name
-                    artifact = wandb.Artifact(
+                    artifact_vec = wandb.Artifact(
               
                     name=f"{run_name}-{run_id}_steering-vec-layer{layer}", 
                     type=f"{run_name}-{run_id}_steering_vector",
@@ -2025,8 +2042,20 @@ class BiPOTrainer(BaseTrainer):
                         "run_id": run_id 
                         }
                     )
-                    artifact.add_file(filepath)
-                    wandb.log_artifact(artifact)
+
+                    artifact_vec = wandb.Artifact(
+              
+                    name=f"{run_name}-{run_id}_gate-layer{layer}", 
+                    type=f"{run_name}-{run_id}_gate",
+                    metadata={
+                        "epoch": self.epoch_for_saving_vec, 
+                        "layer": layer,
+                        "run_id": run_id 
+                        }
+                    )
+
+                    artifact_vec.add_file(filepath_gate)
+                    wandb.log_artifact(artifact_vec)
 
         if self.generate_during_eval:
             num_samples = len(dataloader.dataset)

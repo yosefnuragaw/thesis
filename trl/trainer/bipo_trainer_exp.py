@@ -159,7 +159,9 @@ class BiPOTrainerEXP(BiPOTrainer):
             # vec_idx = 0
             for name, param in model.named_parameters():
                 if "vec" in name:
-                    param.requires_grad = hard_mask[name].item()
+                    parts = name.split('.')
+                    layer_idx = int(parts[2])
+                    param.requires_grad = hard_mask[layer_idx].item()
                     # vec_idx += 1
 
         loss = super().training_step(model, inputs,num_items_in_batch)

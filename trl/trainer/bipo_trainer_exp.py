@@ -26,10 +26,10 @@ class BiPOTrainerEXP(BiPOTrainer):
         self.idx_layer_tensor = torch.arange(num_layer, dtype=torch.float32)
         self.layer_weight = torch.arange(num_layer, dtype=torch.float32)
 
-        idx = 0
+        # idx = 0
         for name, p in self.model.named_parameters():
             if "vec" in name:
-                self.fisher_accumulator[idx] = torch.zeros_like(p)
+                self.fisher_accumulator[name] = torch.zeros_like(p)
                 idx+=1
 
         print('[Pipeline:]',pipeline)
@@ -156,11 +156,11 @@ class BiPOTrainerEXP(BiPOTrainer):
                 threshold = torch.quantile(self.idx_layer_tensor, self.quantile_threshold) 
                 hard_mask = self.idx_layer_tensor <= threshold
         
-            vec_idx = 0
+            # vec_idx = 0
             for name, param in model.named_parameters():
                 if "vec" in name:
-                    param.requires_grad = hard_mask[vec_idx].item()
-                    vec_idx += 1
+                    param.requires_grad = hard_mask[name].item()
+                    # vec_idx += 1
 
         loss = super().training_step(model, inputs,num_items_in_batch)
 
@@ -173,8 +173,8 @@ class BiPOTrainerEXP(BiPOTrainer):
             idx = 0
             for name, param in model.named_parameters():
                 if "vec" in name and param.grad is not None:
-                    self.fisher_accumulator[idx] += param.grad.to(torch.float32).pow(2)
-                    self.fisher_counter[idx] += 1
+                    self.fisher_accumulator[name] += param.grad.to(torch.float32).pow(2)
+                    self.fisher_counter[name] += 1
                     idx += 1
             
 

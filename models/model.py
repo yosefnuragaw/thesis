@@ -82,6 +82,7 @@ class BlockWrapper(torch.nn.Module):
             state_dict = torch.load(path, map_location=device, weights_only=True)
             
             self.gate.load_state_dict(state_dict)
+            self.gate.to(device)
             self.gate.eval()
         else:
             raise ValueError("Gate not initialized. Please define the model architecture first.")

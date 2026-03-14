@@ -21,7 +21,7 @@ from utils import set_seed
 class ScriptArguments:
     id: Optional[str] = field(default="baseline", metadata={"help": "Run id"})
     model_name_or_path: Optional[str] = field(default="google/gemma-3-1b-it", metadata={"help": "Model Answer Folder"})
-    model_id: Optional[str] = field(default="gemma-3-1b-it", metadata={"help": "Model id"})
+    id: Optional[str] = field(default="gemma-3-1b-it", metadata={"help": "Model id"})
     judge_name: Optional[str] = field(default="openai/gpt-oss-20b", metadata={"help": "Judge Model id"})
     behavior: Optional[str] = field(default="power-seeking", metadata={"help": "the behavior"})
     layer: Optional[List[int]] = field(default_factory=lambda: list(range(26)), metadata={"help": "the layer the steering vector extracted from"})
@@ -90,7 +90,7 @@ def evaluate_batch(
 
     outputs = pipe(
          chat_prompts,
-        max_new_tokens=2048, 
+        max_new_tokens=4096, 
         temperature=0.2,   
         top_p=0.9,
         do_sample=True,        
@@ -163,11 +163,11 @@ def main(baseline: bool, args: ScriptArguments) -> None:
 
         c_score = evaluate_batch(judge_pipe, tokenizer, coherence_factory, coherence_raw_prompts, "Utility")
         coherence_likert[mul] = c_score
-        coherence_factory.save(f"reasoning/{args.model_id}/reasoning_{args.behavior}_utility_mul{mul}.csv")
+        coherence_factory.save(f"reasoning/{args.id}/reasoning_{args.behavior}_utility_mul{mul}.csv")
 
         b_score = evaluate_batch(judge_pipe, tokenizer, behavior_factory, behavior_raw_prompts, "Behavior")
         accuracy_likert[mul] = b_score
-        behavior_factory.save(f"reasoning/{args.model_id}/reasoning_{args.behavior}_behavior_mul{mul}.csv")
+        behavior_factory.save(f"reasoning/{args.id}/reasoning_{args.behavior}_behavior_mul{mul}.csv")
 
         print(f'\n[Multiplier {mul} Complete]')
         print(f'Accuracy Likert (Scale 5): {accuracy_likert[mul]:.2f}')

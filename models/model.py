@@ -54,10 +54,10 @@ class BlockWrapper(torch.nn.Module):
 
 
         if gate_function is not None:
-            self.gate = MaskGate(hidden_dim = hidden_dim, dtype=self.init_dtype, function=gate_function)
+            self.gate_mask= MaskGate(hidden_dim = hidden_dim, dtype=self.init_dtype, function=gate_function)
             
         else:
-            self.gate = None
+            self.gate_mask = None
         
         self.buffer = buffer
         self.buffer_space = []
@@ -66,8 +66,8 @@ class BlockWrapper(torch.nn.Module):
         output = self.block(hidden_states, *args, **kwargs)
 
         mask = self.multiplier 
-        if self.gate:
-            mask = mask * self.gate(hidden_states)
+        if self.gate_mask:
+            mask = mask * self.gate_mask(hidden_states)
     
         if isinstance(output, tuple):
             self.buffer_space.append(output[0].detach().mean(dim=1).cpu())

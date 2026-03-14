@@ -89,11 +89,13 @@ def evaluate_batch(
 
 
     outputs = pipe(
-        chat_prompts, 
-        max_new_tokens=512, 
-        return_full_text=False, 
-        do_sample=False, 
-        batch_size=pipe._batch_size 
+         chat_prompts,
+        max_new_tokens=4096, 
+        temperature=0.2,   
+        top_p=0.9,
+        do_sample=True,        
+        return_full_text=False,
+        batch_size=pipe._batch_size
     )
 
     for out in tqdm(outputs, desc=f"Parsing {desc} Results"):

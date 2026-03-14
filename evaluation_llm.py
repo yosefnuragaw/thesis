@@ -90,7 +90,7 @@ def evaluate_batch(
 
     outputs = pipe(
          chat_prompts,
-        max_new_tokens=4096, 
+        max_new_tokens=2048, 
         temperature=0.2,   
         top_p=0.9,
         do_sample=True,        

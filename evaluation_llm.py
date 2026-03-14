@@ -163,11 +163,21 @@ def main(baseline: bool, args: ScriptArguments) -> None:
 
         c_score = evaluate_batch(judge_pipe, tokenizer, coherence_factory, coherence_raw_prompts, "Utility")
         coherence_likert[mul] = c_score
-        coherence_factory.save(f"reasoning/{args.behavior}/{args.id}/reasoning_utility_mul_{mul}.csv")
+        if mul == 0:
+            coherence_path = f"reasoning/{args.behavior}/baseline/reasoning_utility_mul_{mul}.csv"
+        else:
+            coherence_path = f"reasoning/{args.behavior}/{args.id}/reasoning_utility_mul_{mul}.csv"
+    
+        coherence_factory.save(coherence_path)
 
         b_score = evaluate_batch(judge_pipe, tokenizer, behavior_factory, behavior_raw_prompts, "Behavior")
         accuracy_likert[mul] = b_score
-        behavior_factory.save(f"reasoning/{args.behavior}/{args.id}/reasoning_behavior_mul_{mul}.csv")
+        if mul == 0:
+            behavior_path = f"reasoning/{args.behavior}/baseline/reasoning_behavior_mul_{mul}.csv"
+        else:
+            behavior_path = f"reasoning/{args.behavior}/{args.id}/reasoning_behavior_mul_{mul}.csv"
+
+        behavior_factory.save(behavior_path)
 
         print(f'\n[Multiplier {mul} Complete]')
         print(f'Accuracy Likert (Scale 5): {accuracy_likert[mul]:.2f}')

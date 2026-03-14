@@ -15,8 +15,6 @@ class MaskGate(torch.nn.Module):
     def __init__(self, hidden_dim: int, dtype: torch.dtype = torch.float32, function: str = "sigmoid"):
         super().__init__()
 
-        self.gate = torch.nn.Linear(hidden_dim, hidden_dim, dtype=dtype)
-
         func_map = {
             "sigmoid": torch.nn.Sigmoid(),
             "tanh": torch.nn.Tanh(),
@@ -26,10 +24,15 @@ class MaskGate(torch.nn.Module):
         if function not in func_map:
             raise ValueError(f"Function {function} not supported. Choose from {list(func_map.keys())}")
         
-        self.func = func_map[function]
+        self.gate = torch.nn.Sequential(
+            torch.nn.Linear(hidden_dim, 256),
+            torch.nn.GELU(),
+            torch.nn.Linear(256, hidden_dim),
+            func_map[function]
+        )
 
     def forward(self, x):
-        return self.func(self.gate(x))
+        return self.gate(x)
 
 
 class BlockWrapper(torch.nn.Module):

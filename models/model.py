@@ -25,9 +25,9 @@ class MaskGate(torch.nn.Module):
             raise ValueError(f"Function {function} not supported. Choose from {list(func_map.keys())}")
         
         self.gate = torch.nn.Sequential(
-            torch.nn.Linear(hidden_dim, 256, dtype=dtype),
+            torch.nn.Linear(hidden_dim, 512, dtype=dtype),
             torch.nn.GELU(),
-            torch.nn.Linear(256, hidden_dim, dtype=dtype),
+            torch.nn.Linear(512, hidden_dim, dtype=dtype),
             func_map[function]
         )
 

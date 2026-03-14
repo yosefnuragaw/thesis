@@ -90,7 +90,7 @@ def evaluate_batch(
 
     outputs = pipe(
          chat_prompts,
-        max_new_tokens=4096, 
+        max_new_tokens=1024, 
         temperature=0.2,   
         top_p=0.9,
         do_sample=True,        
@@ -163,11 +163,11 @@ def main(baseline: bool, args: ScriptArguments) -> None:
 
         c_score = evaluate_batch(judge_pipe, tokenizer, coherence_factory, coherence_raw_prompts, "Utility")
         coherence_likert[mul] = c_score
-        coherence_factory.save(f"reasoning/{args.id}/reasoning_{args.behavior}_utility_mul{mul}.csv")
+        coherence_factory.save(f"reasoning/{args.behavior}/{args.id}/reasoning_utility_mul_{mul}.csv")
 
         b_score = evaluate_batch(judge_pipe, tokenizer, behavior_factory, behavior_raw_prompts, "Behavior")
         accuracy_likert[mul] = b_score
-        behavior_factory.save(f"reasoning/{args.id}/reasoning_{args.behavior}_behavior_mul{mul}.csv")
+        behavior_factory.save(f"reasoning/{args.behavior}/{args.id}/reasoning_behavior_mul_{mul}.csv")
 
         print(f'\n[Multiplier {mul} Complete]')
         print(f'Accuracy Likert (Scale 5): {accuracy_likert[mul]:.2f}')

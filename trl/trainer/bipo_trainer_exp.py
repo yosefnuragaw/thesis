@@ -162,7 +162,7 @@ class BiPOTrainerEXP(BiPOTrainer):
                     parts = name.split('.')
                     layer_idx = int(parts[2])
                     param.requires_grad = hard_mask[layer_idx].item()
-                    print(f"[Layer:] {layer_idx} {name }Learning" if hard_mask[layer_idx].item() else f"[Layer:] {layer_idx} Freezing")
+                    print(f"[Layer:] {layer_idx} {name} Learning" if hard_mask[layer_idx].item() else f"[Layer:] {layer_idx} Freezing")
                     # vec_idx += 1
 
         loss = super().training_step(model, inputs,num_items_in_batch)

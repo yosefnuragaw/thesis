@@ -2015,7 +2015,7 @@ class BiPOTrainer(BaseTrainer):
             
             if self.model.model.layers[layer].multiplier > 0:
                 steer_vec = self.model.model.layers[layer].vec.detach().cpu()
-                gate = self.model.model.layers[layer].gate
+                gate = self.model.model.layers[layer].gate_mask
 
                 print(f'Steer vec at epoch {self.epoch_for_saving_vec} layer {layer}: ', steer_vec[:10], steer_vec.dtype)
                 

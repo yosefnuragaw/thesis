@@ -71,7 +71,7 @@ class BlockWrapper(torch.nn.Module):
             out_tensor = output[0] if isinstance(output, tuple) else output
             avg_hidden = hidden_states.detach().mean(dim=1)
             avg_output = out_tensor.detach().mean(dim=1)
-            cos_sim = torch.nn.functional.cosine_similarity(avg_hidden, avg_output, dim=-1)
+            cos_sim = torch.nn.functional.cosine_similarity(avg_hidden, avg_output, dim=-1).abs()
             cos_dis = 1-cos_sim
             
         mask = self.multiplier 
@@ -88,7 +88,7 @@ class BlockWrapper(torch.nn.Module):
         if isinstance(mask, torch.Tensor):
             while mask.dim() < hidden_states.dim():
                 mask = mask.unsqueeze(-1)
-                
+
         if isinstance(output, tuple):
             self.buffer_space.append(output[0].detach().mean(dim=1).cpu())
             modified_hidden = output[0] + (mask * self.vec.to(output[0].device))

@@ -50,7 +50,7 @@ class ScriptArguments:
     gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
 
 def init_model(
-        model_name: str, vec_dir: str, gate_dir:str, layers: List[int], multiplier: int, epoch: int|None = None, gate_function:Optional[str]=None, buffer:bool = False, total_layer:int = 26
+        model_name: str, vec_dir: str, gate_dir:str, layers: List[int], multiplier: int, epoch: int|None = None, gate_function:Optional[str]=None, skip:Optional[str]=None, buffer:bool = False, total_layer:int = 26
     )->tuple[AutoModelForCausalLM, AutoTokenizer]:
 
     model = AutoModelForCausalLM.from_pretrained(
@@ -68,7 +68,8 @@ def init_model(
                     hidden_dim=model.config.hidden_size, 
                     vec= torch.zeros(model.config.hidden_size, dtype= model.dtype),
                     buffer=buffer,
-                    gate_function=gate_function
+                    gate_function=gate_function,
+                    skip=skip
                 )
         
         if epoch != None and layer in layers:

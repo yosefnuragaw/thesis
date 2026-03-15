@@ -66,6 +66,7 @@ class ScriptArguments:
     max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
     temperature: Optional[float] = field(default=0.7, metadata={"help": "LLM generation temperature"})
     gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
+    skip: Optional[str] = field(default=None, metadata={"help" : "cosine scaler None | distance | similarity"})
 
 def read_dataset(
         behavior: str,
@@ -164,7 +165,8 @@ def main(baseline:bool, args: ScriptArguments)->None:
                 layers=args.layer,
                 multiplier=0,
                 total_layer = args.total_layer,
-                gate_function = args.gate_function
+                gate_function = args.gate_function,
+                skip = args.skip
             )
     
     if not baseline:

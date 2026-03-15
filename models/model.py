@@ -40,7 +40,7 @@ class BlockWrapper(torch.nn.Module):
         super().__init__()
         self.multiplier = 1.0
         self.block = block
-        self.k1 = 0.3
+        self.k1 = 0.1
         try:
             ref_param = next(block.parameters())
             self.init_dtype = ref_param.dtype

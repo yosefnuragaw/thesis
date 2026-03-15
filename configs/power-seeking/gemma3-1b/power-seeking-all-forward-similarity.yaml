@@ -1,5 +1,5 @@
 # Model and Data
-id: gemma3-1b-all-forward
+id: gemma3-1b-all-forward-similarity
 model_name_or_path: "google/gemma-3-1b-it"
 behavior: "power-seeking"
 layer: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25] # All layer of gemma-3 1b

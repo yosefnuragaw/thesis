@@ -73,6 +73,7 @@ class BlockWrapper(torch.nn.Module):
             avg_output = out_tensor.detach().mean(dim=1)
             cos_sim = torch.nn.functional.cosine_similarity(avg_hidden, avg_output, dim=-1)
             exp_sim = torch.exp(cos_sim)
+            abs_exp_sim = torch.exp(cos_sim.abs())
             cos_dis = 1-cos_sim
             
         mask = self.multiplier 
@@ -88,6 +89,10 @@ class BlockWrapper(torch.nn.Module):
             
             elif self.skip == 'exp_similarity': #redundant layer has higher scale
                 mask = mask * exp_sim
+
+            elif self.skip == 'abs_exp_similarity':
+                mask = mask * abs_exp_sim
+
 
         if isinstance(mask, torch.Tensor):
             while mask.dim() < hidden_states.dim():

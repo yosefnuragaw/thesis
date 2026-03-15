@@ -36,7 +36,7 @@ class MaskGate(torch.nn.Module):
 
 
 class BlockWrapper(torch.nn.Module):
-    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False, gate_function:Optional[str] = None):
+    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False, gate_function:Optional[str] = None, skip:Optional[str] = None):
         super().__init__()
         self.multiplier = 1.0
         self.block = block
@@ -58,16 +58,31 @@ class BlockWrapper(torch.nn.Module):
             
         else:
             self.gate_mask = None
-        
+
+        self.skip =skip
+
         self.buffer = buffer
         self.buffer_space = []
 
     def forward(self, hidden_states, *args, **kwargs):
         output = self.block(hidden_states, *args, **kwargs)
 
+        with torch.no_grad():
+            avg_hidden = hidden_states.detach().mean(dim=1)
+            avg_output = output.detach().mean(dim=1)
+            cos_sim = torch.nn.functional.cosine_similarity(avg_hidden, avg_output, dim=-1)
+            cos_dis = 1-cos_sim
+            
         mask = self.multiplier 
         if self.gate_mask:
             mask = mask * self.gate_mask(hidden_states)
+        
+        if self.skip:
+            if self.skip == 'similarity': #redundant layer has higher scale
+                mask = mask * cos_sim
+
+            elif self.skip == 'distance': # sensitive layer has higher scale
+                mask = mask * cos_dis
     
         if isinstance(output, tuple):
             self.buffer_space.append(output[0].detach().mean(dim=1).cpu())

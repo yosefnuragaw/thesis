@@ -48,6 +48,7 @@ class ScriptArguments:
     max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
     temperature: Optional[float] = field(default=0.7, metadata={"help": "LLM generation temperature"})
     gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
+    k1: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
 
 def init_model(
         model_name: str, vec_dir: str, gate_dir:str, layers: List[int], multiplier: int, epoch: int|None = None, gate_function:Optional[str]=None, skip:Optional[str]=None, buffer:bool = False, total_layer:int = 26, k1:float = 0.

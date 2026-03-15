@@ -84,7 +84,11 @@ class BlockWrapper(torch.nn.Module):
 
             elif self.skip == 'distance': # sensitive layer has higher scale
                 mask = mask * cos_dis
-    
+
+        if isinstance(mask, torch.Tensor):
+            while mask.dim() < hidden_states.dim():
+                mask = mask.unsqueeze(-1)
+                
         if isinstance(output, tuple):
             self.buffer_space.append(output[0].detach().mean(dim=1).cpu())
             modified_hidden = output[0] + (mask * self.vec.to(output[0].device))

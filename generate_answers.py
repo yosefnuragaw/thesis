@@ -67,6 +67,7 @@ class ScriptArguments:
     temperature: Optional[float] = field(default=0.7, metadata={"help": "LLM generation temperature"})
     gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
     skip: Optional[str] = field(default=None, metadata={"help" : "cosine scaler None | distance | similarity"})
+    k1: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
 
 def read_dataset(
         behavior: str,
@@ -166,7 +167,8 @@ def main(baseline:bool, args: ScriptArguments)->None:
                 multiplier=0,
                 total_layer = args.total_layer,
                 gate_function = args.gate_function,
-                skip = args.skip
+                skip = args.skip,
+                k1 = args.k1
             )
     
     if not baseline:

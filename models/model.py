@@ -36,11 +36,11 @@ class MaskGate(torch.nn.Module):
 
 
 class BlockWrapper(torch.nn.Module):
-    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False, gate_function:Optional[str] = None, skip:Optional[str] = None):
+    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False, gate_function:Optional[str] = None, skip:Optional[str] = None, k1:float = 0.):
         super().__init__()
         self.multiplier = 1.0
         self.block = block
-        self.k1 = 0.1
+        self.k1 = k1
         try:
             ref_param = next(block.parameters())
             self.init_dtype = ref_param.dtype

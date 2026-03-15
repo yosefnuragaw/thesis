@@ -66,6 +66,8 @@ class ScriptArguments:
     moving: Optional[str] = field(default='default', metadata={"help": "gradual moving backward | forward"})
     gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
     skip: Optional[str] = field(default=None, metadata={"help" : "cosine scaler None | distance | similarity"})
+    k1: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
+
 
 
 
@@ -93,7 +95,7 @@ if __name__ == "__main__":
     template_name = MODEL_TEMPLATE_MAP.get(script_args.model_name_or_path, 'llama-2')
 
     print(f"Loaded config from {args.config}")
-    print(f"[Behavior:] {script_args.behavior} | [Layer:] {script_args.layer} | [Model:] {script_args.model_name_or_path} | [Experiment:] {script_args.experiment} | [Moving:] {script_args.moving} | [Skip:] {script_args.skip}")
+    print(f"[Behavior:] {script_args.behavior} | [Layer:] {script_args.layer} | [Model:] {script_args.model_name_or_path} | [Experiment:] {script_args.experiment} | [Moving:] {script_args.moving} | [Skip:] {script_args.skip} [k1:] {script_args.k1}")
 
     # 3. Load & Configure Models
     model = AutoModelForCausalLM.from_pretrained(
@@ -106,7 +108,7 @@ if __name__ == "__main__":
 
     # Inject BlockWrappers
     for layer in script_args.layer:
-        model.model.layers[layer] = BlockWrapper(model.model.layers[layer], hidden_dim=model.config.hidden_size, gate_function=script_args.gate_function, skip= script_args.skip)
+        model.model.layers[layer] = BlockWrapper(model.model.layers[layer], hidden_dim=model.config.hidden_size, gate_function=script_args.gate_function, skip= script_args.skip, k1 = script_args.k1)
 
     if script_args.ignore_bias_buffers:
         model._ddp_params_and_buffers_to_ignore = [

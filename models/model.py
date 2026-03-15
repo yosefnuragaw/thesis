@@ -40,7 +40,7 @@ class BlockWrapper(torch.nn.Module):
         super().__init__()
         self.multiplier = 1.0
         self.block = block
-
+        self.k1 = 0.5
         try:
             ref_param = next(block.parameters())
             self.init_dtype = ref_param.dtype
@@ -74,6 +74,7 @@ class BlockWrapper(torch.nn.Module):
             cos_sim = torch.nn.functional.cosine_similarity(avg_hidden, avg_output, dim=-1)
             exp_sim = torch.exp(cos_sim)
             abs_exp_sim = torch.exp(cos_sim.abs())
+            linear_abs_exp_sim =1 + self.k1*(2*torch.exp(cos_sim.abs())-1)
             cos_dis = 1-cos_sim
             
         mask = self.multiplier 
@@ -93,6 +94,8 @@ class BlockWrapper(torch.nn.Module):
             elif self.skip == 'abs_exp_similarity':
                 mask = mask * abs_exp_sim
 
+            elif self.skip == 'linear_abs_exp_similarity':
+                mask = mask * linear_abs_exp_sim
 
         if isinstance(mask, torch.Tensor):
             while mask.dim() < hidden_states.dim():

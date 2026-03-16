@@ -163,19 +163,27 @@ def main(baseline: bool, args: ScriptArguments) -> None:
 
         c_score = evaluate_batch(judge_pipe, tokenizer, coherence_factory, coherence_raw_prompts, "Utility")
         coherence_likert[mul] = c_score
-        if mul == 0:
-            coherence_path = f"reasoning/{args.behavior}/{args.model_name_or_path.replace('/', '_')}/reasoning_utility_mul_{mul}.csv"
+
+        if 'gemma' in args.model_name_or_path:
+            model_dir = 'gemma'
+        elif 'llama' in args.model_name_or_path:
+            model_dir = 'llama'
         else:
-            coherence_path = f"reasoning/{args.behavior}/{args.id}/reasoning_utility_mul_{mul}.csv"
+            model_dir = 'mistral'
+                
+        if mul == 0:
+            coherence_path = f"reasoning/{args.behavior}/{model_dir}/{args.model_name_or_path.replace('/', '_')}/reasoning_utility_mul_{mul}.csv"
+        else:
+            coherence_path = f"reasoning/{args.behavior}/{model_dir}/{args.id}/reasoning_utility_mul_{mul}.csv"
     
         coherence_factory.save(coherence_path)
 
         b_score = evaluate_batch(judge_pipe, tokenizer, behavior_factory, behavior_raw_prompts, "Behavior")
         accuracy_likert[mul] = b_score
         if mul == 0:
-            behavior_path = f"reasoning/{args.behavior}/{args.model_name_or_path.replace('/', '_')}/reasoning_behavior_mul_{mul}.csv"
+            behavior_path = f"reasoning/{args.behavior}/{model_dir}/{args.model_name_or_path.replace('/', '_')}/reasoning_behavior_mul_{mul}.csv"
         else:
-            behavior_path = f"reasoning/{args.behavior}/{args.id}/reasoning_behavior_mul_{mul}.csv"
+            behavior_path = f"reasoning/{args.behavior}/{model_dir}/{args.id}/reasoning_behavior_mul_{mul}.csv"
 
         behavior_factory.save(behavior_path)
 

@@ -13,8 +13,6 @@ from transformers import (
     HfArgumentParser
 )
 
-
-
 from models.prompts import PromptProcessor
 from utils import set_seed
 @dataclass

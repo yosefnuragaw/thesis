@@ -31,7 +31,7 @@ quantile_scheduler: True
 quantile_scheduler_type: "linear"
 target_scheduler: "layers"
 skip: linear_abs_similarity
-k1: 0.75
+k1: 1
 
 # Eval
 vec_dir: "pretrained_vector/wealth-seeking/mistral/all-exp-similarity-abs-linear-1"

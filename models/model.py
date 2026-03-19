@@ -98,7 +98,7 @@ class BlockWrapper(torch.nn.Module):
             elif self.skip == 'linear_abs_similarity': #redundant layer has higher scale
                 mask = mask * linear_abs_sim
 
-            elif self.skip == 'linear_abs_sim_sens':  # sensitive layer has higher scale
+            elif self.skip == 'linear_abs_similarity_sens':  # sensitive layer has higher scale
                 mask = mask * linear_abs_sim_sens
 
 

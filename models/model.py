@@ -76,6 +76,7 @@ class BlockWrapper(torch.nn.Module):
             abs_exp_sim = torch.exp(cos_sim.abs())
             linear_abs_sim =1 + self.k1*(2*cos_sim.abs()-1)
             linear_abs_sim_sens =1 + self.k1*(1-cos_sim.abs()*2)
+            linear_abs_sim_sens_plus =1 + self.k1*(1-cos_sim.abs())
             cos_dis = 1-cos_sim
             
         mask = self.multiplier 
@@ -100,6 +101,10 @@ class BlockWrapper(torch.nn.Module):
 
             elif self.skip == 'linear_abs_similarity_sens':  # sensitive layer has higher scale
                 mask = mask * linear_abs_sim_sens
+
+            elif self.skip == 'linear_abs_similarity_sens_plus':  # sensitive layer has higher scale
+                mask = mask * linear_abs_sim_sens_plus
+
 
 
         if isinstance(mask, torch.Tensor):

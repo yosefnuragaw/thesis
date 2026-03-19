@@ -28,6 +28,7 @@ pipeline: "trace_analysis"
 moving: "default"
 skip: linear_abs_similarity
 scale: 2
+k1: 0.5
 
 # Evaluation
 vec_dir: "pretrained_vector/power-seeking/mistral/all-2-similarity-abs-linear-0_5"

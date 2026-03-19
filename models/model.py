@@ -75,6 +75,7 @@ class BlockWrapper(torch.nn.Module):
             exp_sim = torch.exp(cos_sim)
             abs_exp_sim = torch.exp(cos_sim.abs())
             linear_abs_sim =1 + self.k1*(2*cos_sim.abs()-1)
+            linear_abs_sim_sens =1 + self.k1*(1-cos_sim.abs()*2)
             cos_dis = 1-cos_sim
             
         mask = self.multiplier 
@@ -94,8 +95,12 @@ class BlockWrapper(torch.nn.Module):
             elif self.skip == 'abs_exp_similarity':
                 mask = mask * abs_exp_sim
 
-            elif self.skip == 'linear_abs_similarity':
+            elif self.skip == 'linear_abs_similarity': #redundant layer has higher scale
                 mask = mask * linear_abs_sim
+
+            elif self.skip == 'linear_abs_sim_sens':  # sensitive layer has higher scale
+                mask = mask * linear_abs_sim_sens
+
 
         if isinstance(mask, torch.Tensor):
             while mask.dim() < hidden_states.dim():

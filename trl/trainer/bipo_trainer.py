@@ -297,8 +297,10 @@ class BiPOTrainer(BaseTrainer):
         behavior: str = "power-seeking",
         layer: List[int] = [15],
         name: str | None = None,
+        scale: Optional[float] = 1.0,
     ):
         # BiPO implementation start
+        self.scale = scale
         self.behavior = behavior
         self.layer = layer
         self.name = name
@@ -1794,7 +1796,7 @@ class BiPOTrainer(BaseTrainer):
             multiplier = random.choice(multiplier_pool)
             self.multiplier_counts[multiplier] += 1
             for layer in self.layer:
-                model.model.layers[layer].set_multiplier(multiplier)
+                model.model.layers[layer].set_multiplier(multiplier * self.scale)
         else:
             multiplier = model.model.layers[self.layer[0]].multiplier
 

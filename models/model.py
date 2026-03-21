@@ -72,6 +72,8 @@ class BlockWrapper(torch.nn.Module):
             avg_hidden = hidden_states.detach().mean(dim=1)
             avg_output = out_tensor.detach().mean(dim=1)
             cos_sim = torch.nn.functional.cosine_similarity(avg_hidden, avg_output, dim=-1)
+            cos_sim = torch.clamp(cos_sim, min=-1.0, max=1.0) 
+            cos_dis = 1 - cos_sim
             cos_dis = 1-cos_sim
             print(f'{self.block.__class__.__name__} {cos_dis.mean().item()}')
             exp_sim = torch.exp(cos_sim)

@@ -72,19 +72,21 @@ class BlockWrapper(torch.nn.Module):
             avg_hidden = hidden_states.detach().mean(dim=1)
             avg_output = out_tensor.detach().mean(dim=1)
             cos_sim = torch.nn.functional.cosine_similarity(avg_hidden, avg_output, dim=-1)
-            cos_sim = torch.clamp(cos_sim, min=-1.0, max=1.0) 
-            cos_dis = 1 - cos_sim
-            cos_dis = 1-cos_sim
+            cos_sim_c= torch.clamp(cos_sim, min=-1.0, max=1.0) 
+            cos_dis = 1 - cos_sim_c
             
             exp_sim = torch.exp(cos_sim)
             abs_exp_sim = torch.exp(cos_sim.abs())
             linear_abs_sim =1 + self.k1*(2*cos_sim.abs()-1)
             linear_abs_sim_sens =1 + self.k1*(1-cos_sim.abs()*2)
             lass = 1 + 0.5 * (1-cos_sim.abs() * 2)
-            lds = 1 + 0.5 * (cos_dis - 0.05)
-            ldi = 1 + 0.5 * (0.05 - cos_dis)
+            lds = 1 + 1 * (cos_dis - 0.05)
+            ldi = 1 + 1 * (0.05 - cos_dis)
 
-            print(f'{self.block.__class__.__name__} cosine_distance: {cos_dis.mean().item()} | Scale lass {lass.mean().item()} | Scale ldss {lds.mean().item()} | Scale ldi {ldi.mean().item()}')
+            lds_2 = 1 + 2 * (cos_dis - 0.05)
+            ldi_2 = 1 + 2 * (0.05 - cos_dis)
+
+            print(f'{self.block.__class__.__name__} cosine_distance: {cos_dis.mean().item():.2f} | Scale lass {lass.mean().item():.2f} | Scale lds_ 1 {lds.mean().item():.2f} | Scale ldi_1 {ldi.mean().item():.2f} | Scale lds_ 2 {lds.mean().item():.2f} | Scale ldi_2 {ldi.mean().item():.2f}')
             
         mask = self.multiplier 
         if self.gate_mask:

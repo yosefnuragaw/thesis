@@ -77,6 +77,7 @@ class BlockWrapper(torch.nn.Module):
             linear_abs_sim =1 + self.k1*(2*cos_sim.abs()-1)
             linear_abs_sim_sens =1 + self.k1*(1-cos_sim.abs()*2)
             linear_abs_sim_sens_plus =1 + self.k1*(1-cos_sim.abs())
+            linear_dis_sim_sens =1 + self.k1*((1-cos_sim)*2)
             cos_dis = 1-cos_sim
             
         mask = self.multiplier 

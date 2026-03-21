@@ -83,7 +83,7 @@ class BlockWrapper(torch.nn.Module):
             lass = 1 + 0.5 (1-cos_sim.abs() *2)
             ldss = 1 + 0.5 (cos_dis - 0.05)
             linear_dis_sim_sens =1 + self.k1*((1-cos_sim)*2)
-            print(f'{self.block.__class__.__name__} cosine_distance: {cos_dis.mean().item()} | Scale lass {lass} | Scale ldss {ldss}')
+            print(f'{self.block.__class__.__name__} cosine_distance: {cos_dis.mean().item()} | Scale lass {lass.mean().item()} | Scale ldss {ldss.mean().item()}')
             
         mask = self.multiplier 
         if self.gate_mask:

@@ -83,7 +83,7 @@ class BlockWrapper(torch.nn.Module):
             lds = 1 + 1 * (cos_dis - 0.25)
             ldi = 1 + 1 * (0.25 - cos_dis)
 
-            print(f'{self.block.__class__.__name__} cosine_distance: {cos_dis.mean().item():.3f} | Scale lass {lass.mean().item():.3f} | Scale lds_ 1 {lds.mean().item():.3f} | Scale ldi_1 {ldi.mean().item():.3f}')
+            # print(f'{self.block.__class__.__name__} cosine_distance: {cos_dis.mean().item():.3f} | Scale lass {lass.mean().item():.3f} | Scale lds_ 1 {lds.mean().item():.3f} | Scale ldi_1 {ldi.mean().item():.3f}')
             
         mask = self.multiplier 
         if self.gate_mask:
@@ -108,8 +108,11 @@ class BlockWrapper(torch.nn.Module):
             elif self.skip == 'linear_abs_similarity_sens':  # sensitive layer has higher scale
                 mask = mask * linear_abs_sim_sens
 
-            elif self.skip == 'linear_abs_similarity_sens_plus':  # sensitive layer has higher scale
-                mask = mask * linear_abs_sim_sens_plus
+            elif self.skip == 'ldi':  # sensitive layer has higher scale
+                mask = mask * ldi
+            
+            elif self.skip == 'lds':  # sensitive layer has higher scale
+                mask = mask * lds
 
         if isinstance(mask, torch.Tensor):
             while mask.dim() < hidden_states.dim():

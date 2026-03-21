@@ -72,6 +72,8 @@ class BlockWrapper(torch.nn.Module):
             avg_hidden = hidden_states.detach().mean(dim=1)
             avg_output = out_tensor.detach().mean(dim=1)
             cos_sim = torch.nn.functional.cosine_similarity(avg_hidden, avg_output, dim=-1)
+            cos_dis = 1-cos_sim
+            print(cos_dis.mean().item())
             exp_sim = torch.exp(cos_sim)
             abs_exp_sim = torch.exp(cos_sim.abs())
             linear_abs_sim =1 + self.k1*(2*cos_sim.abs()-1)
@@ -105,8 +107,6 @@ class BlockWrapper(torch.nn.Module):
 
             elif self.skip == 'linear_abs_similarity_sens_plus':  # sensitive layer has higher scale
                 mask = mask * linear_abs_sim_sens_plus
-
-
 
         if isinstance(mask, torch.Tensor):
             while mask.dim() < hidden_states.dim():

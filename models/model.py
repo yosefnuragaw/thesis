@@ -83,10 +83,7 @@ class BlockWrapper(torch.nn.Module):
             lds = 1 + 1 * (cos_dis - 0.25)
             ldi = 1 + 1 * (0.25 - cos_dis)
 
-            lds_2 = 1 + 2 * (cos_dis - 0.25)
-            ldi_2 = 1 + 2 * (0.25 - cos_dis)
-
-            print(f'{self.block.__class__.__name__} cosine_distance: {cos_dis.mean().item():.2f} | Scale lass {lass.mean().item():.2f} | Scale lds_ 1 {lds.mean().item():.2f} | Scale ldi_1 {ldi.mean().item():.2f} | Scale lds_ 2 {lds_2.mean().item():.2f} | Scale ldi_2 {ldi_2.mean().item():.2f}')
+            print(f'{self.block.__class__.__name__} cosine_distance: {cos_dis.mean().item():.3f} | Scale lass {lass.mean().item():.3f} | Scale lds_ 1 {lds.mean().item():.3f} | Scale ldi_1 {ldi.mean().item():.3f}')
             
         mask = self.multiplier 
         if self.gate_mask:

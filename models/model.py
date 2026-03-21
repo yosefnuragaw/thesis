@@ -75,14 +75,15 @@ class BlockWrapper(torch.nn.Module):
             cos_sim = torch.clamp(cos_sim, min=-1.0, max=1.0) 
             cos_dis = 1 - cos_sim
             cos_dis = 1-cos_sim
-            print(f'{self.block.__class__.__name__} {cos_dis.mean().item()}')
+            
             exp_sim = torch.exp(cos_sim)
             abs_exp_sim = torch.exp(cos_sim.abs())
             linear_abs_sim =1 + self.k1*(2*cos_sim.abs()-1)
             linear_abs_sim_sens =1 + self.k1*(1-cos_sim.abs()*2)
-            linear_abs_sim_sens_plus =1 + self.k1*(1-cos_sim.abs())
+            lass = 1 + 0.5 (1-cos_sim.abs() *2)
+            ldss = 1 + 0.5 (cos_dis - 0.05)
             linear_dis_sim_sens =1 + self.k1*((1-cos_sim)*2)
-            cos_dis = 1-cos_sim
+            print(f'{self.block.__class__.__name__} cosine_distance: {cos_dis.mean().item()} | Scale lass {lass} | Scale ldss {ldss}')
             
         mask = self.multiplier 
         if self.gate_mask:

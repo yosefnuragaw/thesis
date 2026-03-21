@@ -80,8 +80,8 @@ class BlockWrapper(torch.nn.Module):
             linear_abs_sim =1 + self.k1*(2*cos_sim.abs()-1)
             linear_abs_sim_sens =1 + self.k1*(1-cos_sim.abs()*2)
             lass = 1 + 0.5 * (1-cos_sim.abs() * 2)
-            lds = 1 + 1 * (cos_dis - 0.25)
-            ldi = 1 + 1 * (0.25 - cos_dis)
+            lds = 1 + (cos_dis - 0.5)
+            ldi = 1 + (0.5 - cos_dis)
 
             # print(f'{self.block.__class__.__name__} cosine_distance: {cos_dis.mean().item():.3f} | Scale lass {lass.mean().item():.3f} | Scale lds_ 1 {lds.mean().item():.3f} | Scale ldi_1 {ldi.mean().item():.3f}')
             

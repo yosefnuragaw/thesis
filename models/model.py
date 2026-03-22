@@ -107,7 +107,7 @@ class BlockWrapper(torch.nn.Module):
                 mask = mask * lds
             
             elif self.skip == 'llds':  # sensitive layer has higher scale
-                llds = 1 + self.gate_mask(cos_dis)*(cos_dis - self.k1)
+                llds = 1 + self.gate_mask(cos_dis).to(output[0].device)*(cos_dis - self.k1)
                 mask = mask * llds
 
         if isinstance(mask, torch.Tensor):

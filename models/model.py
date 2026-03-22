@@ -23,16 +23,10 @@ class MaskGate(torch.nn.Module):
         
         if function not in func_map:
             raise ValueError(f"Function {function} not supported. Choose from {list(func_map.keys())}")
-        
-        self.gate = torch.nn.Sequential(
-            torch.nn.Linear(hidden_dim, 512, dtype=dtype),
-            torch.nn.GELU(),
-            torch.nn.Linear(512, hidden_dim, dtype=dtype),
-            func_map[function]
-        )
-
+        self.func = func_map[function]
+        self.h = torch.nn.Parameter(torch.tensor([0.0], dtype=torch.float32))
     def forward(self, x):
-        return self.gate(x)
+        return self.func(self.h)
 
 
 class BlockWrapper(torch.nn.Module):
@@ -86,8 +80,6 @@ class BlockWrapper(torch.nn.Module):
             # print(f'{self.block.__class__.__name__} cosine_distance: {cos_dis.mean().item():.3f} | Scale lass {lass.mean().item():.3f} | Scale lds_ 1 {lds.mean().item():.3f} | Scale ldi_1 {ldi.mean().item():.3f}')
             
         mask = self.multiplier 
-        if self.gate_mask:
-            mask = mask * self.gate_mask(hidden_states)
         
         if self.skip:
             if self.skip == 'similarity': #redundant layer has higher scale
@@ -113,6 +105,10 @@ class BlockWrapper(torch.nn.Module):
             
             elif self.skip == 'lds':  # sensitive layer has higher scale
                 mask = mask * lds
+            
+            elif self.skip == 'llds':  # sensitive layer has higher scale
+                llds = 1 + self.gate_mask(cos_dis)*(cos_dis - self.k1)
+                mask = mask * llds
 
         if isinstance(mask, torch.Tensor):
             while mask.dim() < hidden_states.dim():

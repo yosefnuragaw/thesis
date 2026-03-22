@@ -145,7 +145,7 @@ if __name__ == "__main__":
 
     # 6. Initialize Training Args
     training_args = DPOConfig(
-        output_dir="placeholder", # required by TRL but not used in this specific flow
+        output_dir="placeholder",
         per_device_train_batch_size=script_args.per_device_train_batch_size,
         per_device_eval_batch_size=script_args.per_device_eval_batch_size,
         num_train_epochs=script_args.num_train_epochs,

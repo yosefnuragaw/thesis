@@ -24,9 +24,9 @@ class MaskGate(torch.nn.Module):
         if function not in func_map:
             raise ValueError(f"Function {function} not supported. Choose from {list(func_map.keys())}")
         self.func = func_map[function]
-        self.h = torch.nn.Parameter(torch.tensor([0.0], dtype=torch.float32))
+        self.h = torch.nn.Parameter(torch.ones(1))
     def forward(self, x):
-        return self.func(self.h)
+        return self.h
 
 
 class BlockWrapper(torch.nn.Module):

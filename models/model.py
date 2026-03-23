@@ -137,7 +137,7 @@ class BlockWrapper(torch.nn.Module):
                 mask = mask * llds
 
             elif self.skip == 'llbds':
-                llbds =  1 + self.gate_mask(cos_dis,'s').to(output[0].device)*(cos_dis - self.gate_mask(cos_dis, 'b'))
+                llbds =  1 + self.gate_mask(cos_dis,'s').to(output[0].device)*(cos_dis - self.gate_mask(cos_dis, 'b').to(output[0].device))
                 mask = mask * llbds
 
         if isinstance(mask, torch.Tensor):

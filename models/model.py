@@ -29,6 +29,29 @@ class MaskGate(torch.nn.Module):
         return self.func(self.h)
 
 
+class MaskGate2(torch.nn.Module):
+    def __init__(self, hidden_dim: int, dtype: torch.dtype = torch.float32, function: str = "sigmoid"):
+        super().__init__()
+
+        func_map = {
+            "sigmoid": torch.nn.Sigmoid(),
+            "tanh": torch.nn.Tanh(),
+            "softplus": torch.nn.Softplus()
+        }
+        
+        if function not in func_map:
+            raise ValueError(f"Function {function} not supported. Choose from {list(func_map.keys())}")
+        self.func = func_map[function]
+        self.h = torch.nn.Parameter(torch.tensor([0.0], dtype=dtype))
+        self.h2 = torch.nn.Parameter(torch.tensor([0.0], dtype=dtype))
+    def forward(self, x, param):
+        if param == 's':
+            return self.func(self.h)
+        elif param == 'b':
+            return self.func(self.h2)
+
+
+
 class BlockWrapper(torch.nn.Module):
     def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False, gate_function:Optional[str] = None, skip:Optional[str] = None, k1:float = 0.):
         super().__init__()
@@ -48,7 +71,10 @@ class BlockWrapper(torch.nn.Module):
 
 
         if gate_function is not None:
-            self.gate_mask= MaskGate(hidden_dim = hidden_dim, dtype=self.init_dtype, function=gate_function)
+            if skip == 'llds':
+                self.gate_mask= MaskGate(hidden_dim = hidden_dim, dtype=self.init_dtype, function=gate_function)
+            elif skip == 'llbds':
+                self.gate_mask = MaskGate2(hidden_dim = hidden_dim, dtype=self.init_dtype, function=gate_function)
             
         else:
             self.gate_mask = None
@@ -109,6 +135,10 @@ class BlockWrapper(torch.nn.Module):
             elif self.skip == 'llds':  # sensitive layer has higher scale
                 llds = 1 + self.gate_mask(cos_dis).to(output[0].device)*(cos_dis - self.k1)
                 mask = mask * llds
+
+            elif self.skip == 'llbds':
+                llbds =  1 + self.gate_mask(cos_dis,'s').to(output[0].device)*(cos_dis - self.gate_mask(cos_dis, 'b'))
+                mask = mask * llbds
 
         if isinstance(mask, torch.Tensor):
             while mask.dim() < hidden_states.dim():

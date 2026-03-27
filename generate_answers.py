@@ -94,23 +94,34 @@ def read_dataset(
             add_generation_prompt=True,
         )
 
-        try:
-            pos, neg = row['A'], row['B']
-        except:
-            raise ValueError(f'Expected column A and B in row {idx}')
-        
         results['questions'].append(row['question'])
         results['prompts'].append(prompt)
-        results['A'].append(pos)
-        results['B'].append(neg)
 
-        if multiplier< 0:
-            if row['matching'] == 'A':
-                results['matching'].append('B')
+        if behavior != 'jailbreak':
+            try:
+                pos, neg = row['A'], row['B']
+            except:
+                raise ValueError(f'Expected column A and B in row {idx}')
+            
+            
+            results['A'].append(pos)
+            results['B'].append(neg)
+
+            if multiplier< 0:
+                if row['matching'] == 'A':
+                    results['matching'].append('B')
+                else:
+                    results['matching'].append('A')
             else:
-                results['matching'].append('A')
+                results['matching'].append(row['matching'] )
+
         else:
-            results['matching'].append(row['matching'] )
+            results['A'].append(pos)
+            results['B'].append(neg)
+            if multiplier< 0:
+                results['matching'].append(row['not_matching'] )
+            else:
+                results['matching'].append(row['matching'] )
 
     return results
 

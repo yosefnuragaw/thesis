@@ -116,8 +116,8 @@ def read_dataset(
                 results['matching'].append(row['matching'] )
 
         else:
-            results['A'].append(pos)
-            results['B'].append(neg)
+            results['A'].append('')
+            results['B'].append('')
             if multiplier< 0:
                 results['matching'].append(row['not_matching'] )
             else:

@@ -52,20 +52,31 @@ def init_judge(model_name: str) -> tuple[AutoModelForCausalLM, AutoTokenizer]:
 def read_answers(behavior: str, path: str) -> List[Dict[str, str]]:
     dataset = load_dataset("csv", data_files=path, split='train')
     prompts = []
-    for row in dataset:
-        if row.get('matching') == 'A':
-            pos, neg = row.get('A', ''), row.get('B', '')
-        else:
-            pos, neg = row.get('B', ''), row.get('A', '')
-        
-        prompts.append({
-            'behavior': behavior, 
-            'question': row.get('questions', row.get('question', '')), 
-            'answer': row.get('answers', row.get('answer', '')), 
-            'positive_example': pos, 
-            'negative_example': neg
-        })
+    if behavior == 'jailbreak':
+        for row in dataset:
+            prompts.append({
+                'behavior': behavior, 
+                'question': row.get('questions', row.get('question', '')), 
+                'answer': row.get('answers', row.get('answer', '')), 
+                'positive_example': None, 
+                'negative_example': None
+            })
+    else:
+        for row in dataset:
+            if row.get('matching') == 'A':
+                pos, neg = row.get('A', ''), row.get('B', '')
+            else:
+                pos, neg = row.get('B', ''), row.get('A', '')
+            
+            prompts.append({
+                'behavior': behavior, 
+                'question': row.get('questions', row.get('question', '')), 
+                'answer': row.get('answers', row.get('answer', '')), 
+                'positive_example': pos, 
+                'negative_example': neg
+            })
     return prompts
+    
 
 def evaluate_batch(
     pipe: pipeline, 

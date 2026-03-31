@@ -83,9 +83,13 @@ def read_dataset(
     results:Dict[str, str] = {'prompts':[], 'questions':[], 'A':[], 'B':[], 'answers':[], 'matching':[]}
   
     for idx, row in enumerate(dataset):
+        user_text = row.get('question', "")
+        if user_text is None:
+            user_text = ""
+            
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": row['question']},
+            {"role": "user", "content": str(user_text)},
         ]
 
         prompt = tokenizer.apply_chat_template(

@@ -9,8 +9,8 @@ Each JSONL record has answer_matching_behavior and answer_not_matching_behavior.
 These may point to any letter (A, B, C, D …).
 
 Output CSVs only ever have two answer slots:
-  train.csv      → columns: question | matching | not_matching
-  test_infer.csv → columns: question | A        | B        | matching
+  train.csv & test.csv → columns: question | matching | not_matching
+  test_infer.csv       → columns: question | A        | B        | matching
 
 Rule (same for both files):
   • Extract the TEXT of answer_matching_behavior's letter   → saved as "matching" / col A
@@ -83,7 +83,7 @@ def clean_question(question: str) -> str:
 
 def to_train_row(record: dict) -> dict:
     """
-    train.csv schema: question | matching | not_matching
+    train.csv / test.csv schema: question | matching | not_matching
 
     matching     = text of answer_matching_behavior's letter
     not_matching = text of answer_not_matching_behavior's letter
@@ -112,19 +112,9 @@ def to_test_row(record: dict) -> dict:
     q = record.get("question", "")
     choices = parse_choices(q)
     
-    
     matching_letter     = extract_letter(record.get("answer_matching_behavior", ""))
     not_matching_letter = extract_letter(record.get("answer_not_matching_behavior", ""))
-    
 
-    print('\n'+'='*100)
-    print(clean_question(q))
-    print(choices)
-    print(record)
-    print('Answer'+(record.get("answer_matching_behavior", "")))
-    print(f'A: '+choices.get(matching_letter, ""))
-    print('B: '+choices.get(not_matching_letter, ""))
-    print('parsed: '+'A')
     return {
         "question": clean_question(q),
         "A":        choices.get(matching_letter, ""),       # matching text → col A
@@ -138,7 +128,7 @@ def to_test_row(record: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="Convert JSONL to train/test CSVs.")
+    parser = argparse.ArgumentParser(description="Convert JSONL to train/test/test_infer CSVs.")
     parser.add_argument("--input",      default="corrigible-less-HHH.jsonl")
     parser.add_argument("--output-dir", default=".")
     args = parser.parse_args()
@@ -148,22 +138,33 @@ def main():
     total   = len(records)
     print(f"  {total} records loaded.")
 
-    n_train = math.ceil(total * 0.8)
-    n_test  = total - n_train
-    print(f"  Split → train: {n_train}  |  test: {n_test}")
+    # Calculate splits: 60% train, 20% test, 20% test_infer
+    n_train      = math.ceil(total * 0.6)
+    n_test       = math.ceil(total * 0.2)
+    n_test_infer = total - n_train - n_test
+    print(f"  Split → train: {n_train}  |  test: {n_test}  |  test_infer: {n_test_infer}")
 
     os.makedirs(args.output_dir, exist_ok=True)
 
+    # 1. Write train.csv (60%)
     write_csv(
         os.path.join(args.output_dir, "train.csv"),
         fieldnames=["question", "matching", "not_matching"],
         rows=[to_train_row(r) for r in records[:n_train]],
     )
 
+    # 2. Write test.csv (20% - same format as train)
+    write_csv(
+        os.path.join(args.output_dir, "test.csv"),
+        fieldnames=["question", "matching", "not_matching"],
+        rows=[to_train_row(r) for r in records[n_train:n_train + n_test]],
+    )
+
+    # 3. Write test_infer.csv (20% - A/B format)
     write_csv(
         os.path.join(args.output_dir, "test_infer.csv"),
         fieldnames=["question", "A", "B", "matching"],
-        rows=[to_test_row(r) for r in records[n_train:]],
+        rows=[to_test_row(r) for r in records[n_train + n_test:]],
     )
 
     print("Done.")

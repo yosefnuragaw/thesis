@@ -83,6 +83,7 @@ class BlockWrapper(torch.nn.Module):
 
         self.buffer = buffer
         self.buffer_space = []
+        self.cosine_space = []
 
     def forward(self, hidden_states, *args, **kwargs):
         output = self.block(hidden_states, *args, **kwargs)
@@ -94,7 +95,7 @@ class BlockWrapper(torch.nn.Module):
             cos_sim = torch.nn.functional.cosine_similarity(avg_hidden, avg_output, dim=-1)
             cos_sim_c= torch.clamp(cos_sim, min=-1.0, max=1.0) 
             cos_dis = 1 - cos_sim_c
-            
+            self.cosine_space.append(cos_dis)
             exp_sim = torch.exp(cos_sim)
             abs_exp_sim = torch.exp(cos_sim.abs())
             linear_abs_sim =1 + self.k1*(2*cos_sim.abs()-1)
@@ -102,7 +103,7 @@ class BlockWrapper(torch.nn.Module):
             lass = 1 + 0.5 * (1-cos_sim.abs() * 2)
             lds = 1 + (cos_dis - self.k1)
             ldi = 1 + (self.k1 - cos_dis)
-
+           
             # print(f'{self.block.__class__.__name__} cosine_distance: {cos_dis.mean().item():.3f} | Scale lass {lass.mean().item():.3f} | Scale lds_ 1 {lds.mean().item():.3f} | Scale ldi_1 {ldi.mean().item():.3f}')
             
         mask = self.multiplier 
@@ -193,3 +194,13 @@ class BlockWrapper(torch.nn.Module):
     def clear_buffer(self):
         self.buffer_space = []
 
+    def get_cosine_statistics(self):
+        if not self.cosine_space:
+            return 0.0, 0.0
+            
+        all_distances = torch.cat(self.cosine_space, dim=0)
+        
+        mean_val = all_distances.mean().item()
+        std_val = all_distances.std().item() if all_distances.numel() > 1 else 0.0
+        
+        return mean_val, std_val

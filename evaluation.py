@@ -44,10 +44,10 @@ class ScriptArguments:
         metadata={"help": "Directory where .pt gate vectors are saved"}
     )
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
-    prompt: Optional[str] = field(default="", metadata={"help": "What prompts for generation eval"})
     max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
     temperature: Optional[float] = field(default=0.7, metadata={"help": "LLM generation temperature"})
     gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
+    skip: Optional[str] = field(default=None, metadata={"help" : "cosine scaler None | distance | similarity"})
     k1: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
 
 def init_model(
@@ -118,7 +118,7 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer):
     return eval_loader
 
 def eval_accuracy(
-        model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int|None, verbose: bool = False, save_buffer: bool = False, save_path: Optional[str] = None, total_layer:int = 26
+        model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int|None, verbose: bool = False,cosine:bool = False, save_buffer: bool = False, save_path: Optional[str] = None, total_layer:int = 26
     ):
     OPT = ['A', 'B']
     directions = [1,-1]
@@ -182,6 +182,9 @@ def eval_accuracy(
                     os.makedirs(os.path.dirname(current_layer_path), exist_ok=True)
                     model.model.layers[layer].save(filepath=current_layer_path)
                     model.model.layers[layer].clear_buffer()
+                    mean_dis, std_dis = model.model.layers[layer].get_cosine_statistics()
+                    print(f"[Layer:] {layer} | Cosine Distance [Mean:] {mean_dis:.2f} [Std:] {std_dis:.2f}")
+                    
 
     return positive_acc, negative_acc
     
@@ -243,6 +246,7 @@ if __name__ == "__main__":
     parser.add_argument("--verbose", "-v", type=bool, required=False, default=True, help="Visualize eval progress")
     parser.add_argument("--task", "-t", type=str, required=False, default="both", help="Visualize eval progress")
     parser.add_argument("--save", action='store_true', help="Save raw activations")
+    parser.add_argument("--cosine", action='store_true', help="Save raw activations")
     args, remaining = parser.parse_known_args()
 
     hf_parser = HfArgumentParser(ScriptArguments)
@@ -281,10 +285,12 @@ if __name__ == "__main__":
                 epoch=script_args.eval_epoch,
                 verbose=args.verbose,
                 save_buffer=args.save,
+                cosine = args.cosine,
                 save_path=template_save_path,
-                total_layer=script_args.total_layer
-                
+                total_layer=script_args.total_layer  
             ) 
+
+        
 
 
     if args.task != "accuracy":

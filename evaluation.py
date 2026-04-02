@@ -184,7 +184,12 @@ def eval_accuracy(
                     model.model.layers[layer].clear_buffer()
                     mean_dis, std_dis = model.model.layers[layer].get_cosine_statistics()
                     print(f"[Layer:] {layer} | Cosine Distance [Mean:] {mean_dis:.2f} [Std:] {std_dis:.2f}")
-                    
+        if cosine:
+            for layer in range(total_layer):
+                if isinstance(model.model.layers[layer], BlockWrapper):
+                    mean_dis, std_dis = model.model.layers[layer].get_cosine_statistics()
+                    print(f"[Layer:] {layer} | Cosine Distance [Mean:] {mean_dis:.2f} [Std:] {std_dis:.2f}")
+
 
     return positive_acc, negative_acc
     

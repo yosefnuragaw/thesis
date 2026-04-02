@@ -80,21 +80,22 @@ def get_eval_data(tokenizer, behavior, system_prompt=SYSTEM_PROMPT, generation_p
     labels = []    
     
     for row in dataset:
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": row['question']},
-        ]
-        full_prompt = tokenizer.apply_chat_template(
-            messages, 
-            tokenize=False, 
-            add_generation_prompt=generation_prompt
-        )
-        
-        questions.append(full_prompt)
-        
-        current_options = [row[col] for col in ['A','B','C','D'] if col in row and row[col] is not None]
-        prompts.append(current_options)
-        labels.append(row['matching'])
+        if row['question'] is not None:  
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": row['question']},
+            ]
+            full_prompt = tokenizer.apply_chat_template(
+                messages, 
+                tokenize=False, 
+                add_generation_prompt=generation_prompt
+            )
+            
+            questions.append(full_prompt)
+            
+            current_options = [row[col] for col in ['A','B','C','D'] if col in row and row[col] is not None]
+            prompts.append(current_options)
+            labels.append(row['matching'])
 
     return{
         'questions':questions,

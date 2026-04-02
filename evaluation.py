@@ -182,13 +182,11 @@ def eval_accuracy(
                     os.makedirs(os.path.dirname(current_layer_path), exist_ok=True)
                     model.model.layers[layer].save(filepath=current_layer_path)
                     model.model.layers[layer].clear_buffer()
-                    mean_dis, std_dis = model.model.layers[layer].get_cosine_statistics()
-                    print(f"[Layer:] {layer} | Cosine Distance [Mean:] {mean_dis:.2f} [Std:] {std_dis:.2f}")
         if cosine:
             for layer in range(total_layer):
                 if isinstance(model.model.layers[layer], BlockWrapper):
                     mean_dis, std_dis = model.model.layers[layer].get_cosine_statistics()
-                    print(f"[Layer:] {layer} | Cosine Distance [Mean:] {mean_dis:.2f} [Std:] {std_dis:.2f}")
+                    print(f"[Layer:] {layer} | Cosine Distance [Mean:] {mean_dis:.4f} [Std:] {std_dis:.4f}")
 
 
     return positive_acc, negative_acc

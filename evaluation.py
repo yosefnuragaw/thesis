@@ -130,6 +130,7 @@ def eval_accuracy(
     else:
         pbar = directions
     
+    stat = {layer:{'mean':[],'std':[]} for layer in range(total_layer)}
     for idx, direction in enumerate(pbar):
         for batch in loader:
             label = batch["label"][0]
@@ -186,7 +187,14 @@ def eval_accuracy(
             for layer in range(total_layer):
                 if isinstance(model.model.layers[layer], BlockWrapper):
                     mean_dis, std_dis = model.model.layers[layer].get_cosine_statistics()
-                    print(f"[Layer:] {layer} | Cosine Distance [Mean:] {mean_dis:.4f} [Std:] {std_dis:.4f}")
+                    stat[layer]['mean'].append(mean_dis)
+                    stat[layer]['std'].append(std_dis)
+
+    if cosine:
+        for layer in range(total_layer):
+            avg_of_means = sum(stat[layer]['mean']) / len(stat[layer]['mean'])
+            avg_of_stds = sum(stat[layer]['std']) / len(stat[layer]['std'])
+            print(f"[Layer:] {layer} | Cosine Distance [Mean:] {avg_of_means:.4f} [Std:] {avg_of_stds:.4f}")
 
 
     return positive_acc, negative_acc

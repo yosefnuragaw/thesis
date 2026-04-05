@@ -5,6 +5,7 @@ behavior: "power-seeking"
 layer: [16]
 total_layer: 32
 
+multipliers: [10,8,6,4,-4,-6,-8,-10]
 # Training Hyperparameters
 learning_rate: 5.0e-4
 num_train_epochs: 20

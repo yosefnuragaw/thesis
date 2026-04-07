@@ -121,7 +121,7 @@ class BlockWrapper(torch.nn.Module):
         t = 0.20 
 
         with torch.no_grad():
-            v_mul = self.vec.to(out_target.device).view(1, 1, -1)
+            v_mul = self.multiplier * self.vec.to(out_target.device).view(1, 1, -1)
             
             # 1. UPCAST KE FLOAT32 
             # Sangat penting untuk Softmax dan Log agar tidak underflow/overflow di bf16
@@ -140,24 +140,17 @@ class BlockWrapper(torch.nn.Module):
             print(f"Max CE Se-Batch: {ce_raw_fp32.max().item():.4f}")
             print(f"Min CE Se-Batch: {ce_raw_fp32.min().item():.4f}")
             print(f"Rata-rata CE: {ce_raw_fp32.mean().item():.4f}")
-            
-            max_sample_0 = ce_raw_fp32[0].max().item()
-            min_sample_0 = ce_raw_fp32[0].min().item()
-            variance_sample_0 = ce_raw_fp32[0].var().item()
-            max_idx_0 = ce_raw_fp32[0].argmax().item()
-            
-            print(f"Max Mentah (Sampel 0): {max_sample_0:.4f} --> Berada di Index Token ke-{max_idx_0}")
-            print(f"Min CE Mentah (Sampel 0): {min_sample_0:.4f}")
-            print(f"Varians CE Mentah (Sampel 0): {variance_sample_0:.6f}")
 
-            max_sample_0 = ce_raw_fp32[1].max().item()
-            min_sample_0 = ce_raw_fp32[1].min().item()
-            variance_sample_0 = ce_raw_fp32[1].var().item()
-            max_idx_0 = ce_raw_fp32[0].argmax().item()
-            
-            print(f"Max Mentah (Sampel 1): {max_sample_0:.4f} --> Berada di Index Token ke-{max_idx_0}")
-            print(f"Min CE Mentah (Sampel 1): {min_sample_0:.4f}")
-            print(f"Varians CE Mentah (Sampel 1): {variance_sample_0:.6f}")
+            for x in range(0,30):
+                max_sample_0 = ce_raw_fp32[x].max().item()
+                min_sample_0 = ce_raw_fp32[x].min().item()
+                variance_sample_0 = ce_raw_fp32[0].var().item()
+                max_idx_0 = ce_raw_fp32[x].argmax().item()
+                
+                print(f"Max Mentah (Sampel {x}): {max_sample_0:.4f} --> Berada di Index Token ke-{max_idx_0}")
+                print(f"Min CE Mentah (Sampel {x}): {min_sample_0:.4f}")
+                print(f"Varians CE Mentah (Sampel {x}): {variance_sample_0:.6f}")
+
             
             # --- CEK TOKEN DI TENGAH (Index 150-160) ---
             print("Nilai RAW CE Token Tengah:\n", ce_raw_fp32[0, 150:160, :].squeeze())
@@ -184,7 +177,7 @@ class BlockWrapper(torch.nn.Module):
         print("Shape soft_mask:", soft_mask.shape)
         
         # 'mask' dikalikan dengan soft_mask dan vektor v
-        injection = soft_mask * self.multiplier* v_mul
+        injection = soft_mask * v_mul
 
         # --- LOGGING ---
         sum_per_sample = soft_mask.sum(dim=(1, 2)) 

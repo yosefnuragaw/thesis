@@ -118,13 +118,10 @@ class BlockWrapper(torch.nn.Module):
 
         out_target = output[0] if isinstance(output, tuple) else output
 
-        t = 0.20 
-
         with torch.no_grad():
             v_mul = self.multiplier * self.vec.to(out_target.device).view(1, 1, -1)
             
             # 1. UPCAST KE FLOAT32 
-            # Sangat penting untuk Softmax dan Log agar tidak underflow/overflow di bf16
             out_fp32 = out_target.to(torch.float32)
             v_mul_fp32 = v_mul.to(torch.float32)
             
@@ -133,92 +130,27 @@ class BlockWrapper(torch.nn.Module):
             q_log_probs = torch.nn.functional.log_softmax(out_fp32, dim=-1)   # Distribusi Model Saat Ini
             
             # 3. Hitung Cross-Entropy RAW (Belum dinormalisasi)
-            # Hasil shape: [128, 311, 1]
             ce_raw_fp32 = -(p_probs * q_log_probs).sum(dim=-1, keepdim=True)
+            max_indices = ce_raw_fp32.argmax(dim=1, keepdim=True)
             
-            # --- CEK STATISTIK MENTAH ---
-            print(f"Max CE Se-Batch: {ce_raw_fp32.max().item():.4f}")
-            print(f"Min CE Se-Batch: {ce_raw_fp32.min().item():.4f}")
-            print(f"Rata-rata CE: {ce_raw_fp32.mean().item():.4f}")
-            attn_mask = kwargs.get('attention_mask', None)
-            for x in range(0, 30):
-                # 1. Hitung statistik CE mentah
-                max_val = ce_raw_fp32[x].max().item()
-                max_idx = ce_raw_fp32[x].argmax().item()
-                
-                # 2. Hitung panjang total sequence (misal 311)
-                total_seq_len = ce_raw_fp32.shape[1]
-                
-                # 3. Hitung panjang asli (hanya token bernilai 1 di mask)
-                if attn_mask is not None:
-                    # Menghitung berapa banyak token '1' dalam baris x
-                    actual_length = attn_mask[x].sum().item()
-                    
-                    # Hitung Rasio Posisi terhadap Panjang Asli
-                    # Jika > 0.95, berarti itu adalah token terakhir atau padding awal
-                    pos_ratio = max_idx / actual_length if actual_length > 0 else 0
-                    
-                    mask_status = "REAL" if attn_mask[x, max_idx].item() == 1 else "PAD"
-                else:
-                    actual_length = "N/A"
-                    pos_ratio = max_idx / total_seq_len
-                    mask_status = "UNKNOWN"
-
-                print(f"Sampel {x:2d} | Index Max: {max_idx:3d} / {actual_length:3d} "
-                    f"| Rasio: {pos_ratio:.2f} | Status: {mask_status} | Val: {max_val:.4f}")
-
+            # Kita buat tensor nol dengan shape yang sama seperti ce_raw_fp32 [128, 311, 1]
+            # Lalu kita isi angka 1 hanya pada posisi max_indices
+            injection_mask = torch.zeros_like(ce_raw_fp32)
+            injection_mask.scatter_(1, max_indices, 1.0)
             
-            # --- CEK TOKEN DI TENGAH (Index 150-160) ---
-            print("Nilai RAW CE Token Tengah:\n", ce_raw_fp32[0, 150:160, :].squeeze())
-            
-            # 4. NORMALISASI & KONVERSI MENJADI MASK (Rentang 0.0 - 1.0)
-            # Kita bagi dengan log(dimensi) agar nilainya berada di skala yang mudah diolah.
-            hidden_dim = out_target.shape[-1] # misalnya 4096
-            max_ce = torch.log(torch.tensor(hidden_dim, dtype=torch.float32, device=out_target.device))
-            
-            normalized_ce = ce_raw_fp32 / max_ce
-            
-            # Ubah menjadi persentase injeksi (Semakin kecil CE, semakin mendekati 1.0)
-            # Anda bisa mengubah nilai 'temperature' (misal 3.0, 5.0, 10.0) untuk mengatur 
-            # seberapa galak filter ini membuang token yang tidak relevan.
-            soft_mask_fp32 = 1-torch.exp(-normalized_ce*5)
-
-            # 5. KEMBALIKAN KE BFLOAT16 (Downcast)
-            soft_mask = soft_mask_fp32.to(out_target.dtype)
-
-
-        # 3. Kalkulasi Injeksi
-        print(1)
-        print("Shape out_target:", out_target.shape)
-        print("Shape soft_mask:", soft_mask.shape)
-        
-        # 'mask' dikalikan dengan soft_mask dan vektor v
-        injection = soft_mask * v_mul
-
-        # --- LOGGING ---
-        sum_per_sample = soft_mask.sum(dim=(1, 2)) 
-        ratio_per_sample = (sum_per_sample / out_target.shape[1]) * 100
-
-        print("10 Pertama:\n", soft_mask[0, :10, :].squeeze())
-        print("10 Terakhir:\n", soft_mask[0, -10:, :].squeeze())
-
-        soft_mask_0_fp32 = soft_mask[0].to(torch.float32)
-        print(f"Max (Sampel 0): {soft_mask_0_fp32.max().item():.4f}")
-        print(f"Mean (Sampel 0): {soft_mask_0_fp32.mean().item():.4f}")
-        print(f"Variance (Sampel 0): {soft_mask_0_fp32.var().item():.6f}")
-        print(f"Rasio Steering CE % per sampel: {ratio_per_sample.mean(dim=-1):.2f}%")
-        raise ValueError
-        injection = soft_mask * (self.multiplier * self.vec.to(out_target.device))
+            # v_mul [1, 1, 4096] akan dikalikan dengan injection_mask [128, 311, 1]
+            # Hasilnya: Hanya 1 token per batch yang punya nilai v_mul, sisanya 0.
+            final_injection = (injection_mask.to(out_target.dtype)) * v_mul
 
         # 4. Implementasi ke dalam arsitektur
         if isinstance(output, tuple):
             self.buffer_space.append(out_target.detach().mean(dim=1).cpu())
-            modified_hidden = out_target + injection
+            modified_hidden = out_target + final_injection # Injeksi selektif
             output = (modified_hidden,) + output[1:]
             
         elif isinstance(output, torch.Tensor):
             self.buffer_space.append(out_target.detach().mean(dim=1).cpu())
-            output = out_target + injection
+            output = out_target + final_injection
 
         return output
 

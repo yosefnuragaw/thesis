@@ -115,11 +115,11 @@ class BlockWrapper(torch.nn.Module):
         # elif isinstance(output, torch.Tensor):
         #     self.buffer_space.append(output.detach().mean(dim=1).cpu())
         #     output = output + (mask * self.vec.to(output.device))
-        
+
         out_target = output[0] if isinstance(output, tuple) else output
 
         # 2. Hitung Covariance Mask (O(1) dan di dalam no_grad)
-        t = 0.25 # Threshold Absolute Covariance
+        t = 0.75 # Threshold Absolute Covariance
         with torch.no_grad():
             v = self.vec.to(out_target.device)
             

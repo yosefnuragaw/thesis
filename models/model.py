@@ -154,7 +154,7 @@ class BlockWrapper(torch.nn.Module):
             
             # 2. COSINE SIMILARITY MENTAH (Bukan Probabilitas)
             # Rentang hasil alami: -1.0 (Berlawanan) hingga 1.0 (Searah)
-            cos_sim_raw = F.cosine_similarity(out_fp32, v_mul_fp32, dim=-1).unsqueeze(-1)
+            cos_sim_raw = torch.nn.functional.cosine_similarity(out_fp32, v_mul_fp32, dim=-1).unsqueeze(-1)
             
             # --- CEK STATISTIK MENTAH ---
             print(f"Max Cosine Mentah: {cos_sim_raw.max().item():.4f}")

@@ -120,31 +120,41 @@ class BlockWrapper(torch.nn.Module):
 
         t = 0.20 
 
+        # with torch.no_grad():
+        #     # Pastikan dimensi sesuai untuk broadcasting: [1, 1, hidden]
+        #     v_mul = self.multiplier * self.vec.to(out_target.device).view(1, 1, -1)
+            
+        #     # 1. Konversi ke Distribusi Probabilitas (Softmax)
+        #     # v_mul sebagai distribusi target ideal (P)
+        #     # out_target sebagai distribusi tebakan model saat ini (Q)
+        #     p_probs = torch.nn.functional.softmax(v_mul, dim=-1)
+            
+        #     # Untuk Q, kita gunakan log_softmax demi stabilitas numerik dan kemudahan rumus CE
+        #     q_log_probs = torch.nn.functional.log_softmax(out_target, dim=-1)
+            
+        #     # 2. Hitung Cross-Entropy per Token
+        #     # Rumus: CE = -sum(P * log(Q)) pada dimensi hidden (dim=-1)
+        #     cross_entropy = -(p_probs * q_log_probs).sum(dim=-1, keepdim=True)
+            
+        #     # 3. Ubah Cross-Entropy menjadi Gerbang/Masking (Range 0 sampai 1)
+        #     # Nilai CE berkisar dari 0 (identik) hingga tak terhingga (sangat berbeda).
+        #     # Kita gunakan fungsi eksponensial (e^-x) untuk memetakannya ke rentang 0-1.
+            
+        #     # OPSI A: Injeksi kuat jika pola mirip (CE rendah -> mask mendekati 1)
+        #     # soft_mask = torch.exp(-cross_entropy)
+            
+        #     # OPSI B (Jika Anda ingin sebaliknya): Injeksi kuat jika pola sangat BERBEDA
+        #     soft_mask = 1.0 - torch.exp(-cross_entropy)
         with torch.no_grad():
-            # Pastikan dimensi sesuai untuk broadcasting: [1, 1, hidden]
             v_mul = self.multiplier * self.vec.to(out_target.device).view(1, 1, -1)
             
-            # 1. Konversi ke Distribusi Probabilitas (Softmax)
-            # v_mul sebagai distribusi target ideal (P)
-            # out_target sebagai distribusi tebakan model saat ini (Q)
-            p_probs = torch.nn.functional.softmax(v_mul, dim=-1)
+            # Hitung kemiripan sudut (Cosine) antara output dan vektor Anda
+            # Hasil: 1.0 (Sangat searah), 0.0 (Tegak lurus), -1.0 (Berlawanan arah)
+            cosine_sim = torch.nn.functional.cosine_similarity(out_target, v_mul, dim=-1, keepdim=True)
             
-            # Untuk Q, kita gunakan log_softmax demi stabilitas numerik dan kemudahan rumus CE
-            q_log_probs = torch.nn.functional.log_softmax(out_target, dim=-1)
-            
-            # 2. Hitung Cross-Entropy per Token
-            # Rumus: CE = -sum(P * log(Q)) pada dimensi hidden (dim=-1)
-            cross_entropy = -(p_probs * q_log_probs).sum(dim=-1, keepdim=True)
-            
-            # 3. Ubah Cross-Entropy menjadi Gerbang/Masking (Range 0 sampai 1)
-            # Nilai CE berkisar dari 0 (identik) hingga tak terhingga (sangat berbeda).
-            # Kita gunakan fungsi eksponensial (e^-x) untuk memetakannya ke rentang 0-1.
-            
-            # OPSI A: Injeksi kuat jika pola mirip (CE rendah -> mask mendekati 1)
-            # soft_mask = torch.exp(-cross_entropy)
-            
-            # OPSI B (Jika Anda ingin sebaliknya): Injeksi kuat jika pola sangat BERBEDA
-            soft_mask = 1.0 - torch.exp(-cross_entropy)
+            # Karena kita hanya ingin menyuntikkan ke token yang searah/mirip,
+            # kita buang nilai negatif (menjadi 0)
+            soft_mask = torch.clamp(cosine_sim, min=-1.0, max = 1.0)
 
         # 3. Kalkulasi Injeksi
         print("Shape out_target:", out_target.shape)

@@ -121,14 +121,14 @@ class BlockWrapper(torch.nn.Module):
         t = 0.20 
 
         with torch.no_grad():
-            v = self.vec.to(out_target.device)
+            v_mul = self.multiplier * self.vec.to(out_target.device)
             
             # Mean centering
             mean_h = out_target.mean(dim=-1, keepdim=True)
-            mean_v = v.mean()
+            mean_v = v_mul.mean()
             
             centered_h = out_target - mean_h
-            centered_v = v - mean_v
+            centered_v = v_mul - mean_v
             
             # Covariance & Variance
             covariance = (centered_h * centered_v).mean(dim=-1, keepdim=True)
@@ -149,7 +149,7 @@ class BlockWrapper(torch.nn.Module):
 
         # 3. Kalkulasi Injeksi
         # 'mask' (self.multiplier) dikalikan dengan soft_mask dan vektor v
-        injection = soft_mask * (mask * v)
+        injection = soft_mask * (v_mul)
 
         # 4. Implementasi ke dalam arsitektur
         if isinstance(output, tuple):

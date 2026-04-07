@@ -157,6 +157,7 @@ class BlockWrapper(torch.nn.Module):
             soft_mask = torch.clamp(cosine_sim, min=-1.0, max = 1.0)
 
         # 3. Kalkulasi Injeksi
+        print(1)
         print("Shape out_target:", out_target.shape)
         print("Shape soft_mask:", soft_mask.shape)
         

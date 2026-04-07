@@ -132,15 +132,18 @@ class BlockWrapper(torch.nn.Module):
             # 3. Hitung Cross-Entropy RAW (Belum dinormalisasi)
             ce_raw_fp32 = -(p_probs * q_log_probs).sum(dim=-1, keepdim=True)
             max_indices = ce_raw_fp32.argmax(dim=1, keepdim=True)
-            
+            soft_mask_fp32 = torch.exp(-ce_raw_fp32)
             # Kita buat tensor nol dengan shape yang sama seperti ce_raw_fp32 [128, 311, 1]
             # Lalu kita isi angka 1 hanya pada posisi max_indices
-            injection_mask = torch.zeros_like(ce_raw_fp32)
-            injection_mask.scatter_(1, max_indices, 1.0)
+            selection_mask = torch.zeros_like(ce_raw_fp32)
+            selection_mask.scatter_(1, max_indices, 1.0)
             
             # v_mul [1, 1, 4096] akan dikalikan dengan injection_mask [128, 311, 1]
             # Hasilnya: Hanya 1 token per batch yang punya nilai v_mul, sisanya 0.
-            final_injection = (injection_mask.to(out_target.dtype)) * v_mul
+            weighted_injection_mask = selection_mask * soft_mask_fp32
+            
+            # 5. Final Injeksi
+            final_injection = (weighted_injection_mask.to(out_target.dtype)) * v_mul
 
         # 4. Implementasi ke dalam arsitektur
         if isinstance(output, tuple):

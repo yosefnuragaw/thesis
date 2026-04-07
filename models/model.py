@@ -150,6 +150,7 @@ class BlockWrapper(torch.nn.Module):
         # 3. Kalkulasi Injeksi
         # 'mask' (self.multiplier) dikalikan dengan soft_mask dan vektor v
         print(soft_mask.shape)
+        print(soft_mask.sum())
         print(soft_mask[:, :10, :])
         injection = soft_mask * (self.multiplier * self.vec.to(out_target.device))
 

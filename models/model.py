@@ -142,7 +142,7 @@ class BlockWrapper(torch.nn.Module):
             # (x - min) / (max - min)
             # Epsilon (1e-6) mencegah pembagian dengan nol jika max == min
             norm_range = max_val - min_val + 1e-6
-            soft_mask = (out_norm - min_val) / norm_range
+            soft_mask = 1-((out_norm - min_val) / norm_range)
             
             # 4. Final Injeksi
             # Steering force dikalikan dengan soft_mask [0.0 s/d 1.0]

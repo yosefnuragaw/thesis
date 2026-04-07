@@ -166,11 +166,11 @@ class BlockWrapper(torch.nn.Module):
             print(f"Min CE Se-Batch: {ce_raw_fp32.min().item():.4f}")
             print(f"Rata-rata CE: {ce_raw_fp32.mean().item():.4f}")
             
-            # --- CEK TOKEN DI TENGAH (Index 150-160) ---
-            print("Nilai RAW CE Token Tengah:\n", ce_raw_fp32[0, 150:160, :].squeeze())
-
             variance_sample_0 = ce_raw_fp32[0].var().item()
             print(f"Varians CE Mentah (Sampel 0): {variance_sample_0:.6f}")
+            
+            # --- CEK TOKEN DI TENGAH (Index 150-160) ---
+            print("Nilai RAW CE Token Tengah:\n", ce_raw_fp32[0, 150:160, :].squeeze())
             
             # 4. NORMALISASI & KONVERSI MENJADI MASK (Rentang 0.0 - 1.0)
             # Kita bagi dengan log(dimensi) agar nilainya berada di skala yang mudah diolah.
@@ -182,7 +182,8 @@ class BlockWrapper(torch.nn.Module):
             # Ubah menjadi persentase injeksi (Semakin kecil CE, semakin mendekati 1.0)
             # Anda bisa mengubah nilai 'temperature' (misal 3.0, 5.0, 10.0) untuk mengatur 
             # seberapa galak filter ini membuang token yang tidak relevan.
-            soft_mask_fp32 = 1-torch.exp(-normalized_ce)
+            temperature = 10
+            soft_mask_fp32 = 1-torch.exp(-normalized_ce * temperature)
 
             # 5. KEMBALIKAN KE BFLOAT16 (Downcast)
             soft_mask = soft_mask_fp32.to(out_target.dtype)
@@ -200,6 +201,8 @@ class BlockWrapper(torch.nn.Module):
         sum_per_sample = soft_mask.sum(dim=(1, 2)) 
         ratio_per_sample = (sum_per_sample / out_target.shape[1]) * 100
 
+        print(soft_mask[0, :10, :])  
+        print(soft_mask[0, -10:, :])
         print(f"Rasio Steering CE % per sampel: {ratio_per_sample.mean(dim=-1):.2f}%")
         raise ValueError
         injection = soft_mask * (self.multiplier * self.vec.to(out_target.device))

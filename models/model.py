@@ -169,16 +169,18 @@ class BlockWrapper(torch.nn.Module):
             max_sample_0 = ce_raw_fp32[0].max().item()
             min_sample_0 = ce_raw_fp32[0].min().item()
             variance_sample_0 = ce_raw_fp32[0].var().item()
+            max_idx_0 = ce_raw_fp32[0].argmax().item()
             
-            print(f"Max CE Mentah (Sampel 0): {max_sample_0:.4f}")
+            print(f"Max Mentah (Sampel 0): {max_sample_0:.4f} --> Berada di Index Token ke-{max_idx_0}")
             print(f"Min CE Mentah (Sampel 0): {min_sample_0:.4f}")
             print(f"Varians CE Mentah (Sampel 0): {variance_sample_0:.6f}")
 
             max_sample_0 = ce_raw_fp32[1].max().item()
             min_sample_0 = ce_raw_fp32[1].min().item()
             variance_sample_0 = ce_raw_fp32[1].var().item()
+            max_idx_0 = ce_raw_fp32[0].argmax().item()
             
-            print(f"Max CE Mentah (Sampel 1): {max_sample_0:.4f}")
+            print(f"Max Mentah (Sampel 1): {max_sample_0:.4f} --> Berada di Index Token ke-{max_idx_0}")
             print(f"Min CE Mentah (Sampel 1): {min_sample_0:.4f}")
             print(f"Varians CE Mentah (Sampel 1): {variance_sample_0:.6f}")
             

@@ -138,6 +138,17 @@ class BlockWrapper(torch.nn.Module):
             
             # E. Final Gabungan
             final_injection = ( out_norm_scaled * steering_force).to(out_target.dtype)
+            
+            for x in range(30):
+                sample = out_norm_scaled[x].detach() 
+    
+                s_max = sample.max().item()
+                s_min = sample.min().item()
+                s_mean = sample.mean().item()
+                s_diff = s_max - s_min
+                
+                print(f"{x:02d}     | {s_max:.4f} | {s_mean:.4f} | {s_min:.4f} | {s_diff:.4f}")
+            raise ValueError
                     
 
         # 8. Implementasi ke dalam arsitektur

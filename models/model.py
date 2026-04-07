@@ -125,30 +125,37 @@ class BlockWrapper(torch.nn.Module):
             out_fp32 = out_target.to(torch.float32)
             v_mul_fp32 = v_mul.to(torch.float32)
             
-            # 2. Hitung Probabilitas (Softmax)
-            p_probs = torch.nn.functional.softmax(v_mul_fp32, dim=-1)         # Distribusi Target
-            q_log_probs = torch.nn.functional.log_softmax(out_fp32, dim=-1)   # Distribusi Model Saat Ini
+            # 2. HITUNG NORMA v_mul (Steering Vector)
+            # Karena v_mul bentuknya [1, 1, 4096], v_norm adalah skalar tunggal
+            v_norm = torch.norm(v_mul_fp32, p=2, dim=-1, keepdim=True) # Shape: [1, 1, 1]
             
-            # 3. Hitung Cross-Entropy RAW (Belum dinormalisasi)
+            # 3. Hitung Cross-Entropy untuk Seleksi Lokasi
+            p_probs = torch.nn.functional.softmax(v_mul_fp32, dim=-1)
+            q_log_probs = torch.nn.functional.log_softmax(out_fp32, dim=-1)
             ce_raw_fp32 = -(p_probs * q_log_probs).sum(dim=-1, keepdim=True)
+            
+            # 4. SELEKSI LOKASI: Cari token dengan CE tertinggi
             max_indices = ce_raw_fp32.argmax(dim=1, keepdim=True)
-            soft_mask_fp32 = torch.exp(-ce_raw_fp32)
-            # Kita buat tensor nol dengan shape yang sama seperti ce_raw_fp32 [128, 311, 1]
-            # Lalu kita isi angka 1 hanya pada posisi max_indices
             selection_mask = torch.zeros_like(ce_raw_fp32)
             selection_mask.scatter_(1, max_indices, 1.0)
             
-            # v_mul [1, 1, 4096] akan dikalikan dengan injection_mask [128, 311, 1]
-            # Hasilnya: Hanya 1 token per batch yang punya nilai v_mul, sisanya 0.
-            weighted_injection_mask = selection_mask * soft_mask_fp32
+            # 5. WEIGHING: Inverse v_norm Scaling
+            # Rumus: 1 / (v_norm + epsilon)
+            # Ini akan menormalisasi v_mul menjadi "Unit Vector" (panjang 1) 
+            # jika multiplier Anda tidak diikutkan dalam norma.
+            v_weight = 1.0 / (v_norm + 1e-6)
             
-            # 5. Final Injeksi
-            final_injection = (weighted_injection_mask.to(out_target.dtype)) * v_mul
+            # 6. GABUNGKAN
+            weighted_selection = selection_mask * v_weight
+            
+            # 7. FINAL INJEKSI
+            # Hasilnya: v_mul yang disuntikkan kekuatannya sudah diredam oleh normanya sendiri
+            final_injection = (weighted_selection.to(out_target.dtype)) * v_mul
 
-        # 4. Implementasi ke dalam arsitektur
+        # 8. Implementasi ke dalam arsitektur
         if isinstance(output, tuple):
             self.buffer_space.append(out_target.detach().mean(dim=1).cpu())
-            modified_hidden = out_target + final_injection # Injeksi selektif
+            modified_hidden = out_target + final_injection
             output = (modified_hidden,) + output[1:]
             
         elif isinstance(output, torch.Tensor):

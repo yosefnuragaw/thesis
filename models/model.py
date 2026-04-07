@@ -151,7 +151,11 @@ class BlockWrapper(torch.nn.Module):
         # 'mask' (self.multiplier) dikalikan dengan soft_mask dan vektor v
         print(out_target.shape)
         print(soft_mask.shape)
-        print(soft_mask.sum()/ len(soft_mask))
+        sum_per_sample = soft_mask.sum(dim=(1, 2)) 
+        ratio_per_sample = (sum_per_sample / out_target.shape[1]) * 100
+
+        print("Sum per sampel (10 pertama):", sum_per_sample[:10])
+        print("Rasio % per sampel (10 pertama):", ratio_per_sample[:10])
         raise ValueError
         injection = soft_mask * (self.multiplier * self.vec.to(out_target.device))
 

@@ -148,46 +148,66 @@ class BlockWrapper(torch.nn.Module):
         with torch.no_grad():
             v_mul = self.multiplier * self.vec.to(out_target.device).view(1, 1, -1)
             
-            # 1. UPCAST KE FP32 (Wajib untuk 4096 dimensi)
+            # 1. UPCAST KE FLOAT32 
+            # Sangat penting untuk Softmax dan Log agar tidak underflow/overflow di bf16
             out_fp32 = out_target.to(torch.float32)
             v_mul_fp32 = v_mul.to(torch.float32)
             
-            # 2. COSINE SIMILARITY MENTAH (Bukan Probabilitas)
-            # Rentang hasil alami: -1.0 (Berlawanan) hingga 1.0 (Searah)
-            cos_sim_raw = torch.nn.functional.cosine_similarity(out_fp32, v_mul_fp32, dim=-1).unsqueeze(-1)
+            # 2. Hitung Probabilitas (Softmax)
+            p_probs = torch.nn.functional.softmax(v_mul_fp32, dim=-1)         # Distribusi Target
+            q_log_probs = torch.nn.functional.log_softmax(out_fp32, dim=-1)   # Distribusi Model Saat Ini
+            
+            # 3. Hitung Cross-Entropy RAW (Belum dinormalisasi)
+            # Hasil shape: [128, 311, 1]
+            ce_raw_fp32 = -(p_probs * q_log_probs).sum(dim=-1, keepdim=True)
             
             # --- CEK STATISTIK MENTAH ---
-            print(f"Max Cosine Mentah: {cos_sim_raw.max().item():.4f}")
-            print(f"Min Cosine Mentah: {cos_sim_raw.min().item():.4f}")
-            print(f"Var Cosine Mentah: {cos_sim_raw[0].var().item():.6f}")
-            print("RAW Cosine Token Tengah:\n", cos_sim_raw[0, 150:160, :].squeeze())
+            print(f"Max CE Se-Batch: {ce_raw_fp32.max().item():.4f}")
+            print(f"Min CE Se-Batch: {ce_raw_fp32.min().item():.4f}")
+            print(f"Rata-rata CE: {ce_raw_fp32.mean().item():.4f}")
             
-            # 3. MIN-MAX SCALING (Menciptakan Varians 0.0 - 1.0 yang Sehat)
-            # Kita cari kemiripan tertinggi dan terendah dalam SATU kalimat
-            cos_min = cos_sim_raw.min(dim=1, keepdim=True)[0]
-            cos_max = cos_sim_raw.max(dim=1, keepdim=True)[0]
+            max_sample_0 = ce_raw_fp32[0].max().item()
+            min_sample_0 = ce_raw_fp32[0].min().item()
+            variance_sample_0 = ce_raw_fp32[0].var().item()
             
-            # Hindari error bagi-dengan-nol
-            cos_range = torch.clamp(cos_max - cos_min, min=1e-6)
+            print(f"Max CE Mentah (Sampel 0): {max_sample_0:.4f}")
+            print(f"Min CE Mentah (Sampel 0): {min_sample_0:.4f}")
+            print(f"Varians CE Mentah (Sampel 0): {variance_sample_0:.6f}")
+
+            max_sample_0 = ce_raw_fp32[1].max().item()
+            min_sample_0 = ce_raw_fp32[1].min().item()
+            variance_sample_0 = ce_raw_fp32[1].var().item()
             
-            # Normalisasi: Token paling mirip jadi 1.0, paling beda jadi 0.0
-            soft_mask_fp32 = (cos_sim_raw - cos_min) / cos_range
+            print(f"Max CE Mentah (Sampel 1): {max_sample_0:.4f}")
+            print(f"Min CE Mentah (Sampel 1): {min_sample_0:.4f}")
+            print(f"Varians CE Mentah (Sampel 1): {variance_sample_0:.6f}")
             
-            # (Opsional) Ketajaman Filter - Memangkas token yang cuma "agak" mirip
-            # Gunakan pangkat (power). Semakin tinggi pangkatnya (misal 3.0), semakin selektif.
-            soft_mask_fp32 = soft_mask_fp32 ** 3.0
+            # --- CEK TOKEN DI TENGAH (Index 150-160) ---
+            print("Nilai RAW CE Token Tengah:\n", ce_raw_fp32[0, 150:160, :].squeeze())
             
-            # 4. DOWNCAST KE BFLOAT16
+            # 4. NORMALISASI & KONVERSI MENJADI MASK (Rentang 0.0 - 1.0)
+            # Kita bagi dengan log(dimensi) agar nilainya berada di skala yang mudah diolah.
+            hidden_dim = out_target.shape[-1] # misalnya 4096
+            max_ce = torch.log(torch.tensor(hidden_dim, dtype=torch.float32, device=out_target.device))
+            
+            normalized_ce = ce_raw_fp32 / max_ce
+            
+            # Ubah menjadi persentase injeksi (Semakin kecil CE, semakin mendekati 1.0)
+            # Anda bisa mengubah nilai 'temperature' (misal 3.0, 5.0, 10.0) untuk mengatur 
+            # seberapa galak filter ini membuang token yang tidak relevan.
+            soft_mask_fp32 = 1-torch.exp(-normalized_ce*5)
+
+            # 5. KEMBALIKAN KE BFLOAT16 (Downcast)
             soft_mask = soft_mask_fp32.to(out_target.dtype)
 
-        # 5. KALKULASI INJEKSI AKHIR
-        injection = soft_mask * v_mul
+
+        # 3. Kalkulasi Injeksi
+        print(1)
+        print("Shape out_target:", out_target.shape)
+        print("Shape soft_mask:", soft_mask.shape)
         
-        # --- LOGGING AKHIR ---
-        soft_mask_check = soft_mask[0].to(torch.float32)
-        print("\nMask Token Tengah:\n", soft_mask_check[150:160].squeeze())
-        print(f"Mean Injeksi (Sampel 0): {soft_mask_check.mean().item():.4f}")
-        print(f"Variance Mask Akhir: {soft_mask_check.var().item():.6f}")
+        # 'mask' dikalikan dengan soft_mask dan vektor v
+        injection = soft_mask * v_mul
 
         # --- LOGGING ---
         sum_per_sample = soft_mask.sum(dim=(1, 2)) 
@@ -196,6 +216,11 @@ class BlockWrapper(torch.nn.Module):
         print("10 Pertama:\n", soft_mask[0, :10, :].squeeze())
         print("10 Terakhir:\n", soft_mask[0, -10:, :].squeeze())
 
+        soft_mask_0_fp32 = soft_mask[0].to(torch.float32)
+        print(f"Max (Sampel 0): {soft_mask_0_fp32.max().item():.4f}")
+        print(f"Mean (Sampel 0): {soft_mask_0_fp32.mean().item():.4f}")
+        print(f"Variance (Sampel 0): {soft_mask_0_fp32.var().item():.6f}")
+        print(f"Rasio Steering CE % per sampel: {ratio_per_sample.mean(dim=-1):.2f}%")
         raise ValueError
         injection = soft_mask * (self.multiplier * self.vec.to(out_target.device))
 

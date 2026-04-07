@@ -141,7 +141,7 @@ class BlockWrapper(torch.nn.Module):
             abs_correlation = torch.abs(correlation)
             
             # 1. Buat Gerbang Biner (Lolos Threshold atau Tidak)
-            binary_gate = (abs_correlation < 0.1).to(out_target.dtype)
+            binary_gate = (abs_correlation < 0.01).to(out_target.dtype)
             
             # --- MODIFIKASI SOFT MASKING DI SINI ---
             # 2. Kalikan gerbang dengan nilai korelasinya

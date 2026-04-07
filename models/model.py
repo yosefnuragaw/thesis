@@ -90,7 +90,6 @@ class BlockWrapper(torch.nn.Module):
 
         with torch.no_grad():
             out_tensor = output[0] if isinstance(output, tuple) else output
-            self.apply_sparse_steering(out_tensor)
             avg_hidden = hidden_states.detach().mean(dim=1)
             avg_output = out_tensor.detach().mean(dim=1)
             cos_sim = torch.nn.functional.cosine_similarity(avg_hidden, avg_output, dim=-1)
@@ -108,15 +107,50 @@ class BlockWrapper(torch.nn.Module):
             while mask.dim() < hidden_states.dim():
                 mask = mask.unsqueeze(-1)
 
+        # if isinstance(output, tuple):
+        #     self.buffer_space.append(output[0].detach().mean(dim=1).cpu())
+        #     modified_hidden = output[0] + (mask * self.vec.to(output[0].device))
+        #     output = (modified_hidden,) + output[1:]
+            
+        # elif isinstance(output, torch.Tensor):
+        #     self.buffer_space.append(output.detach().mean(dim=1).cpu())
+        #     output = output + (mask * self.vec.to(output.device))
+        
+        out_target = output[0] if isinstance(output, tuple) else output
+
+        # 2. Hitung Covariance Mask (O(1) dan di dalam no_grad)
+        t = 0.25 # Threshold Absolute Covariance
+        with torch.no_grad():
+            v = self.vec.to(out_target.device)
+            
+            # Mean centering
+            mean_h = out_target.mean(dim=-1, keepdim=True)
+            mean_v = v.mean()
+            
+            centered_h = out_target - mean_h
+            centered_v = v - mean_v
+            
+            # Absolute Covariance
+            covariance = (centered_h * centered_v).mean(dim=-1, keepdim=True)
+            abs_covariance = torch.abs(covariance)
+            
+            # Binary Mask: Shape (batch, seq_len, 1)
+            cov_mask = (abs_covariance >= t).to(out_target.dtype)
+
+        # 3. Kalkulasi Injeksi
+        # 'mask' dari kode Anda (multiplier) dikalikan dengan cov_mask dan vektor v
+        injection = cov_mask * (mask * v)
+
+        # 4. Implementasi ke dalam arsitektur (Buffer & Repackage)
         if isinstance(output, tuple):
-            self.buffer_space.append(output[0].detach().mean(dim=1).cpu())
-            modified_hidden = output[0] + (mask * self.vec.to(output[0].device))
+            self.buffer_space.append(out_target.detach().mean(dim=1).cpu())
+            modified_hidden = out_target + injection
             output = (modified_hidden,) + output[1:]
             
         elif isinstance(output, torch.Tensor):
-            self.buffer_space.append(output.detach().mean(dim=1).cpu())
-            output = output + (mask * self.vec.to(output.device))
-        
+            self.buffer_space.append(out_target.detach().mean(dim=1).cpu())
+            output = out_target + injection
+
         return output
 
     def set_multiplier(self, multiplier):
@@ -170,18 +204,25 @@ class BlockWrapper(torch.nn.Module):
     
 
     def apply_sparse_steering(self, hidden_states):
+        t = 0.25 
 
-        # 1. Hitung mask tanpa melacak gradien (O(1) komputasi)
         with torch.no_grad():
-            variance = hidden_states.pow(2).mean(dim=-1, keepdim=True)
-            rms_normed = hidden_states / torch.sqrt(variance + 1e-6)
-            abs_normed = torch.abs(rms_normed)
+            v = self.vec.to(hidden_states.device)
             
-            # Asumsikan Anda sudah mendefinisikan self.theta = 5.0 di __init__
-        #     mask = (abs_normed <= self.theta).to(hidden_states.dtype)
+            mean_h = hidden_states.mean(dim=-1, keepdim=True)
+            mean_v = v.mean()
+
+            centered_h = hidden_states - mean_h
+            centered_v = v - mean_v
+            
+            # Hitung Kovarians
+            covariance = (centered_h * centered_v).mean(dim=-1, keepdim=True)
+            abs_covariance = torch.abs(covariance)
+            
+            mask = (abs_covariance >= t).to(hidden_states.dtype)
         
-        # # 2. Injeksi terarah DI LUAR no_grad agar fungsi loss BiPO tetap jalan
-        # injection = mask * (self.multiplier * self.vec.to(hidden_states.device))
-        # steered_states = hidden_states + injection
-        print(abs_normed)
-        # return steered_states
+        # 2. Injeksi terarah DI LUAR no_grad
+        injection = mask * (self.multiplier * v)
+        steered_states = hidden_states + injection
+        
+        return steered_states

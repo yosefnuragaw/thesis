@@ -148,12 +148,19 @@ class BlockWrapper(torch.nn.Module):
         with torch.no_grad():
             v_mul = self.multiplier * self.vec.to(out_target.device).view(1, 1, -1)
             
-            # Hitung kemiripan sudut (Cosine) antara output dan vektor Anda
-            # Hasil: 1.0 (Sangat searah), 0.0 (Tegak lurus), -1.0 (Berlawanan arah)
-            cosine_sim = torch.nn.functional.cosine_similarity(out_target, v_mul, dim=-1).unsqueeze(-1)            
-            # Karena kita hanya ingin menyuntikkan ke token yang searah/mirip,
-            # kita buang nilai negatif (menjadi 0)
-            soft_mask = torch.clamp(cosine_sim, min=-1.0, max = 1.0)
+            # 1. UPCAST KE FLOAT32 (Mencegah Overflow pada akar kuadrat)
+            out_fp32 = out_target.to(torch.float32)
+            v_mul_fp32 = v_mul.to(torch.float32)
+            
+            # 2. Hitung Cosine Similarity di ruang FP32 yang aman
+            cosine_sim_fp32 = F.cosine_similarity(out_fp32, v_mul_fp32, dim=-1).unsqueeze(-1)
+            
+            # 3. KEMBALIKAN KE BFLOAT16 (Downcast)
+            cosine_sim = cosine_sim_fp32.to(out_target.dtype)
+            
+            # 4. Filter nilai negatif
+            soft_mask = torch.clamp(cosine_sim, min=-1.0, max=1.0)
+
 
         # 3. Kalkulasi Injeksi
         print(1)

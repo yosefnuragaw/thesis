@@ -136,8 +136,9 @@ class BlockWrapper(torch.nn.Module):
             
             # 4. SELEKSI LOKASI: Cari token dengan CE tertinggi
             max_indices = ce_raw_fp32.argmax(dim=1, keepdim=True)
-            selection_mask = torch.zeros_like(ce_raw_fp32)
-            selection_mask.scatter_(1, max_indices, 1.0)
+            # selection_mask = torch.zeros_like(ce_raw_fp32)
+            selection_mask = torch.ones_like(ce_raw_fp32)
+            # selection_mask.scatter_(1, max_indices, 1.0)
             
             # 5. WEIGHING: Inverse v_norm Scaling
             # Rumus: 1 / (v_norm + epsilon)
@@ -150,9 +151,8 @@ class BlockWrapper(torch.nn.Module):
             
             # 7. FINAL INJEKSI
             # Hasilnya: v_mul yang disuntikkan kekuatannya sudah diredam oleh normanya sendiri
-            # final_injection = (weighted_selection.to(out_target.dtype)) * v_mul
-            final_injection = self.multiplier * v_weight * self.vec.to(out_target.device).view(1, 1, -1)
-
+            final_injection = (weighted_selection.to(out_target.dtype)) * v_mul
+            
 
         # 8. Implementasi ke dalam arsitektur
         if isinstance(output, tuple):

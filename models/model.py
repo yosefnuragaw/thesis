@@ -140,15 +140,8 @@ class BlockWrapper(torch.nn.Module):
             correlation = covariance / std_product
             abs_correlation = torch.abs(correlation)
             
-            # 1. Buat Gerbang Biner (Lolos Threshold atau Tidak)
-            binary_gate = (abs_correlation >= t).to(out_target.dtype)
-            
-            # --- MODIFIKASI SOFT MASKING DI SINI ---
-            # 2. Kalikan gerbang dengan nilai korelasinya
-            soft_mask = binary_gate * abs_correlation
+            soft_mask =  abs_correlation
 
-        # 3. Kalkulasi Injeksi
-        # 'mask' (self.multiplier) dikalikan dengan soft_mask dan vektor v
         injection = soft_mask * (mask * v)
 
         # 4. Implementasi ke dalam arsitektur

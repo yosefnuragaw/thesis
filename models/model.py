@@ -170,10 +170,10 @@ class BlockWrapper(torch.nn.Module):
     
 
     def apply_sparse_steering(hidden_states: torch.Tensor, 
-                          vec: torch.Tensor, 
-                          multiplier: float, 
-                          theta: float = 5.0, 
-                          strategy: str = "do_no_harm", 
+                        #   vec: torch.Tensor, 
+                        #   multiplier: float, 
+                        #   theta: float = 5.0, 
+                        #   strategy: str = "do_no_harm", 
                           eps: float = 1e-8) -> torch.Tensor:
         with torch.no_grad():
             variance = hidden_states.pow(2).mean(dim=-1, keepdim=True)

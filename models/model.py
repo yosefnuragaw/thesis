@@ -132,17 +132,22 @@ class BlockWrapper(torch.nn.Module):
             # D. Hitung Resistensi Model (Opsional tapi bagus)
             # Semakin besar energi asli model (out_norm), semakin kecil suntikannya
             out_norm = torch.norm(out_target.to(torch.float32), p=2, dim=-1, keepdim=True)
+    
+            # 2. Ambil Nilai Ekstrem per Sequence (dim=1)
+            # [Batch, 1, 1]
+            max_val = out_norm.max(dim=1, keepdim=True)[0]
+            min_val = out_norm.min(dim=1, keepdim=True)[0]
             
-            # 2. SELEKSI LOKASI: Cari indeks dengan norma tertinggi
-            # Kita mencari di dimensi Sequence (dim=1)
-            max_norm_indices = out_norm.argmax(dim=1, keepdim=True)
+            # 3. Rumus Min-Max Scaling
+            # (x - min) / (max - min)
+            # Epsilon (1e-6) mencegah pembagian dengan nol jika max == min
+            norm_range = max_val - min_val + 1e-6
+            soft_mask = (out_norm - min_val) / norm_range
             
-            # 3. BUAT MASKER: Hanya isi 1.0 pada posisi tertinggi, sisanya 0.0
-            selection_mask = torch.zeros_like(out_norm)
-            selection_mask.scatter_(1, max_norm_indices, 1.0)
-            
-            # E. Final Gabungan
-            final_injection = ( selection_mask * steering_force).to(out_target.dtype)
+            # 4. Final Injeksi
+            # Steering force dikalikan dengan soft_mask [0.0 s/d 1.0]
+            # Token terlemah akan memiliki injeksi 0, token terkuat akan memiliki injeksi 1.0 * multiplier
+            final_injection = (soft_mask * steering_force).to(out_target.dtype)
                     
 
         # 8. Implementasi ke dalam arsitektur

@@ -142,7 +142,8 @@ class BlockWrapper(torch.nn.Module):
             final_injection = ( out_norm_scaled * steering_force).to(out_target.dtype)
             
             for x in range(30):
-                sample = final_injection[x].detach() 
+                mul = out_norm_scaled * self.multiplier
+                sample = mul[x].detach() 
     
                 s_max = sample.max().item()
                 s_min = sample.min().item()

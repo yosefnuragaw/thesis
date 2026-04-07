@@ -140,16 +140,32 @@ class BlockWrapper(torch.nn.Module):
             print(f"Max CE Se-Batch: {ce_raw_fp32.max().item():.4f}")
             print(f"Min CE Se-Batch: {ce_raw_fp32.min().item():.4f}")
             print(f"Rata-rata CE: {ce_raw_fp32.mean().item():.4f}")
-
-            for x in range(0,30):
-                max_sample_0 = ce_raw_fp32[x].max().item()
-                min_sample_0 = ce_raw_fp32[x].min().item()
-                variance_sample_0 = ce_raw_fp32[0].var().item()
-                max_idx_0 = ce_raw_fp32[x].argmax().item()
+            attn_mask = kwargs.get('attention_mask', None)
+            for x in range(0, 30):
+                # 1. Hitung statistik CE mentah
+                max_val = ce_raw_fp32[x].max().item()
+                max_idx = ce_raw_fp32[x].argmax().item()
                 
-                print(f"Max Mentah (Sampel {x}): {max_sample_0:.4f} --> Berada di Index Token ke-{max_idx_0}")
-                print(f"Min CE Mentah (Sampel {x}): {min_sample_0:.4f}")
-                print(f"Varians CE Mentah (Sampel {x}): {variance_sample_0:.6f}")
+                # 2. Hitung panjang total sequence (misal 311)
+                total_seq_len = ce_raw_fp32.shape[1]
+                
+                # 3. Hitung panjang asli (hanya token bernilai 1 di mask)
+                if attn_mask is not None:
+                    # Menghitung berapa banyak token '1' dalam baris x
+                    actual_length = attn_mask[x].sum().item()
+                    
+                    # Hitung Rasio Posisi terhadap Panjang Asli
+                    # Jika > 0.95, berarti itu adalah token terakhir atau padding awal
+                    pos_ratio = max_idx / actual_length if actual_length > 0 else 0
+                    
+                    mask_status = "REAL" if attn_mask[x, max_idx].item() == 1 else "PAD"
+                else:
+                    actual_length = "N/A"
+                    pos_ratio = max_idx / total_seq_len
+                    mask_status = "UNKNOWN"
+
+                print(f"Sampel {x:2d} | Index Max: {max_idx:3d} / {actual_length:3d} "
+                    f"| Rasio: {pos_ratio:.2f} | Status: {mask_status} | Val: {max_val:.4f}")
 
             
             # --- CEK TOKEN DI TENGAH (Index 150-160) ---

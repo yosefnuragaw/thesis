@@ -152,6 +152,7 @@ class BlockWrapper(torch.nn.Module):
         print(soft_mask.shape)
         print(soft_mask.sum())
         print(soft_mask[:, :10, :])
+        raise ValueError
         injection = soft_mask * (self.multiplier * self.vec.to(out_target.device))
 
         # 4. Implementasi ke dalam arsitektur

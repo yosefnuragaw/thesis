@@ -119,40 +119,26 @@ class BlockWrapper(torch.nn.Module):
         out_target = output[0] if isinstance(output, tuple) else output
 
         with torch.no_grad():
-            v_mul = self.multiplier * self.vec.to(out_target.device).view(1, 1, -1)
+            # A. Normalisasi Arah (Statis) - Menghasilkan Unit Vector
+            v_base = self.vec.to(out_target.device).to(torch.float32).view(1, 1, -1)
+            # v_unit = v_base / (torch.norm(v_base, p=2) + 1e-6)
             
-            # 1. UPCAST KE FLOAT32 
-            out_fp32 = out_target.to(torch.float32)
-            v_mul_fp32 = v_mul.to(torch.float32)
+            # B. Tentukan Kekuatan (Dinamis) - Multiplier di luar
+            # Sekarang, jika multiplier naik, kekuatan injeksi benar-benar naik
+            steering_force = self.multiplier  * v_base
             
-            # 2. HITUNG NORMA v_mul (Steering Vector)
-            # Karena v_mul bentuknya [1, 1, 4096], v_norm adalah skalar tunggal
-            v_norm = torch.norm(v_mul_fp32, p=2, dim=-1, keepdim=True) # Shape: [1, 1, 1]
+            # C. Tentukan Lokasi (Masking)
+            # Gunakan zeros + scatter jika ingin 1 token, atau ones jika ingin semua
+            # selection_mask = torch.ones_like(ce_raw_fp32) 
             
-            # 3. Hitung Cross-Entropy untuk Seleksi Lokasi
-            p_probs = torch.nn.functional.softmax(v_mul_fp32, dim=-1)
-            q_log_probs = torch.nn.functional.log_softmax(out_fp32, dim=-1)
-            ce_raw_fp32 = -(p_probs * q_log_probs).sum(dim=-1, keepdim=True)
+            # D. Hitung Resistensi Model (Opsional tapi bagus)
+            # Semakin besar energi asli model (out_norm), semakin kecil suntikannya
+            out_norm = torch.norm(out_target.to(torch.float32), p=2, dim=-1, keepdim=True)
+            resistance = 1.0 / (out_norm + 1e-6)
             
-            # 4. SELEKSI LOKASI: Cari token dengan CE tertinggi
-            max_indices = ce_raw_fp32.argmax(dim=1, keepdim=True)
-            # selection_mask = torch.zeros_like(ce_raw_fp32)
-            selection_mask = torch.ones_like(ce_raw_fp32)
-            # selection_mask.scatter_(1, max_indices, 1.0)
-            
-            # 5. WEIGHING: Inverse v_norm Scaling
-            # Rumus: 1 / (v_norm + epsilon)
-            # Ini akan menormalisasi v_mul menjadi "Unit Vector" (panjang 1) 
-            # jika multiplier Anda tidak diikutkan dalam norma.
-            v_weight = 1.0 / (v_norm + 1e-6)
-            
-            # 6. GABUNGKAN
-            weighted_selection = selection_mask * v_weight
-            
-            # 7. FINAL INJEKSI
-            # Hasilnya: v_mul yang disuntikkan kekuatannya sudah diredam oleh normanya sendiri
-            final_injection = (weighted_selection.to(out_target.dtype)) * v_mul
-            
+            # E. Final Gabungan
+            final_injection = ( resistance * steering_force).to(out_target.dtype)
+                    
 
         # 8. Implementasi ke dalam arsitektur
         if isinstance(output, tuple):

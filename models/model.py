@@ -121,41 +121,43 @@ class BlockWrapper(torch.nn.Module):
         t = 0.20 
 
         with torch.no_grad():
-            v_mul = self.multiplier * self.vec.to(out_target.device)
+            # Pastikan dimensi sesuai untuk broadcasting: [1, 1, hidden]
+            v_mul = self.multiplier * self.vec.to(out_target.device).view(1, 1, -1)
             
-            # Mean centering
-            mean_h = out_target.mean(dim=-1, keepdim=True)
-            mean_v = v_mul.mean()
+            # 1. Konversi ke Distribusi Probabilitas (Softmax)
+            # v_mul sebagai distribusi target ideal (P)
+            # out_target sebagai distribusi tebakan model saat ini (Q)
+            p_probs = torch.nn.functional.softmax(v_mul, dim=-1)
             
-            centered_h = out_target - mean_h
-            centered_v = v_mul - mean_v
+            # Untuk Q, kita gunakan log_softmax demi stabilitas numerik dan kemudahan rumus CE
+            q_log_probs = torch.nn.functional.log_softmax(out_target, dim=-1)
             
-            # Covariance & Variance
-            covariance = (centered_h * centered_v).mean(dim=-1, keepdim=True)
-            var_h = centered_h.pow(2).mean(dim=-1, keepdim=True)
-            var_v = centered_v.pow(2).mean()
+            # 2. Hitung Cross-Entropy per Token
+            # Rumus: CE = -sum(P * log(Q)) pada dimensi hidden (dim=-1)
+            cross_entropy = -(p_probs * q_log_probs).sum(dim=-1, keepdim=True)
             
-            # Pearson Correlation
-            std_product = torch.sqrt(var_h * var_v) + 1e-6
-            correlation = covariance / std_product
-            abs_correlation = torch.abs(correlation)
+            # 3. Ubah Cross-Entropy menjadi Gerbang/Masking (Range 0 sampai 1)
+            # Nilai CE berkisar dari 0 (identik) hingga tak terhingga (sangat berbeda).
+            # Kita gunakan fungsi eksponensial (e^-x) untuk memetakannya ke rentang 0-1.
             
-            # 1. Buat Gerbang Biner (Lolos Threshold atau Tidak)
-            binary_gate = (correlation < 0.0).to(out_target.dtype)
+            # OPSI A: Injeksi kuat jika pola mirip (CE rendah -> mask mendekati 1)
+            # soft_mask = torch.exp(-cross_entropy)
             
-            # --- MODIFIKASI SOFT MASKING DI SINI ---
-            # 2. Kalikan gerbang dengan nilai korelasinya
-            soft_mask =  binary_gate 
+            # OPSI B (Jika Anda ingin sebaliknya): Injeksi kuat jika pola sangat BERBEDA
+            soft_mask = 1.0 - torch.exp(-cross_entropy)
 
         # 3. Kalkulasi Injeksi
-        # 'mask' (self.multiplier) dikalikan dengan soft_mask dan vektor v
-        print(1)
-        print(out_target.shape)
-        print(soft_mask.shape)
+        print("Shape out_target:", out_target.shape)
+        print("Shape soft_mask:", soft_mask.shape)
+        
+        # 'mask' dikalikan dengan soft_mask dan vektor v
+        injection = soft_mask * v_mul
+
+        # --- LOGGING ---
         sum_per_sample = soft_mask.sum(dim=(1, 2)) 
         ratio_per_sample = (sum_per_sample / out_target.shape[1]) * 100
 
-        print("Rasio % per sampel (10 pertama):", ratio_per_sample.mean(dim=-1))
+        print(f"Rasio Steering CE % per sampel: {ratio_per_sample.mean(dim=-1):.2f}%")
         raise ValueError
         injection = soft_mask * (self.multiplier * self.vec.to(out_target.device))
 

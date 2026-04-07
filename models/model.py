@@ -167,6 +167,8 @@ class BlockWrapper(torch.nn.Module):
         sum_per_sample = soft_mask.sum(dim=(1, 2)) 
         ratio_per_sample = (sum_per_sample / out_target.shape[1]) * 100
 
+        print(soft_mask[0, :10, :])   # 10 token pertama dari sampel ke-0
+        print(soft_mask[0, -10:, :])
         print(f"Rasio Steering CE % per sampel: {ratio_per_sample.mean(dim=-1):.2f}%")
         raise ValueError
         injection = soft_mask * (self.multiplier * self.vec.to(out_target.device))

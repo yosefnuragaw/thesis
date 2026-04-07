@@ -200,8 +200,13 @@ class BlockWrapper(torch.nn.Module):
         sum_per_sample = soft_mask.sum(dim=(1, 2)) 
         ratio_per_sample = (sum_per_sample / out_target.shape[1]) * 100
 
-        print(soft_mask[0, :10, :])  
-        print(soft_mask[0, -10:, :])
+        print("10 Pertama:\n", soft_mask[0, :10, :].squeeze())
+        print("10 Terakhir:\n", soft_mask[0, -10:, :].squeeze())
+
+        soft_mask_0_fp32 = soft_mask[0].to(torch.float32)
+        print(f"Max (Sampel 0): {soft_mask_0_fp32.max().item():.4f}")
+        print(f"Mean (Sampel 0): {soft_mask_0_fp32.mean().item():.4f}")
+        print(f"Variance (Sampel 0): {soft_mask_0_fp32.var().item():.6f}")
         print(f"Rasio Steering CE % per sampel: {ratio_per_sample.mean(dim=-1):.2f}%")
         raise ValueError
         injection = soft_mask * (self.multiplier * self.vec.to(out_target.device))

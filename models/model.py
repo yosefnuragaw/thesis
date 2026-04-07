@@ -120,33 +120,8 @@ class BlockWrapper(torch.nn.Module):
 
         t = 0.20 
 
-        # with torch.no_grad():
-        #     # Pastikan dimensi sesuai untuk broadcasting: [1, 1, hidden]
-        #     v_mul = self.multiplier * self.vec.to(out_target.device).view(1, 1, -1)
-            
-        #     # 1. Konversi ke Distribusi Probabilitas (Softmax)
-        #     # v_mul sebagai distribusi target ideal (P)
-        #     # out_target sebagai distribusi tebakan model saat ini (Q)
-        #     p_probs = torch.nn.functional.softmax(v_mul, dim=-1)
-            
-        #     # Untuk Q, kita gunakan log_softmax demi stabilitas numerik dan kemudahan rumus CE
-        #     q_log_probs = torch.nn.functional.log_softmax(out_target, dim=-1)
-            
-        #     # 2. Hitung Cross-Entropy per Token
-        #     # Rumus: CE = -sum(P * log(Q)) pada dimensi hidden (dim=-1)
-        #     cross_entropy = -(p_probs * q_log_probs).sum(dim=-1, keepdim=True)
-            
-        #     # 3. Ubah Cross-Entropy menjadi Gerbang/Masking (Range 0 sampai 1)
-        #     # Nilai CE berkisar dari 0 (identik) hingga tak terhingga (sangat berbeda).
-        #     # Kita gunakan fungsi eksponensial (e^-x) untuk memetakannya ke rentang 0-1.
-            
-        #     # OPSI A: Injeksi kuat jika pola mirip (CE rendah -> mask mendekati 1)
-        #     # soft_mask = torch.exp(-cross_entropy)
-            
-        #     # OPSI B (Jika Anda ingin sebaliknya): Injeksi kuat jika pola sangat BERBEDA
-        #     soft_mask = 1.0 - torch.exp(-cross_entropy)
         with torch.no_grad():
-            v_mul = self.multiplier * self.vec.to(out_target.device).view(1, 1, -1)
+            v_mul = self.vec.to(out_target.device).view(1, 1, -1)
             
             # 1. UPCAST KE FLOAT32 
             # Sangat penting untuk Softmax dan Log agar tidak underflow/overflow di bf16
@@ -168,7 +143,7 @@ class BlockWrapper(torch.nn.Module):
             
             max_sample_0 = ce_raw_fp32[0].max().item()
             min_sample_0 = ce_raw_fp32[0].min().item()
-            variance_sample_0 = ce_raw_fp32[0].var().item()
+            variance_sample_0 = ce_raw * self.vec.to(_fp32[0].var().item()
             max_idx_0 = ce_raw_fp32[0].argmax().item()
             
             print(f"Max Mentah (Sampel 0): {max_sample_0:.4f} --> Berada di Index Token ke-{max_idx_0}")
@@ -209,7 +184,7 @@ class BlockWrapper(torch.nn.Module):
         print("Shape soft_mask:", soft_mask.shape)
         
         # 'mask' dikalikan dengan soft_mask dan vektor v
-        injection = soft_mask * v_mul
+        injection = soft_mask * self.multiplier* v_mul
 
         # --- LOGGING ---
         sum_per_sample = soft_mask.sum(dim=(1, 2)) 

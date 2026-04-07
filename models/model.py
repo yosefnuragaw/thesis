@@ -118,8 +118,8 @@ class BlockWrapper(torch.nn.Module):
 
         out_target = output[0] if isinstance(output, tuple) else output
 
-        # 2. Hitung Covariance Mask (O(1) dan di dalam no_grad)
-        t = 0.75 # Threshold Absolute Covariance
+        t = 0.20 
+
         with torch.no_grad():
             v = self.vec.to(out_target.device)
             
@@ -130,18 +130,21 @@ class BlockWrapper(torch.nn.Module):
             centered_h = out_target - mean_h
             centered_v = v - mean_v
             
-            # Absolute Covariance
+            # Covariance & Variance
             covariance = (centered_h * centered_v).mean(dim=-1, keepdim=True)
-            abs_covariance = torch.abs(covariance)
+            var_h = centered_h.pow(2).mean(dim=-1, keepdim=True)
+            var_v = centered_v.pow(2).mean()
             
-            # Binary Mask: Shape (batch, seq_len, 1)
-            cov_mask = (abs_covariance >= t).to(out_target.dtype)
+            # Pearson Correlation
+            std_product = torch.sqrt(var_h * var_v) + 1e-6
+            correlation = covariance / std_product
+            abs_correlation = torch.abs(correlation)
+        
+            soft_mask = abs_correlation
 
-        # 3. Kalkulasi Injeksi
-        # 'mask' dari kode Anda (multiplier) dikalikan dengan cov_mask dan vektor v
-        injection = cov_mask * (mask * v)
+        injection = soft_mask * (mask * v)
 
-        # 4. Implementasi ke dalam arsitektur (Buffer & Repackage)
+        # 4. Implementasi ke dalam arsitektur
         if isinstance(output, tuple):
             self.buffer_space.append(out_target.detach().mean(dim=1).cpu())
             modified_hidden = out_target + injection
@@ -150,8 +153,6 @@ class BlockWrapper(torch.nn.Module):
         elif isinstance(output, torch.Tensor):
             self.buffer_space.append(out_target.detach().mean(dim=1).cpu())
             output = out_target + injection
-
-        return output
 
     def set_multiplier(self, multiplier):
         self.multiplier = multiplier

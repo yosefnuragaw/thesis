@@ -134,7 +134,9 @@ class BlockWrapper(torch.nn.Module):
             # D. Hitung Resistensi Model (Opsional tapi bagus)
             # Semakin besar energi asli model (out_norm), semakin kecil suntikannya
             out_norm = torch.norm(out_target.to(torch.float32), p=2, dim=-1, keepdim=True)
-            out_norm_scaled = out_norm / (out_norm.mean(dim=1, keepdim=True) + 1e-6)
+            out_norm_log = torch.log(out_norm + 1e-6)
+            # Normalisasi agar rata-rata log tetap 1.0
+            out_norm_scaled = out_norm_log / (out_norm_log.mean(dim=1, keepdim=True) + 1e-6)
             
             # E. Final Gabungan
             final_injection = ( out_norm_scaled * steering_force).to(out_target.dtype)

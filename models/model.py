@@ -127,17 +127,22 @@ class BlockWrapper(torch.nn.Module):
             # Sekarang, jika multiplier naik, kekuatan injeksi benar-benar naik
             steering_force = self.multiplier  * v_base
             
-            # C. Tentukan Lokasi (Masking)
-            # Gunakan zeros + scatter jika ingin 1 token, atau ones jika ingin semua
-            # selection_mask = torch.ones_like(ce_raw_fp32) 
+            
             
             # D. Hitung Resistensi Model (Opsional tapi bagus)
             # Semakin besar energi asli model (out_norm), semakin kecil suntikannya
             out_norm = torch.norm(out_target.to(torch.float32), p=2, dim=-1, keepdim=True)
-            resistance = 1.0 / (out_norm + 1e-6)
+            
+            # 2. SELEKSI LOKASI: Cari indeks dengan norma tertinggi
+            # Kita mencari di dimensi Sequence (dim=1)
+            max_norm_indices = out_norm.argmax(dim=1, keepdim=True)
+            
+            # 3. BUAT MASKER: Hanya isi 1.0 pada posisi tertinggi, sisanya 0.0
+            selection_mask = torch.zeros_like(out_norm)
+            selection_mask.scatter_(1, max_norm_indices, 1.0)
             
             # E. Final Gabungan
-            final_injection = ( resistance * steering_force).to(out_target.dtype)
+            final_injection = ( selection_mask * steering_force).to(out_target.dtype)
                     
 
         # 8. Implementasi ke dalam arsitektur

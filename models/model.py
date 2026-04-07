@@ -149,7 +149,7 @@ class BlockWrapper(torch.nn.Module):
 
         # 3. Kalkulasi Injeksi
         # 'mask' (self.multiplier) dikalikan dengan soft_mask dan vektor v
-        injection = soft_mask * (v_mul)
+        injection = soft_mask * (self.multiplier * self.vec.to(out_target.device))
 
         # 4. Implementasi ke dalam arsitektur
         if isinstance(output, tuple):

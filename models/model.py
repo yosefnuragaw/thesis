@@ -141,7 +141,7 @@ class BlockWrapper(torch.nn.Module):
             abs_correlation = torch.abs(correlation)
             
             # 1. Buat Gerbang Biner (Lolos Threshold atau Tidak)
-            binary_gate = (abs_correlation < 0.001).to(out_target.dtype)
+            binary_gate = (abs_correlation < 0.0001).to(out_target.dtype)
             
             # --- MODIFIKASI SOFT MASKING DI SINI ---
             # 2. Kalikan gerbang dengan nilai korelasinya
@@ -155,8 +155,7 @@ class BlockWrapper(torch.nn.Module):
         sum_per_sample = soft_mask.sum(dim=(1, 2)) 
         ratio_per_sample = (sum_per_sample / out_target.shape[1]) * 100
 
-        print("Sum per sampel (10 pertama):", sum_per_sample[:10])
-        print("Rasio % per sampel (10 pertama):", ratio_per_sample[:10])
+        print("Rasio % per sampel (10 pertama):", ratio_per_sample.mean(dim=-1))
         raise ValueError
         injection = soft_mask * (self.multiplier * self.vec.to(out_target.device))
 

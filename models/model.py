@@ -150,8 +150,7 @@ class BlockWrapper(torch.nn.Module):
             
             # Hitung kemiripan sudut (Cosine) antara output dan vektor Anda
             # Hasil: 1.0 (Sangat searah), 0.0 (Tegak lurus), -1.0 (Berlawanan arah)
-            cosine_sim = torch.nn.functional.cosine_similarity(out_target, v_mul, dim=-1, keepdim=True)
-            
+            cosine_sim = torch.nn.functional.cosine_similarity(out_target, v_mul, dim=-1).unsqueeze(-1)            
             # Karena kita hanya ingin menyuntikkan ke token yang searah/mirip,
             # kita buang nilai negatif (menjadi 0)
             soft_mask = torch.clamp(cosine_sim, min=-1.0, max = 1.0)

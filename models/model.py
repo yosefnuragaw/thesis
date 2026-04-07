@@ -169,33 +169,19 @@ class BlockWrapper(torch.nn.Module):
         return mean_val, std_val
     
 
-    def apply_sparse_steering(hidden_states: torch.Tensor, 
-                        #   vec: torch.Tensor, 
-                        #   multiplier: float, 
-                        #   theta: float = 5.0, 
-                        #   strategy: str = "do_no_harm", 
-                          eps: float = 1e-8) -> torch.Tensor:
+    def apply_sparse_steering(self, hidden_states):
+
+        # 1. Hitung mask tanpa melacak gradien (O(1) komputasi)
         with torch.no_grad():
             variance = hidden_states.pow(2).mean(dim=-1, keepdim=True)
-            rms_normed = hidden_states / torch.sqrt(variance + eps)
-            
+            rms_normed = hidden_states / torch.sqrt(variance + 1e-6)
             abs_normed = torch.abs(rms_normed)
             
-            print(abs_normed)
-            # if strategy == "do_no_harm":
-            #     # Mask = 1 jika neuron BUKAN outlier (<= theta), Mask = 0 jika outlier (> theta)
-            #     mask = (abs_normed <= theta).to(hidden_states.dtype)
-            # elif strategy == "amplification":
-            #     # Mask = 1 jika neuron ADALAH outlier (>= theta), Mask = 0 jika inlier (< theta)
-            #     mask = (abs_normed >= theta).to(hidden_states.dtype)
-            # else:
-            #     raise ValueError(f"Strategy '{strategy}' tidak dikenal. Gunakan 'do_no_harm' atau 'amplification'.")
+            # Asumsikan Anda sudah mendefinisikan self.theta = 5.0 di __init__
+        #     mask = (abs_normed <= self.theta).to(hidden_states.dtype)
         
-        # 3. Hitung Injeksi (Hadamard Product antara Mask, Multiplier, dan Vector)
-        # vec di-broadcast secara otomatis oleh PyTorch ke shape (batch, seq_len, hidden_dim)
-        # injection = mask * (multiplier * vec.to(hidden_states.device))
-        
-        # # 4. Tambahkan injeksi yang sudah di-masking ke aktivasi asli
+        # # 2. Injeksi terarah DI LUAR no_grad agar fungsi loss BiPO tetap jalan
+        # injection = mask * (self.multiplier * self.vec.to(hidden_states.device))
         # steered_states = hidden_states + injection
-        
+        print(abs_normed)
         # return steered_states

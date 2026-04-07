@@ -143,7 +143,7 @@ class BlockWrapper(torch.nn.Module):
             
             max_sample_0 = ce_raw_fp32[0].max().item()
             min_sample_0 = ce_raw_fp32[0].min().item()
-            variance_sample_0 = ce_raw * self.vec.to(_fp32[0].var().item()
+            variance_sample_0 = ce_raw_fp32[0].var().item()
             max_idx_0 = ce_raw_fp32[0].argmax().item()
             
             print(f"Max Mentah (Sampel 0): {max_sample_0:.4f} --> Berada di Index Token ke-{max_idx_0}")

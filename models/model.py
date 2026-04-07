@@ -153,7 +153,7 @@ class BlockWrapper(torch.nn.Module):
             v_mul_fp32 = v_mul.to(torch.float32)
             
             # 2. Hitung Cosine Similarity di ruang FP32 yang aman
-            cosine_sim_fp32 = F.cosine_similarity(out_fp32, v_mul_fp32, dim=-1).unsqueeze(-1)
+            cosine_sim_fp32 = torch.nn.functional.cosine_similarity(out_fp32, v_mul_fp32, dim=-1).unsqueeze(-1)
             
             # 3. KEMBALIKAN KE BFLOAT16 (Downcast)
             cosine_sim = cosine_sim_fp32.to(out_target.dtype)

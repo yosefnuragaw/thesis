@@ -182,8 +182,7 @@ class BlockWrapper(torch.nn.Module):
             # Ubah menjadi persentase injeksi (Semakin kecil CE, semakin mendekati 1.0)
             # Anda bisa mengubah nilai 'temperature' (misal 3.0, 5.0, 10.0) untuk mengatur 
             # seberapa galak filter ini membuang token yang tidak relevan.
-            temperature = 10
-            soft_mask_fp32 = 1-torch.exp(-normalized_ce * temperature)
+            soft_mask_fp32 = 1-torch.exp(-normalized_ce)
 
             # 5. KEMBALIKAN KE BFLOAT16 (Downcast)
             soft_mask = soft_mask_fp32.to(out_target.dtype)

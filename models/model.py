@@ -152,10 +152,18 @@ class BlockWrapper(torch.nn.Module):
             out_fp32 = out_target.to(torch.float32)
             v_mul_fp32 = v_mul.to(torch.float32)
             
-            # 2. Hitung Cosine Similarity di ruang FP32 yang aman
+            # Hitung Cosine Similarity RAW (Belum di-clamp)
             cosine_sim_fp32 = torch.nn.functional.cosine_similarity(out_fp32, v_mul_fp32, dim=-1).unsqueeze(-1)
             
-            # 3. KEMBALIKAN KE BFLOAT16 (Downcast)
+            # --- CEK STATISTIK MENTAH ---
+            print(f"Max Similarity Se-Batch: {cosine_sim_fp32.max().item():.4f}")
+            print(f"Min Similarity Se-Batch: {cosine_sim_fp32.min().item():.4f}")
+            print(f"Rata-rata Similarity: {cosine_sim_fp32.mean().item():.4f}")
+            
+            # --- CEK TOKEN DI TENGAH (Index 150-160) ---
+            print("Nilai RAW Token Tengah:\n", cosine_sim_fp32[0, 150:160, :].squeeze())
+            
+            # Kembali ke kode normal Anda
             cosine_sim = cosine_sim_fp32.to(out_target.dtype)
             
             # 4. Filter nilai negatif

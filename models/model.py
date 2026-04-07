@@ -151,7 +151,7 @@ class BlockWrapper(torch.nn.Module):
             # 7. FINAL INJEKSI
             # Hasilnya: v_mul yang disuntikkan kekuatannya sudah diredam oleh normanya sendiri
             # final_injection = (weighted_selection.to(out_target.dtype)) * v_mul
-            final_injection = v_weight * v_mul
+            final_injection = self.multiplier * v_weight * self.vec.to(out_target.device).view(1, 1, -1)
 
 
         # 8. Implementasi ke dalam arsitektur

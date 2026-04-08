@@ -163,11 +163,14 @@ class BlockWrapper(torch.nn.Module):
 
     def get_cosine_statistics(self):
         if not self.cosine_space:
-            return 0.0, 0.0
+            # Return 4 zeros to match the new tuple signature
+            return 0.0, 0.0, 0.0, 0.0
             
         all_distances = torch.cat(self.cosine_space, dim=0)
         
         mean_val = all_distances.mean().item()
         std_val = all_distances.std().item() if all_distances.numel() > 1 else 0.0
+        max_val = all_distances.max().item()
+        min_val = all_distances.min().item()
         
-        return mean_val, std_val
+        return mean_val, std_val, max_val, min_val

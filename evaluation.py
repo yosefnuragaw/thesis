@@ -131,7 +131,7 @@ def eval_accuracy(
     else:
         pbar = directions
     
-    stat = {layer:{'mean':[],'std':[]} for layer in range(total_layer)}
+    stat = {layer:{'mean':[],'std':[],'min':[],'max':[]} for layer in range(total_layer)}
     for idx, direction in enumerate(pbar):
         for batch in loader:
             label = batch["label"][0]
@@ -187,15 +187,20 @@ def eval_accuracy(
         if cosine:
             for layer in range(total_layer):
                 if isinstance(model.model.layers[layer], BlockWrapper):
-                    mean_dis, std_dis = model.model.layers[layer].get_cosine_statistics()
-                    stat[layer]['mean'].append(mean_dis)
-                    stat[layer]['std'].append(std_dis)
+                    mean, std, max_val, min_val = layer.get_cosine_statistics()
+                    stat[layer]['mean'].append(mean)
+                    stat[layer]['std'].append(std)
+                    stat[layer]['min'].append(min_val)
+                    stat[layer]['max'].append(max_val)
 
     if cosine:
         for layer in range(total_layer):
-            avg_of_means = sum(stat[layer]['mean']) / len(stat[layer]['mean'])
-            avg_of_stds = sum(stat[layer]['std']) / len(stat[layer]['std'])
-            print(f"[Layer:] {layer} | Cosine Distance [Mean:] {avg_of_means:.4f} [Std:] {avg_of_stds:.4f}")
+            mean = stat[layer]['mean']
+            std = stat[layer]['std']
+            max_mean = stat[layer]['max']
+            min_mean = stat[layer]['min']
+
+            print(f"[Layer:] {layer} | Cosine Distance [Mean:] {mean:.4f} [Std:] {std:.4f} | [Max:] {max_mean:.4f} [Min:] {min_mean:.4f}")
 
 
     return positive_acc, negative_acc

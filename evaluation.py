@@ -149,6 +149,7 @@ def eval_accuracy(
             avg_logp = []
             for input_ids, attention_mask in zip(batch["input_ids"], batch["attention_mask"]):
                 input_ids = input_ids.to(model.device)
+                print(input_ids)
                 attention_mask = attention_mask.to(model.device)
         
                 with torch.no_grad():
@@ -157,6 +158,8 @@ def eval_accuracy(
                     
                     sliced = logps[0, q_len - 1:]
                     avg_logp.append(sliced.mean().item())
+                
+                break
 
             pred = OPT[avg_logp.index(max(avg_logp))]
             

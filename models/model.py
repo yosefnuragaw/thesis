@@ -98,7 +98,6 @@ class BlockWrapper(torch.nn.Module):
        
     def forward(self, hidden_states, *args, **kwargs):
         output = self.block(hidden_states, *args, **kwargs)
-        print(hidden_states.shape)
         with torch.no_grad():
             out_tensor = output[0] if isinstance(output, tuple) else output
             avg_hidden = hidden_states.detach().mean(dim=1)
@@ -145,7 +144,7 @@ class BlockWrapper(torch.nn.Module):
 
             min_val = torch.minimum(self.cache_min, batch_min)
             max_val = torch.maximum(self.cache_max, batch_max)
-            
+
         norm_range = max_val - min_val + 1e-6
         soft_mask = (out_norm - min_val) / norm_range
             

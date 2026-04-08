@@ -131,36 +131,12 @@ class BlockWrapper(torch.nn.Module):
 
         with torch.no_grad():
             
-            q25 = torch.quantile(out_norm, 0.25, dim=1, keepdim=True)
-            q75 = torch.quantile(out_norm, 0.75, dim=1, keepdim=True)
-            
-            # Calculate the Interquartile Range
-            iqr = q75 - q25
-            
-            # Define the outlier threshold. Standard math uses 1.5x IQR.
-            # Because sinks are extreme structural outliers, using 5.0x IQR ensures 
-            # we ONLY catch the sinks and never accidentally clip a "loud" semantic word.
-            sink_threshold = q75 + (5.0 * iqr)
-            
-            # Boolean mask of the sinks (True for 213.43 and 90.67, False for 0.45)
-            is_sink = out_norm > sink_threshold
-            
-            # ==========================================
-            # 2. SAFE MIN/MAX EXTRACTION (Without Sinks)
-            # ==========================================
-            # To find min/max without breaking batch dimensions, we mask the sinks
-            # with Infinity so they are ignored by the .min() and .max() functions.
-            norms_for_min = out_norm.masked_fill(is_sink, float('inf'))
-            norms_for_max = out_norm.masked_fill(is_sink, float('-inf'))
-            
-            # Now these perfectly repesent the bounds of your semantic text (~0.2 to ~0.5)
-            batch_min = norms_for_min.min(dim=1, keepdim=True)[0]
-            batch_max = norms_for_max.max(dim=1, keepdim=True)[0]
-            
-            if not hasattr(self, 'cache_min') or self.cache_min is None:
-                self.register_buffer('cache_min', batch_min.detach().clone())
-                self.register_buffer('cache_max', batch_max.detach().clone())
+            batch_min = out_norm.min()
+            batch_max = out_norm.max()
 
+            if not hasattr(self, 'cache_min') or self.cache_min is None:
+                self.register_buffer('cache_min', batch_min)
+                self.register_buffer('cache_max', batch_max)
             else:
                 self.cache_min = torch.minimum(self.cache_min, batch_min)
                 self.cache_max = torch.maximum(self.cache_max, batch_max)
@@ -172,17 +148,8 @@ class BlockWrapper(torch.nn.Module):
         norm_range = max_val - min_val + 1e-6
         soft_mask = (out_norm - min_val) / norm_range
 
-        norm_range = self.cache_max - self.cache_min + 1e-6
-        
-        # MISSING CLAMP: Because the sink tokens were excluded from cache_max, 
-        # their (out_norm - cache_min) / norm_range will be MASSIVE (e.g., 500.0). 
-        # You MUST clamp it so the sink tokens lock exactly at 1.0.
-        soft_mask = torch.clamp((out_norm - self.cache_min) / norm_range, 0.0, 1.0)
-
-        llbds = 1 
-
-        v_base = self.vec.detach().to(out_target.device).to(torch.float32).view(1, 1, -1)
-        final_injection = (llbds * self.multiplier * v_base).to(out_target.dtype)
+        llbds =  1+ (soft_mask-0.5) 
+        final_injection = (llbds * self.multiplier * self.vec.to(out_target.device)).to(out_target.dtype)
                     
 
         # 8. Implementasi ke dalam arsitektur

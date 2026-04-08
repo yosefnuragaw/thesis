@@ -130,42 +130,26 @@ class BlockWrapper(torch.nn.Module):
         out_norm = torch.norm(out_target.to(torch.float32), p=2, dim=-1, keepdim=True)
 
         with torch.no_grad():
-            # Check if we are in the generation phase (seq_len == 1)
-            is_decoding = out_target.size(1) == 1
+            
+            batch_min = out_norm.min()
+            batch_max = out_norm.max()
 
-            if not is_decoding:
-                # ==========================================
-                # IQR-BASED OUTLIER DETECTION (SINK FINDER)
-                # ==========================================
-                # Find the 25th (Q1) and 75th (Q3) percentiles
-                q25 = torch.quantile(out_norm, 0.25, dim=1, keepdim=True)
-                q75 = torch.quantile(out_norm, 0.75, dim=1, keepdim=True)
-                
-                # Calculate Interquartile Range
-                iqr = q75 - q25
-                
-                sink_threshold = q75 + (iqr)
-                
-                is_sink = out_norm > sink_threshold
+            if not hasattr(self, 'cache_min') or self.cache_min is None:
+                self.register_buffer('cache_min', batch_min)
+                self.register_buffer('cache_max', batch_max)
             else:
-                # During decoding (1 token at a time), the new token is never an attention sink.
-                # We default the mask to False to avoid quantile math errors on a size-1 tensor.
-                is_sink = torch.zeros_like(out_norm, dtype=torch.bool)
+                self.cache_min = torch.minimum(self.cache_min, batch_min)
+                self.cache_max = torch.maximum(self.cache_max, batch_max)
 
-        # ==========================================
-        # VECTOR INJECTION
-        # ==========================================
-        # Cast the boolean mask to 1.0 (sinks) and 0.0 (semantic text)
-        binary_mask = is_sink.to(out_target.dtype)
-        print(f"Sinks detected per sequence: {binary_mask.sum(dim=1).squeeze().tolist()}")
-        # Sinks get a 1000x multiplier, everything else gets 0x
+            min_val = torch.minimum(self.cache_min, batch_min)
+            max_val = torch.maximum(self.cache_max, batch_max)
+
+        norm_range = max_val - min_val + 1e-6
+        soft_mask = (out_norm - min_val) / norm_range
+        binary_mask = (out_norm == max_val).to(out_target.dtype)
+
         llbds = binary_mask * 50
-        
-        # Prepare the base vector properly shaped
-        v_base = self.vec.detach().to(out_target.device).to(torch.float32).view(1, 1, -1)
-        
-        # Calculate final injection payload
-        final_injection = (llbds * self.multiplier * v_base).to(out_target.dtype)
+        final_injection = (llbds * self.multiplier * self.vec.to(out_target.device)).to(out_target.dtype)
                     
 
         # 8. Implementasi ke dalam arsitektur

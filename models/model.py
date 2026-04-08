@@ -128,14 +128,12 @@ class BlockWrapper(torch.nn.Module):
         #     output = output + (mask * self.vec.to(output.device))
 
         out_target = output[0] if isinstance(output, tuple) else output
+        out_norm = torch.norm(out_target.to(torch.float32), p=2, dim=-1, keepdim=True)
 
         with torch.no_grad():
-            v_base = self.vec.to(out_target.device).to(torch.float32).view(1, 1, -1)
-            steering_force = self.multiplier  * v_base
             
-            out_norm = torch.norm(out_target.to(torch.float32), p=2, dim=-1, keepdim=True)
-            batch_min = out_norm.min(dim=1, keepdim=True)[0]
-            batch_max = out_norm.max(dim=1, keepdim=True)[0]
+            batch_min = out_norm.min()
+            batch_max = out_norm.max()
 
             if not hasattr(self, 'cache_min') or self.cache_min is None:
                 self.register_buffer('cache_min', batch_min)
@@ -144,14 +142,16 @@ class BlockWrapper(torch.nn.Module):
                 self.cache_min = torch.minimum(self.cache_min, batch_min)
                 self.cache_max = torch.maximum(self.cache_max, batch_max)
 
+
             min_val = torch.minimum(self.cache_min, batch_min)
             max_val = torch.maximum(self.cache_max, batch_max)
-            norm_range = max_val - min_val + 1e-6
-            soft_mask = (out_norm - min_val) / norm_range
+            
+        norm_range = max_val - min_val + 1e-6
+        soft_mask = (out_norm - min_val) / norm_range
             
 
-            llbds =  1 + (soft_mask - 0.75)
-            final_injection = (llbds * steering_force).to(out_target.dtype)
+        llbds =  1 + (soft_mask - 0.75)
+        final_injection = (llbds * self.multiplier * self.vec.to(out_target.device)).to(out_target.dtype)
                     
 
         # 8. Implementasi ke dalam arsitektur

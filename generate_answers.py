@@ -169,8 +169,8 @@ def save(output_dir:str,file_name:str,df: pd.DataFrame)->None:
     df.to_csv(output_path, index=False)
 
     print(f"Results saved to: {output_path}")
+    
 def main(baseline:bool, args: ScriptArguments)->None:
-
     model, tokenizer = init_model(
                 model_name=args.model_name_or_path,
                 vec_dir=args.vec_dir,

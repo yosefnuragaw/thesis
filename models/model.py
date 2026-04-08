@@ -140,7 +140,7 @@ class BlockWrapper(torch.nn.Module):
             
 
             llbds =  1 + (soft_mask - 0.75)
-            final_injection = (steering_force).to(out_target.dtype)
+            final_injection = (llbds * steering_force).to(out_target.dtype)
                     
 
         # 8. Implementasi ke dalam arsitektur

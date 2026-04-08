@@ -187,7 +187,7 @@ def eval_accuracy(
         if cosine:
             for layer in range(total_layer):
                 if isinstance(model.model.layers[layer], BlockWrapper):
-                    mean, std, max_val, min_val = layer.get_cosine_statistics()
+                    mean, std, max_val, min_val = model.model.layers[layer].get_cosine_statistics()
                     stat[layer]['mean'].append(mean)
                     stat[layer]['std'].append(std)
                     stat[layer]['min'].append(min_val)

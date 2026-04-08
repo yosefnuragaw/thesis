@@ -147,7 +147,7 @@ def eval_accuracy(
                 curr_label = label
 
             avg_logp = []
-            for input_ids, attention_mask, decoded in zip(batch["input_ids"], batch["attention_mask"], batch['decoded']):
+            for input_ids, attention_mask, decoded in zip(batch["input_ids"], batch["attention_mask"], batch['decode']):
                 input_ids = input_ids.to(model.device)
                 print(decoded)
                 attention_mask = attention_mask.to(model.device)

@@ -103,13 +103,13 @@ class BlockWrapper(torch.nn.Module):
             
         mask = self.multiplier 
         
-        # if self.skip:
-        #     if self.skip == 'llbds':
-        #         llbds =  1 + self.gate_mask(cos_dis,'s').to(output[0].device)*(cos_dis - self.gate_mask(cos_dis, 'b').to(output[0].device))
-        #         mask = mask * llbds
+        if self.skip:
+            if self.skip == 'llbds':
+                llbds = 1.0 + self.gate_mask(cos_dis, 'b').to(output[0].device) - cos_dis.to(output[0].device)
+                mask = mask * llbds
 
-        llbds =  1 +  0.8 - cos_dis
-        mask = mask * llbds
+        # llbds =  1 +  0.8 - cos_dis
+        # mask = mask * llbds
 
         if isinstance(mask, torch.Tensor):
             while mask.dim() < hidden_states.dim():

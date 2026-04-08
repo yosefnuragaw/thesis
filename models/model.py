@@ -97,6 +97,7 @@ class BlockWrapper(torch.nn.Module):
 
        
     def forward(self, hidden_states, *args, **kwargs):
+        print(hidden_states)
         output = self.block(hidden_states, *args, **kwargs)
         with torch.no_grad():
             out_tensor = output[0] if isinstance(output, tuple) else output

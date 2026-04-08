@@ -130,7 +130,6 @@ class BlockWrapper(torch.nn.Module):
                 self.register_buffer('cache_min', batch_min)
                 self.register_buffer('cache_max', batch_max)
             else:
-                # Update existing cache
                 self.cache_min = torch.minimum(self.cache_min, batch_min)
                 self.cache_max = torch.maximum(self.cache_max, batch_max)
 
@@ -140,7 +139,7 @@ class BlockWrapper(torch.nn.Module):
             soft_mask = (out_norm - min_val) / norm_range
             
 
-            llbds =  1 + (soft_mask - 0.5)
+            llbds =  1 + (soft_mask - 0.75)
             final_injection = (llbds * steering_force).to(out_target.dtype)
                     
 

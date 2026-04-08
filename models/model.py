@@ -142,7 +142,6 @@ class BlockWrapper(torch.nn.Module):
             
 
             llbds =  1 + (soft_mask - 0.5)
-            print(llbds)
             final_injection = (llbds * steering_force).to(out_target.dtype)
                     
 

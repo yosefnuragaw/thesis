@@ -58,7 +58,7 @@ def init_model(
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         attn_implementation="flash_attention_2", 
-        use_cache=True,
+        # use_cache=True,
         low_cpu_mem_usage=True,
         trust_remote_code=True,
     )
@@ -92,7 +92,7 @@ def init_model(
             else:
                 raise ValueError(f"Vector not found at {vec_path}")
                 
-        model.config.use_cache = False
+    model.config.use_cache = False
     model.eval()
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -314,7 +314,7 @@ if __name__ == "__main__":
             model=model,
             tokenizer=tokenizer,
             layers=script_args.layer,
-            multipliers= [-100,-10,-2,2,10,100],
+            multipliers= [2],
             messages=messages,
             max_new_tokens = script_args.max_new_tokens,
             temperature = script_args.temperature ,

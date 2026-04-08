@@ -53,11 +53,21 @@ class MaskGate2(torch.nn.Module):
 
 
 class BlockWrapper(torch.nn.Module):
-    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False, gate_function:Optional[str] = None, skip:Optional[str] = None, k1:float = 0.):
+    def __init__(self, 
+                 block, 
+                 hidden_dim, 
+                 vec: Optional[torch.Tensor] = None, 
+                 buffer: bool = False, 
+                 gate_function:Optional[str] = None, 
+                 skip:Optional[str] = None, 
+                 k1:float = 0.,
+                 use_cache: bool = False):
+        
         super().__init__()
         self.multiplier = 1.0
         self.block = block
         self.k1 = k1
+        self.use_cache = use_cache
         try:
             ref_param = next(block.parameters())
             self.init_dtype = ref_param.dtype
@@ -88,6 +98,7 @@ class BlockWrapper(torch.nn.Module):
        
     def forward(self, hidden_states, *args, **kwargs):
         output = self.block(hidden_states, *args, **kwargs)
+        print(hidden_states.shape)
         with torch.no_grad():
             out_tensor = output[0] if isinstance(output, tuple) else output
             avg_hidden = hidden_states.detach().mean(dim=1)

@@ -97,7 +97,6 @@ class BlockWrapper(torch.nn.Module):
 
        
     def forward(self, hidden_states, *args, **kwargs):
-        print(hidden_states)
         output = self.block(hidden_states, *args, **kwargs)
         with torch.no_grad():
             out_tensor = output[0] if isinstance(output, tuple) else output
@@ -148,7 +147,8 @@ class BlockWrapper(torch.nn.Module):
 
         norm_range = max_val - min_val + 1e-6
         soft_mask = (out_norm - min_val) / norm_range
-            
+        print("\n==========================")
+        print(norm_range)
 
         llbds =  1 + (soft_mask - 0.75)
         final_injection = (llbds * self.multiplier * self.vec.to(out_target.device)).to(out_target.dtype)

@@ -96,8 +96,9 @@ class BlockWrapper(torch.nn.Module):
             # cos_sim_c= torch.clamp(cos_sim, min=-1.0, max=1.0) 
             cos_sim = torch.nn.functional.cosine_similarity(avg_output, self.vec.detach(), dim=-1)
             cos_sim_c= torch.clamp(cos_sim, min=-1.0, max=1.0) 
-            print(f'old{cos_sim_c}')
             cos_dis = 1 - cos_sim_c
+            self.cosine_space.append(cos_sim_c)
+
            
             
         mask = self.multiplier 

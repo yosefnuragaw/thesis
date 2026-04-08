@@ -179,7 +179,7 @@ class BlockWrapper(torch.nn.Module):
         # You MUST clamp it so the sink tokens lock exactly at 1.0.
         soft_mask = torch.clamp((out_norm - self.cache_min) / norm_range, 0.0, 1.0)
 
-        llbds = 1+(soft_mask-0.1) 
+        llbds = 1 
 
         v_base = self.vec.detach().to(out_target.device).to(torch.float32).view(1, 1, -1)
         final_injection = (llbds * self.multiplier * v_base).to(out_target.dtype)

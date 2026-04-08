@@ -38,7 +38,7 @@ class MultipleOptionDataset(Dataset):
             tokenized_row_ids.append(tok.input_ids.squeeze(0))
             tokenized_row_mask.append(tok.attention_mask.squeeze(0))
 
-        decoded = [self.tokenizer.decode(ids) for ids in tokenized_row_ids]
+        decoded = [self.tokenizer.convert_ids_to_tokens(ids) for ids in tokenized_row_ids]
         return {
             "question_length": question_len,
             "input_ids": tokenized_row_ids,

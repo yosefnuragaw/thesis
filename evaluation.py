@@ -159,7 +159,7 @@ def eval_accuracy(
                     sliced = logps[0, q_len - 1:]
                     avg_logp.append(sliced.mean().item())
                 
-                break
+            break
 
             pred = OPT[avg_logp.index(max(avg_logp))]
             

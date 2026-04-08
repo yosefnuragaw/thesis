@@ -148,7 +148,7 @@ class BlockWrapper(torch.nn.Module):
         soft_mask = (out_norm - batch_min) / norm_range
         binary_mask = (out_norm == batch_max).to(out_target.dtype)
 
-        llbds = binary_mask * 100
+        llbds = binary_mask * 10
         final_injection = (llbds * self.multiplier * self.vec.to(out_target.device)).to(out_target.dtype)
                     
 

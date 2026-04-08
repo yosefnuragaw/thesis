@@ -133,22 +133,23 @@ class BlockWrapper(torch.nn.Module):
             
             batch_min = out_norm.min()
             batch_max = out_norm.max()
+            
+            if out_target.size(1) == 1:
+                if not hasattr(self, 'cache_min') or self.cache_min is None:
+                    self.register_buffer('cache_min', batch_min)
+                    self.register_buffer('cache_max', batch_max)
+                else:
+                    self.cache_min = torch.minimum(self.cache_min, batch_min)
+                    self.cache_max = torch.maximum(self.cache_max, batch_max)
 
-            if not hasattr(self, 'cache_min') or self.cache_min is None:
-                self.register_buffer('cache_min', batch_min)
-                self.register_buffer('cache_max', batch_max)
-            else:
-                self.cache_min = torch.minimum(self.cache_min, batch_min)
-                self.cache_max = torch.maximum(self.cache_max, batch_max)
+                batch_min = torch.minimum(self.cache_min, batch_min)
+                batch_max = torch.maximum(self.cache_max, batch_max)
 
-            min_val = torch.minimum(self.cache_min, batch_min)
-            max_val = torch.maximum(self.cache_max, batch_max)
+        # norm_range = batch_max - batch_min + 1e-6
+        # soft_mask = (out_norm - batch_min) / norm_range
+        binary_mask = (out_norm == batch_max).to(out_target.dtype)
 
-        norm_range = max_val - min_val + 1e-6
-        soft_mask = (out_norm - min_val) / norm_range
-        binary_mask = (out_norm == max_val).to(out_target.dtype)
-
-        llbds = binary_mask * 100
+        llbds = binary_mask 
         final_injection = (llbds * self.multiplier * self.vec.to(out_target.device)).to(out_target.dtype)
                     
 

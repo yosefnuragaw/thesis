@@ -135,8 +135,8 @@ class BlockWrapper(torch.nn.Module):
                 self.cache_min = torch.minimum(self.cache_min, batch_min)
                 self.cache_max = torch.maximum(self.cache_max, batch_max)
 
-            min_val = torch.minimum(self.cache_min, min_val)
-            max_val = torch.maximum(self.cache_max, max_val)
+            min_val = torch.minimum(self.cache_min, batch_min)
+            max_val = torch.maximum(self.cache_max, batch_max)
             norm_range = max_val - min_val + 1e-6
             soft_mask = (out_norm - min_val) / norm_range
             

@@ -157,7 +157,7 @@ class BlockWrapper(torch.nn.Module):
         # ==========================================
         # Cast the boolean mask to 1.0 (sinks) and 0.0 (semantic text)
         binary_mask = is_sink.to(out_target.dtype)
-
+        print(f"Sinks detected per sequence: {binary_mask.sum(dim=1).squeeze().tolist()}")
         # Sinks get a 1000x multiplier, everything else gets 0x
         llbds = binary_mask * 50
         

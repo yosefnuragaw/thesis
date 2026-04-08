@@ -119,35 +119,19 @@ class BlockWrapper(torch.nn.Module):
         out_target = output[0] if isinstance(output, tuple) else output
 
         with torch.no_grad():
-            # A. Normalisasi Arah (Statis) - Menghasilkan Unit Vector
             v_base = self.vec.to(out_target.device).to(torch.float32).view(1, 1, -1)
-            # v_unit = v_base / (torch.norm(v_base, p=2) + 1e-6)
-            
-            # B. Tentukan Kekuatan (Dinamis) - Multiplier di luar
-            # Sekarang, jika multiplier naik, kekuatan injeksi benar-benar naik
             steering_force = self.multiplier  * v_base
             
-            
-            
-            # D. Hitung Resistensi Model (Opsional tapi bagus)
-            # Semakin besar energi asli model (out_norm), semakin kecil suntikannya
             out_norm = torch.norm(out_target.to(torch.float32), p=2, dim=-1, keepdim=True)
-    
-            # 2. Ambil Nilai Ekstrem per Sequence (dim=1)
-            # [Batch, 1, 1]
             max_val = out_norm.max(dim=1, keepdim=True)[0]
             min_val = out_norm.min(dim=1, keepdim=True)[0]
             
-            # 3. Rumus Min-Max Scaling
-            # (x - min) / (max - min)
-            # Epsilon (1e-6) mencegah pembagian dengan nol jika max == min
             norm_range = max_val - min_val + 1e-6
-            soft_mask = 1-((out_norm - min_val) / norm_range)
-            
-            # 4. Final Injeksi
-            # Steering force dikalikan dengan soft_mask [0.0 s/d 1.0]
-            # Token terlemah akan memiliki injeksi 0, token terkuat akan memiliki injeksi 1.0 * multiplier
-            final_injection = (soft_mask * steering_force).to(out_target.dtype)
+            soft_mask = (out_norm - min_val) / norm_range
+
+            llbds =  1 + (soft_mask - 0.5)
+
+            final_injection = (llbds * steering_force).to(out_target.dtype)
                     
 
         # 8. Implementasi ke dalam arsitektur

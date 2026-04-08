@@ -4,8 +4,7 @@ model_name_or_path: "mistralai/Mistral-7B-Instruct-v0.3"
 behavior: "power-seeking"
 layer: [6]
 total_layer: 32
-# multipliers: [10,8,6,4,2,-2,-4,-6,-8,-10]
-multipliers: [10,2,-2,-10]
+multipliers: [10,8,6,4,2,1.5,1,0.5,-0.5,-1,-2,-4,-6,-8,-10]
 
 # Training Hyperparameters
 learning_rate: 5.0e-5

@@ -85,6 +85,7 @@ class BlockWrapper(torch.nn.Module):
         self.buffer_space = []
         self.cosine_space = []
 
+       
     def forward(self, hidden_states, *args, **kwargs):
         output = self.block(hidden_states, *args, **kwargs)
         print(hidden_states.shape)
@@ -123,9 +124,19 @@ class BlockWrapper(torch.nn.Module):
             steering_force = self.multiplier  * v_base
             
             out_norm = torch.norm(out_target.to(torch.float32), p=2, dim=-1, keepdim=True)
-            max_val = out_norm.max(dim=1, keepdim=True)[0]
-            min_val = out_norm.min(dim=1, keepdim=True)[0]
-            
+            batch_min = out_norm.min(dim=1, keepdim=True)[0]
+            batch_max = out_norm.max(dim=1, keepdim=True)[0]
+
+            if not hasattr(self, 'cache_min') or self.cache_min is None:
+                self.register_buffer('cache_min', batch_min)
+                self.register_buffer('cache_max', batch_max)
+            else:
+                # Update existing cache
+                self.cache_min = torch.minimum(self.cache_min, batch_min)
+                self.cache_max = torch.maximum(self.cache_max, batch_max)
+
+            min_val = torch.minimum(self.cache_min, min_val)
+            max_val = torch.maximum(self.cache_max, max_val)
             norm_range = max_val - min_val + 1e-6
             soft_mask = (out_norm - min_val) / norm_range
             

@@ -195,10 +195,10 @@ def eval_accuracy(
 
     if cosine:
         for layer in range(total_layer):
-            mean = stat[layer]['mean']
-            std = stat[layer]['std']
-            max_mean = stat[layer]['max']
-            min_mean = stat[layer]['min']
+            mean = sum(stat[layer]['mean']) / len(stat[layer]['mean'])
+            std = sum(stat[layer]['std'])/len(stat[layer]['mean'])
+            max_mean = sum(stat[layer]['max'])/len(stat[layer]['mean'])
+            min_mean = sum(stat[layer]['min'])/len(stat[layer]['mean'])
 
             print(f"[Layer:] {layer} | Cosine Distance [Mean:] {mean:.4f} [Std:] {std:.4f} | [Max:] {max_mean:.4f} [Min:] {min_mean:.4f}")
 

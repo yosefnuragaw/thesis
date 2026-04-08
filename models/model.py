@@ -149,7 +149,7 @@ class BlockWrapper(torch.nn.Module):
         soft_mask = (out_norm - min_val) / norm_range
 
         llbds =  1 + (soft_mask - 0.5)
-        final_injection = (llbds * self.multiplier * self.vec.to(out_target.device)).to(out_target.dtype)
+        final_injection = (self.multiplier * self.vec.to(out_target.device)).to(out_target.dtype)
                     
 
         # 8. Implementasi ke dalam arsitektur

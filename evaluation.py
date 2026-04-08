@@ -317,7 +317,7 @@ if __name__ == "__main__":
             model=model,
             tokenizer=tokenizer,
             layers=script_args.layer,
-            multipliers= [2,-2],
+            multipliers= [0],
             messages=messages,
             max_new_tokens = script_args.max_new_tokens,
             temperature = script_args.temperature ,

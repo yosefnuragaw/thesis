@@ -148,7 +148,7 @@ class BlockWrapper(torch.nn.Module):
         norm_range = max_val - min_val + 1e-6
         soft_mask = (out_norm - min_val) / norm_range
 
-        llbds =  soft_mask 
+        llbds =  soft_mask  * 10
         final_injection = (llbds * self.multiplier * self.vec.to(out_target.device)).to(out_target.dtype)
                     
 

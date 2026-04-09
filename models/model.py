@@ -94,7 +94,7 @@ class BlockWrapper(torch.nn.Module):
             avg_output = out_tensor.detach().mean(dim=1)
             # cos_sim = torch.nn.functional.cosine_similarity(avg_hidden, avg_output, dim=-1)
             # cos_sim_c= torch.clamp(cos_sim, min=-1.0, max=1.0) 
-            cos_sim = torch.nn.functional.cosine_similarity(avg_output, self.vec.to(output[0].device), dim=-1)
+            cos_sim = torch.nn.functional.cosine_similarity(avg_output, self.multiplier*self.vec.to(output[0].device), dim=-1)
             cos_sim_c= torch.clamp(cos_sim, min=-1.0, max=1.0) 
             cos_dis = 1 - cos_sim_c
             self.cosine_space.append(cos_dis)

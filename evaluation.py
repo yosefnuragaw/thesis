@@ -300,7 +300,7 @@ if __name__ == "__main__":
             if args.trace:
                     
                 import sys
-                log_file_path = f"{script_args.model_name_or_path.split("/")[-1]}_log.txt"
+                log_file_path = f"{script_args.model_name_or_path.split("/")[-1]}_{script_args.behavior}_log.txt"
                 log_file = open(log_file_path, "w")
                 original_stdout = sys.stdout  # Save the original console output
                 sys.stdout = log_file         # Redirect all print() statements to the file
@@ -312,11 +312,8 @@ if __name__ == "__main__":
                         else:
                             current_layers = [0, i]
                             
-                        print(f"\n{'='*40}")
-                        print(f"Starting Evaluation for layers: {current_layers}")
-                        print(f"{'='*40}")
+                        print(f"[Layer:] {current_layers}")
                         
-                        # 3. Call your function with the modified layers argument
                         accuracy = eval_accuracy(
                             model=model,
                             loader=eval_loader,
@@ -329,10 +326,7 @@ if __name__ == "__main__":
                             save_path=template_save_path,
                             total_layer=script_args.total_layer  
                         ) 
-                        
-                        print(f"Resulting Accuracy: {accuracy}")
-                        
-                        # Force Python to write to the file immediately rather than buffering
+                                                
                         sys.stdout.flush() 
 
                 except Exception as e:

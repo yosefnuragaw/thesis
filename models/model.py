@@ -84,6 +84,7 @@ class BlockWrapper(torch.nn.Module):
         self.buffer = buffer
         self.buffer_space = []
         self.cosine_space = []
+        self.rel_norm_space = []
 
     def forward(self, hidden_states, *args, **kwargs):
         output = self.block(hidden_states, *args, **kwargs)
@@ -94,16 +95,20 @@ class BlockWrapper(torch.nn.Module):
             avg_output = out_tensor.detach().mean(dim=1)
             # cos_sim = torch.nn.functional.cosine_similarity(avg_hidden, avg_output, dim=-1)
             # cos_sim_c= torch.clamp(cos_sim, min=-1.0, max=1.0) 
-            cos_sim = torch.nn.functional.cosine_similarity(avg_output, self.multiplier*self.vec.to(output[0].device), dim=-1)
+            current_vec = (self.multiplier * self.vec).to(avg_output.device)
+            cos_sim = torch.nn.functional.cosine_similarity(avg_output, current_vec, dim=-1)
             cos_sim_c= torch.clamp(cos_sim, min=-1.0, max=1.0) 
             cos_dis = 1 - cos_sim_c
             self.cosine_space.append(cos_dis)
 
-           
+            vec_norm = torch.norm(current_vec, p=2, dim=-1)
+            output_norm = torch.norm(avg_output, p=2, dim=-1)
+            output_norm_safe = torch.clamp(output_norm, min=1e-8)
+            rel_norm = vec_norm / output_norm_safe
+            self.rel_norm_space.append(rel_norm)
             
-        # mask = self.multiplier 
-        mask = 0
-        
+        mask = self.multiplier 
+
         if self.skip:
             if self.skip == 'llbds':
                 # llbds = 1.0 + self.gate_mask(cos_dis, 'b').to(output[0].device) - torch.clamp(cos_dis.to(output[0].device), min=0.0, max=1.0)
@@ -172,10 +177,12 @@ class BlockWrapper(torch.nn.Module):
             return 0.0, 0.0, 0.0, 0.0
             
         all_distances = torch.cat(self.cosine_space, dim=0)
+        all_norm = torch.cat(self.rel_norm_space, dim=0)
         
         mean_val = all_distances.mean().item()
         std_val = all_distances.std().item() if all_distances.numel() > 1 else 0.0
         max_val = all_distances.max().item()
         min_val = all_distances.min().item()
+        rel_norm = all_norm.mean().item()
         
-        return mean_val, std_val, max_val, min_val
+        return mean_val, std_val, max_val, min_val,rel_norm

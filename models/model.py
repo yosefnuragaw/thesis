@@ -107,8 +107,8 @@ class BlockWrapper(torch.nn.Module):
             rel_norm = vec_norm / output_norm_safe
             self.rel_norm_space.append(rel_norm)
             
-        # mask = self.multiplier 
-        mask = 0
+        mask = self.multiplier 
+
         if self.skip:
             if self.skip == 'llbds':
                 # llbds = 1.0 + self.gate_mask(cos_dis, 'b').to(output[0].device) - torch.clamp(cos_dis.to(output[0].device), min=0.0, max=1.0)

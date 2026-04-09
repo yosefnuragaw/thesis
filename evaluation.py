@@ -65,15 +65,16 @@ def init_model(
     model.warnings_issued = {}
     model.to("cuda" if torch.cuda.is_available() else "cpu")
     for layer in range(total_layer):
-        model.model.layers[layer] = BlockWrapper(
-                    model.model.layers[layer], 
-                    hidden_dim=model.config.hidden_size, 
-                    vec= torch.zeros(model.config.hidden_size, dtype= model.dtype),
-                    buffer=buffer,
-                    gate_function=gate_function,
-                    skip=skip,
-                    k1= k1
-                )
+        if layer != 0:
+            model.model.layers[layer] = BlockWrapper(
+                        model.model.layers[layer], 
+                        hidden_dim=model.config.hidden_size, 
+                        vec= torch.zeros(model.config.hidden_size, dtype= model.dtype),
+                        buffer=buffer,
+                        gate_function=gate_function,
+                        skip=skip,
+                        k1= k1
+                    )
         
         if epoch != None and layer in layers:
             vec_path = f"{vec_dir}/vec_ep{epoch}_layer{layer}.pt"

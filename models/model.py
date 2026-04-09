@@ -105,7 +105,8 @@ class BlockWrapper(torch.nn.Module):
         
         if self.skip:
             if self.skip == 'llbds':
-                llbds = 1.0 + self.gate_mask(cos_dis, 'b').to(output[0].device) - torch.clamp(cos_dis.to(output[0].device), min=0.0, max=1.0)
+                # llbds = 1.0 + self.gate_mask(cos_dis, 'b').to(output[0].device) - torch.clamp(cos_dis.to(output[0].device), min=0.0, max=1.0)
+                llbds = 1.0 + 0.8 - torch.clamp(cos_dis.to(output[0].device), min=0.0, max=1.0)
                 mask = mask * llbds
 
         # llbds =  1 +  0.8 - cos_dis

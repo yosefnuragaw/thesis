@@ -207,7 +207,7 @@ def eval_accuracy(
 
             print(f"[Layer:] {layer} | Cosine Distance [Mean:] {mean:.4f} [Std:] {std:.4f} | [Max:] {max_mean:.4f} [Min:] {min_mean:.4f} [Rel_Norm:] {rel_norm}")
 
-
+    print(f"[Positive Accuracy:] {positive_acc} [Negative Accuracy:] {negative_acc}")
     return positive_acc, negative_acc
     
 def eval_generation(
@@ -298,7 +298,7 @@ if __name__ == "__main__":
     )
     
     if args.task != "generation":
-        for mul in [10]:      
+        for mul in [1]:      
             template_save_path = f"activation/{script_args.model_name_or_path.split("/")[-1]}/{script_args.behavior}/{script_args.id}_buffer_{{layer}}_{{mul}}.pt" 
             if args.trace:
                     
@@ -311,6 +311,18 @@ if __name__ == "__main__":
                 try:
                     base_list = list(reversed(script_args.layer))
                     for idx, _ in enumerate(base_list):
+
+                        model, tokenizer = init_model(
+                                model_name=script_args.model_name_or_path,
+                                vec_dir=script_args.vec_dir,
+                                gate_dir=script_args.gate_dir,
+                                epoch=script_args.eval_epoch,
+                                layers=script_args.layer,
+                                multiplier= 0,
+                                buffer = args.save,
+                                total_layer = script_args.total_layer,
+                                gate_function = script_args.gate_function
+                            )
                         current_layers = base_list[:idx + 1]
                         print(f"[Layers:] {current_layers}")
                         
@@ -327,9 +339,10 @@ if __name__ == "__main__":
                             total_layer=script_args.total_layer,
                             mask_layer= current_layers  
                         ) 
-                                                
+                                     
                         sys.stdout.flush() 
 
+                        del model,tokenizer
                 except Exception as e:
                     # If something crashes, log the error before stopping
                     print(f"An error occurred: {e}")

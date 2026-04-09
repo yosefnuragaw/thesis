@@ -119,7 +119,7 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer):
     return eval_loader
 
 def eval_accuracy(
-        model, loader: DataLoader, multiplier: float, layers: List[int], epoch: int|None, verbose: bool = False,cosine:bool = False, save_buffer: bool = False, save_path: Optional[str] = None, total_layer:int = 26
+        model, loader: DataLoader, multiplier: float, layers: List[int], mask_layer, epoch: int|None, verbose: bool = False,cosine:bool = False, save_buffer: bool = False, save_path: Optional[str] = None, total_layer:int = 26
     ):
     OPT = ['A', 'B']
     directions = [1,-1]
@@ -139,7 +139,10 @@ def eval_accuracy(
 
             for layer in layers:
                 if isinstance(model.model.layers[layer], BlockWrapper):
-                    model.model.layers[layer].set_multiplier(direction*multiplier)
+                    if layer in mask_layer:
+                        model.model.layers[layer].set_multiplier(direction*multiplier)
+                    else:
+                        model.model.layers[layer].set_multiplier(0)
 
             if idx == 1:
                 curr_label = 'B' if label == 'A' else 'A'
@@ -306,25 +309,23 @@ if __name__ == "__main__":
                 sys.stdout = log_file         # Redirect all print() statements to the file
 
                 try:
-                    for i in script_args.layer:
-                        if i == 0:
-                            current_layers = [0]
-                        else:
-                            current_layers = [0, i]
-                            
-                        print(f"[Layer:] {current_layers}")
+                    base_list = list(reversed(script_args.layer))
+                    for idx, _ in enumerate(base_list):
+                        current_layers = base_list[:idx + 1]
+                        print(f"[Layers:] {current_layers}")
                         
                         accuracy = eval_accuracy(
                             model=model,
                             loader=eval_loader,
                             multiplier=mul,
-                            layers=current_layers,       # <--- Passing the new list here
+                            layers=script_args.layer,       # <--- Passing the new list here
                             epoch=script_args.eval_epoch,
                             verbose=args.verbose,
                             save_buffer=args.save,
                             cosine=args.cosine,
                             save_path=template_save_path,
-                            total_layer=script_args.total_layer  
+                            total_layer=script_args.total_layer,
+                            mask_layer= current_layers  
                         ) 
                                                 
                         sys.stdout.flush() 

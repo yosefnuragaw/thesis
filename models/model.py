@@ -101,7 +101,8 @@ class BlockWrapper(torch.nn.Module):
 
            
             
-        mask = self.multiplier 
+        # mask = self.multiplier 
+        mask = 0
         
         if self.skip:
             if self.skip == 'llbds':

@@ -131,7 +131,7 @@ def eval_accuracy(
     else:
         pbar = directions
     
-    stat = {layer:{'mean':[],'std':[],'min':[],'max':[]} for layer in range(total_layer)}
+    stat = {layer:{'mean':[],'std':[],'min':[],'max':[],'rel_norm':[]} for layer in range(total_layer)}
     for idx, direction in enumerate(pbar):
         for batch in loader:
             label = batch["label"][0]

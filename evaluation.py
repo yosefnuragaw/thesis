@@ -187,11 +187,12 @@ def eval_accuracy(
         if cosine:
             for layer in range(total_layer):
                 if isinstance(model.model.layers[layer], BlockWrapper):
-                    mean, std, max_val, min_val = model.model.layers[layer].get_cosine_statistics()
+                    mean, std, max_val, min_val, rel_norm = model.model.layers[layer].get_cosine_statistics()
                     stat[layer]['mean'].append(mean)
                     stat[layer]['std'].append(std)
                     stat[layer]['min'].append(min_val)
                     stat[layer]['max'].append(max_val)
+                    stat[layer]['rel_norm'].append(rel_norm)
 
     if cosine:
         for layer in range(total_layer):
@@ -199,8 +200,9 @@ def eval_accuracy(
             std = sum(stat[layer]['std'])/len(stat[layer]['mean'])
             max_mean = sum(stat[layer]['max'])/len(stat[layer]['mean'])
             min_mean = sum(stat[layer]['min'])/len(stat[layer]['mean'])
+            rel_norm = sum(stat[layer]['rel_norm']) / len(stat[layer]['rel_norm'])
 
-            print(f"[Layer:] {layer} | Cosine Distance [Mean:] {mean:.4f} [Std:] {std:.4f} | [Max:] {max_mean:.4f} [Min:] {min_mean:.4f}")
+            print(f"[Layer:] {layer} | Cosine Distance [Mean:] {mean:.4f} [Std:] {std:.4f} | [Max:] {max_mean:.4f} [Min:] {min_mean:.4f} [Rel_Norm:] {rel_norm}")
 
 
     return positive_acc, negative_acc

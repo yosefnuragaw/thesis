@@ -12,7 +12,7 @@ def download_best_bipo_step():
     
     entity = "yosefnuragaw"
     project = "Final-Power-Seeking"
-    run_id = "u9fnrtsw" 
+    run_id = "698dafzo" 
     
     print("Fetching run history (Max 10,000 rows)...")
     run = api.run(f"{entity}/{project}/{run_id}")

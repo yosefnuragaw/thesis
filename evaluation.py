@@ -65,16 +65,15 @@ def init_model(
     model.warnings_issued = {}
     model.to("cuda" if torch.cuda.is_available() else "cpu")
     for layer in range(total_layer):
-        if layer != 0:
-            model.model.layers[layer] = BlockWrapper(
-                        model.model.layers[layer], 
-                        hidden_dim=model.config.hidden_size, 
-                        vec= torch.zeros(model.config.hidden_size, dtype= model.dtype),
-                        buffer=buffer,
-                        gate_function=gate_function,
-                        skip=skip,
-                        k1= k1
-                    )
+        model.model.layers[layer] = BlockWrapper(
+                    model.model.layers[layer], 
+                    hidden_dim=model.config.hidden_size, 
+                    vec= torch.zeros(model.config.hidden_size, dtype= model.dtype),
+                    buffer=buffer,
+                    gate_function=gate_function,
+                    skip=skip,
+                    k1= k1
+                )
         
         if epoch != None and layer in layers:
             vec_path = f"{vec_dir}/vec_ep{epoch}_layer{layer}.pt"
@@ -267,6 +266,7 @@ if __name__ == "__main__":
     parser.add_argument("--task", "-t", type=str, required=False, default="both", help="Visualize eval progress")
     parser.add_argument("--save", action='store_true', help="Save raw activations")
     parser.add_argument("--cosine", action='store_true', help="Save raw activations")
+    parser.add_argument("--trace", action='store_true', help="Save raw activations")
     args, remaining = parser.parse_known_args()
 
     hf_parser = HfArgumentParser(ScriptArguments)
@@ -297,18 +297,67 @@ if __name__ == "__main__":
     if args.task != "generation":
         for mul in [10]:      
             template_save_path = f"activation/{script_args.model_name_or_path.split("/")[-1]}/{script_args.behavior}/{script_args.id}_buffer_{{layer}}_{{mul}}.pt" 
-            accuracy = eval_accuracy(
-                model=model,
-                loader=eval_loader,
-                multiplier=mul,
-                layers=script_args.layer, 
-                epoch=script_args.eval_epoch,
-                verbose=args.verbose,
-                save_buffer=args.save,
-                cosine = args.cosine,
-                save_path=template_save_path,
-                total_layer=script_args.total_layer  
-            ) 
+            if args.trace:
+                    
+                import sys
+                log_file_path = f"{script_args.model_name_or_path.split("/")[-1]}_log.txt"
+                log_file = open(log_file_path, "w")
+                original_stdout = sys.stdout  # Save the original console output
+                sys.stdout = log_file         # Redirect all print() statements to the file
+
+                try:
+                    for i in script_args.layer:
+                        if i == 0:
+                            current_layers = [0]
+                        else:
+                            current_layers = [0, i]
+                            
+                        print(f"\n{'='*40}")
+                        print(f"Starting Evaluation for layers: {current_layers}")
+                        print(f"{'='*40}")
+                        
+                        # 3. Call your function with the modified layers argument
+                        accuracy = eval_accuracy(
+                            model=model,
+                            loader=eval_loader,
+                            multiplier=mul,
+                            layers=current_layers,       # <--- Passing the new list here
+                            epoch=script_args.eval_epoch,
+                            verbose=args.verbose,
+                            save_buffer=args.save,
+                            cosine=args.cosine,
+                            save_path=template_save_path,
+                            total_layer=script_args.total_layer  
+                        ) 
+                        
+                        print(f"Resulting Accuracy: {accuracy}")
+                        
+                        # Force Python to write to the file immediately rather than buffering
+                        sys.stdout.flush() 
+
+                except Exception as e:
+                    # If something crashes, log the error before stopping
+                    print(f"An error occurred: {e}")
+                    raise e
+
+                finally:
+                    # 4. Crucial: Restore standard output to the console and close the file
+                    sys.stdout = original_stdout
+                    log_file.close()
+                    print(f"Evaluation complete. All output has been saved to {log_file_path}")
+            else:
+                accuracy = eval_accuracy(
+                    model=model,
+                    loader=eval_loader,
+                    multiplier=mul,
+                    layers=script_args.layer, 
+                    epoch=script_args.eval_epoch,
+                    verbose=args.verbose,
+                    save_buffer=args.save,
+                    cosine = args.cosine,
+                    save_path=template_save_path,
+                    total_layer=script_args.total_layer  
+                ) 
 
         
 

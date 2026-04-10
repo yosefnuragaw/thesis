@@ -233,3 +233,14 @@ if __name__ == '__main__':
         print(f"Layer Weights (Norm/Rev):  {norm_row_avg.tolist()}")
 
         weigh = np.where(strict_dist == np.nan, norm_row_avg ** 3, norm_row_avg)
+        print(3)
+        print(weigh)
+
+        weigh = np.where(strict_dist == np.nan, norm_row_avg ** 2, norm_row_avg)
+        print(2)
+        print(weigh)
+
+        weigh = np.where(strict_dist == np.nan, norm_row_avg ** 1, norm_row_avg)
+        print(1)
+        print(weigh)
+

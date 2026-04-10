@@ -177,7 +177,7 @@ if __name__ == '__main__':
     tokenizer.pad_token = tokenizer.eos_token
 
     loader = produce_dataloader(
-        behavior= 'power-seeking',
+        behavior= 'wealth-seeking',
         tokenizer=tokenizer
     )
     engine = RAPR(

@@ -163,7 +163,7 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer):
         
     eval_loader = DataLoader(
         dataset=eval_dataset,
-        batch_size=16,              
+        batch_size=1,              
         shuffle=False,          
         num_workers=0            
     ) 

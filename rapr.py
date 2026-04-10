@@ -222,17 +222,14 @@ if __name__ == '__main__':
 
         print(f"\n--- Statistics for {dir} ---")
         print(matrix[-1,:])
-        # 2. Distance Cost (First Column of the TRANSPOSED matrix)
-        # Note: This was originally the first ROW of your un-transposed matrix.
-        # raw_dist = matrix[:, 0]
         raw_dist =  np.nanmean(matrix, axis=0)
         strict_dist = mask_to_strictly_decreasing(raw_dist)
         print(f"Raw Cost: {raw_dist.tolist()}...")
         print(f"Strictly Decreasing Cost: {strict_dist.tolist()}...")
 
-        # 3. Layer Weight (Row-wise mean of transposed matrix)
-        # This averages what used to be the columns.
-        row_avg = np.nanmean(matrix, axis=1)[::-1]
+        row_avg = np.nanmean(matrix, axis=1)
         norm_row_avg = 1-min_max_normalize(row_avg)
         print(f"Layer Weights :  {row_avg.tolist()}...")
         print(f"Layer Weights (Norm/Rev):  {norm_row_avg.tolist()}")
+
+        weigh = np.where(strict_dist == np.nan, norm_row_avg ** 3, norm_row_avg)

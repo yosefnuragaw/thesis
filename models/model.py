@@ -184,5 +184,5 @@ class BlockWrapper(torch.nn.Module):
         max_val = all_distances.max().item()
         min_val = all_distances.min().item()
         rel_norm = all_norm.mean().item()
-        
+        self.cosine_space = []
         return mean_val, std_val, max_val, min_val,rel_norm

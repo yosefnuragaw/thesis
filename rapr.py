@@ -215,10 +215,6 @@ if __name__ == '__main__':
         matrix = result[dir].T 
         
         print(f"\n{'='*10} Direction: {dir} {'='*10}")
-        
-        # 1. Row-by-Row Print
-        for i, row in enumerate(matrix):
-            print(f"Row {i:02d}: {row.tolist()}")
 
         print(f"\n--- Statistics for {dir} ---")
 
@@ -226,15 +222,16 @@ if __name__ == '__main__':
         # Note: This was originally the first ROW of your un-transposed matrix.
         raw_dist = matrix[:, 0]
         strict_dist = mask_to_strictly_decreasing(raw_dist)
-        print(f"Strictly Decreasing Cost: {strict_dist.tolist()[:5]}...")
+        print(f"Strictly Decreasing Cost: {strict_dist.tolist()}...")
 
         # 3. Layer Weight (Row-wise mean of transposed matrix)
         # This averages what used to be the columns.
         row_avg = np.nanmean(matrix, axis=1)[::-1]
         norm_row_avg = min_max_normalize(row_avg)
-        print(f"Layer Weights (Norm/Rev):  {norm_row_avg.tolist()[:5]}...")
+        print(f"Layer Weights :  {row_avg.tolist()}...")
+        print(f"Layer Weights (Norm/Rev):  {norm_row_avg.tolist()}...")
 
         # 4. Pareto (Column-wise mean of transposed matrix)
         col_avg = np.nanmean(matrix, axis=0)
         pareto_dist = pareto(col_avg)
-        print(f"Pareto Distribution:      {pareto_dist.tolist()[:5]}...")
+        print(f"Pareto Distribution:      {pareto_dist.tolist()}...")

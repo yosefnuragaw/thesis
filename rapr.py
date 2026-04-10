@@ -73,7 +73,7 @@ class RAPR(PatcherEngine):
                             model(input_ids=input_ids.to(model.device), attention_mask=attention_mask.to(model.device))
 
                 for layer in range(N):
-                    if isinstance(model.model.layers[layer], BlockWrapper):
+                    if isinstance(model.model.layers[layer], BlockWrapper) and layer in current_layers:
                         mean, std, max_val, min_val, rel_norm = model.model.layers[layer].get_cosine_statistics()
                         stat[direction][N-idx-1, layer] = mean
                 

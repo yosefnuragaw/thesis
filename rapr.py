@@ -187,34 +187,52 @@ if __name__ == '__main__':
     )
 
     result = engine.compute_matrix()
+    
     def min_max_normalize(data):
-        return (data - np.nanmin(data)) / (np.nanmax(data) - np.nanmin(data))
+        d_min, d_max = np.nanmin(data), np.nanmax(data)
+        if d_max == d_min: return np.zeros_like(data)
+        return (data - d_min) / (d_max - d_min)
 
     def pareto(data):
         sorted_vals = np.sort(data)[::-1]
-        return (np.cumsum(sorted_vals) / np.sum(data))
+        return (np.cumsum(sorted_vals) / np.nansum(data))
+
+    def mask_to_strictly_decreasing(data):
+        cleaned = np.array(data, dtype=float).copy()
+        if len(cleaned) == 0: return cleaned
+        current_min = cleaned[0]
+        for i in range(1, len(cleaned)):
+            if cleaned[i] >= current_min or np.isnan(cleaned[i]):
+                cleaned[i] = np.nan # Or 0 depending on your preference
+            else:
+                current_min = cleaned[i]
+        return cleaned
 
     for dir in result.keys():
-        transposed_data = result[dir].T
-        matrix = transposed_data
-        # Print row by row
-        for i, row in enumerate(transposed_data):
-            print(f"Row {i}: {row.tolist()}")
+        # .T flips the matrix: rows become columns
+        matrix = result[dir].T 
         
+        print(f"\n{'='*10} Direction: {dir} {'='*10}")
         
-        print(f"\n=== Analysis for {dir} ===")
-        
-        # 1. Distance Cost (First Col - Strictly Decreasing)
-        dist_cost = matrix[:, 0].copy()
-        # Apply your logic to keep it strictly decreasing if needed...
-        print(f"Distance Cost: {dist_cost.tolist()[:5]}...")
+        # 1. Row-by-Row Print
+        for i, row in enumerate(matrix):
+            print(f"Row {i:02d}: {row.tolist()}")
 
-        # 2. Layer Weight (Row-wise mean, Reversed, Normalized)
+        print(f"\n--- Statistics for {dir} ---")
+
+        # 2. Distance Cost (First Column of the TRANSPOSED matrix)
+        # Note: This was originally the first ROW of your un-transposed matrix.
+        raw_dist = matrix[:, 0]
+        strict_dist = mask_to_strictly_decreasing(raw_dist)
+        print(f"Strictly Decreasing Cost: {strict_dist.tolist()[:5]}...")
+
+        # 3. Layer Weight (Row-wise mean of transposed matrix)
+        # This averages what used to be the columns.
         row_avg = np.nanmean(matrix, axis=1)[::-1]
         norm_row_avg = min_max_normalize(row_avg)
-        print(f"Layer Weights (Norm/Rev): {norm_row_avg.tolist()[:5]}...")
+        print(f"Layer Weights (Norm/Rev):  {norm_row_avg.tolist()[:5]}...")
 
-        # 3. Pareto (Column-wise mean)
+        # 4. Pareto (Column-wise mean of transposed matrix)
         col_avg = np.nanmean(matrix, axis=0)
         pareto_dist = pareto(col_avg)
-        print(f"Pareto Distribution: {pareto_dist.tolist()[:5]}...")
+        print(f"Pareto Distribution:      {pareto_dist.tolist()[:5]}...")

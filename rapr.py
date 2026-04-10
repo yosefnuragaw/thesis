@@ -206,7 +206,7 @@ if __name__ == '__main__':
         current_min = cleaned[0]
         for i in range(1, len(cleaned)):
             if cleaned[i] >= current_min or np.isnan(cleaned[i]):
-                cleaned[i] = np.nan # Or 0 depending on your preference
+                cleaned[i] = 0
             else:
                 current_min = cleaned[i]
                 cleaned[i] = 1.

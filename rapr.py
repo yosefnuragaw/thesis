@@ -196,10 +196,6 @@ if __name__ == '__main__':
         if d_max == d_min: return np.zeros_like(data)
         return (data - d_min) / (d_max - d_min)
 
-    def pareto(data):
-        sorted_vals = np.sort(data)[::-1]
-        return (np.cumsum(sorted_vals) / np.nansum(data))
-
     def mask_to_strictly_decreasing(data):
         cleaned = np.array(data, dtype=float).copy()
         if len(cleaned) == 0: return cleaned
@@ -231,11 +227,6 @@ if __name__ == '__main__':
         # 3. Layer Weight (Row-wise mean of transposed matrix)
         # This averages what used to be the columns.
         row_avg = np.nanmean(matrix, axis=1)[::-1]
-        norm_row_avg = min_max_normalize(row_avg)
+        norm_row_avg = 1-min_max_normalize(row_avg)
         print(f"Layer Weights :  {row_avg.tolist()}...")
         print(f"Layer Weights (Norm/Rev):  {norm_row_avg.tolist()}")
-
-        # 4. Pareto (Column-wise mean of transposed matrix)
-        col_avg = np.nanmean(matrix, axis=0)
-        pareto_dist = pareto(col_avg)
-        print(f"Pareto Distribution:      {pareto_dist.tolist()}")

@@ -76,9 +76,6 @@ class RAPR(PatcherEngine):
                     if isinstance(model.model.layers[layer], BlockWrapper) and layer in current_layers:
                         mean, std, max_val, min_val, rel_norm = model.model.layers[layer].get_cosine_statistics()
                         stat[direction][N-idx-1, layer] = mean
-                
-                print(current_layers)
-                print(stat[direction][N-idx-1, :])
 
         return stat
 
@@ -192,4 +189,4 @@ if __name__ == '__main__':
     result = engine.compute_matrix()
     for dir in result.keys():
         print(f'[Direction:] {dir}')
-        print(result[dir])
+        print(result[dir].T.tolist())

@@ -146,7 +146,7 @@ def get_prompts(tokenizer, behavior, system_prompt=SYSTEM_PROMPT, generation_pro
             questions.append(full_prompt)
             current_options = [row[col] for col in ['matching','not_matching'] if col in row and row[col] is not None]
             prompts.append(current_options)
-            labels.append(None)
+            labels.append('')
 
     return {
         'questions': questions,

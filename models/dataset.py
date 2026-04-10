@@ -49,6 +49,7 @@ class MultipleOptionDataset(Dataset):
     
     def __len__(self) -> int:
         return len(self.prompts)
+
     
 class PromptDataset(Dataset):
     def __init__(self, prompts):

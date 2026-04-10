@@ -309,7 +309,7 @@ if __name__ == "__main__":
                 sys.stdout = log_file         # Redirect all print() statements to the file
 
                 try:
-                    base_list = list(reversed(script_args.layer))
+                    base_list = list(reversed(sorted(script_args.layer)))
                     for idx, _ in enumerate(base_list):
 
                         model, tokenizer = init_model(

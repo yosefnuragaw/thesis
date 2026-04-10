@@ -227,6 +227,7 @@ if __name__ == '__main__':
         # raw_dist = matrix[:, 0]
         raw_dist =  np.nanmean(matrix, axis=0)
         strict_dist = mask_to_strictly_decreasing(raw_dist)
+        print(f"Raw Cost: {raw_dist.tolist()}...")
         print(f"Strictly Decreasing Cost: {strict_dist.tolist()}...")
 
         # 3. Layer Weight (Row-wise mean of transposed matrix)

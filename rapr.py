@@ -187,6 +187,34 @@ if __name__ == '__main__':
     )
 
     result = engine.compute_matrix()
+    def min_max_normalize(data):
+        return (data - np.nanmin(data)) / (np.nanmax(data) - np.nanmin(data))
+
+    def pareto(data):
+        sorted_vals = np.sort(data)[::-1]
+        return (np.cumsum(sorted_vals) / np.sum(data))
+
     for dir in result.keys():
-        print(f'[Direction:] {dir}')
-        print(result[dir].T.tolist())
+        transposed_data = result[dir].T
+        matrix = transposed_data
+        # Print row by row
+        for i, row in enumerate(transposed_data):
+            print(f"Row {i}: {row.tolist()}")
+        
+        
+        print(f"\n=== Analysis for {dir} ===")
+        
+        # 1. Distance Cost (First Col - Strictly Decreasing)
+        dist_cost = matrix[:, 0].copy()
+        # Apply your logic to keep it strictly decreasing if needed...
+        print(f"Distance Cost: {dist_cost.tolist()[:5]}...")
+
+        # 2. Layer Weight (Row-wise mean, Reversed, Normalized)
+        row_avg = np.nanmean(matrix, axis=1)[::-1]
+        norm_row_avg = min_max_normalize(row_avg)
+        print(f"Layer Weights (Norm/Rev): {norm_row_avg.tolist()[:5]}...")
+
+        # 3. Pareto (Column-wise mean)
+        col_avg = np.nanmean(matrix, axis=0)
+        pareto_dist = pareto(col_avg)
+        print(f"Pareto Distribution: {pareto_dist.tolist()[:5]}...")

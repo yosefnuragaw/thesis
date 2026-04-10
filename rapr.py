@@ -170,7 +170,10 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer):
     return eval_loader
 
 if __name__ == '__main__':
-    tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.1-8B-Instruct")
+    model_id = "meta-llama/Llama-3.1-8B-Instruct"
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
     tokenizer.pad_token = tokenizer.eos_token
 
     loader = produce_dataloader(
@@ -178,7 +181,7 @@ if __name__ == '__main__':
         tokenizer=tokenizer
     )
     engine = RAPR(
-        model_name="meta-llama/Llama-3.1-8B-Instruct",
+        model_name=model_id,
         vec_dir="pretrained_vector/wealth-seeking/llama-3/all",
         layers= list(range(32)),
         eval_epoch=9,
@@ -207,7 +210,8 @@ if __name__ == '__main__':
             else:
                 current_min = cleaned[i]
                 cleaned[i] = 1.
-        cleaned[i] = 1.
+
+        cleaned[0] = 1.
         return cleaned
 
     for dir in result.keys():
@@ -229,9 +233,9 @@ if __name__ == '__main__':
         row_avg = np.nanmean(matrix, axis=1)[::-1]
         norm_row_avg = min_max_normalize(row_avg)
         print(f"Layer Weights :  {row_avg.tolist()}...")
-        print(f"Layer Weights (Norm/Rev):  {norm_row_avg.tolist()}...")
+        print(f"Layer Weights (Norm/Rev):  {norm_row_avg.tolist()}")
 
         # 4. Pareto (Column-wise mean of transposed matrix)
         col_avg = np.nanmean(matrix, axis=0)
         pareto_dist = pareto(col_avg)
-        print(f"Pareto Distribution:      {pareto_dist.tolist()}...")
+        print(f"Pareto Distribution:      {pareto_dist.tolist()}")

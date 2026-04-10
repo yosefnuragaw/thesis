@@ -43,6 +43,10 @@ class ScriptArguments:
         default_factory=lambda: list(range(26)), 
         metadata={"help": "the layer the steering vector extracted from"}
     )
+    layer_weight: Optional[List[int]] = field(
+        default_factory=lambda: list(1 for x in range(26)), 
+        metadata={"help": "Weight layer"}
+    )
     total_layer: Optional[int] = field(default=200, metadata={"help": "LLM total number of layers"})
 
     multipliers: Optional[List[float]] = field(
@@ -169,7 +173,7 @@ def save(output_dir:str,file_name:str,df: pd.DataFrame)->None:
     df.to_csv(output_path, index=False)
 
     print(f"Results saved to: {output_path}")
-    
+    print(1)
 def main(baseline:bool, args: ScriptArguments)->None:
     model, tokenizer = init_model(
                 model_name=args.model_name_or_path,
@@ -183,12 +187,11 @@ def main(baseline:bool, args: ScriptArguments)->None:
                 skip = args.skip,
                 k1 = args.k1
             )
-    
     if not baseline:
         for multiplier in args.multipliers:
-            for idx in args.layer:
+            for idx,weight in zip(args.layer,args.layer_weight):
                 if isinstance(model.model.layers[idx], BlockWrapper):
-                    model.model.layers[idx].set_multiplier(multiplier)
+                    model.model.layers[idx].set_multiplier(multiplier*weight)
 
             dataset = read_dataset(
                 behavior=args.behavior,
@@ -244,4 +247,3 @@ if __name__ == "__main__":
 
     main(baseline=args.baseline, args=script_args)
     
-

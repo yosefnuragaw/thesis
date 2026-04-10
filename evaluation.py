@@ -88,9 +88,9 @@ def init_model(
                     gate_path = f"{gate_dir}/gate_ep{epoch}_layer{layer}.pt"
                     if os.path.exists(gate_path):
                         model.model.layers[layer].set_gate(gate_path)
-
             else:
                 raise ValueError(f"Vector not found at {vec_path}")
+        
                 
     model.config.use_cache = False
     model.eval()

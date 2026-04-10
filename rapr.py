@@ -196,6 +196,10 @@ if __name__ == '__main__':
         if d_max == d_min: return np.zeros_like(data)
         return (data - d_min) / (d_max - d_min)
 
+    def pareto(data):
+        sorted_vals = np.sort(data)[::-1]
+        return (np.cumsum(sorted_vals) / np.nansum(data))
+
     def mask_to_strictly_decreasing(data):
         cleaned = np.array(data, dtype=float).copy()
         if len(cleaned) == 0: return cleaned
@@ -220,7 +224,8 @@ if __name__ == '__main__':
 
         # 2. Distance Cost (First Column of the TRANSPOSED matrix)
         # Note: This was originally the first ROW of your un-transposed matrix.
-        raw_dist = matrix[:, 0]
+        # raw_dist = matrix[:, 0]
+        raw_dist =  np.nanmean(matrix, axis=0)
         strict_dist = mask_to_strictly_decreasing(raw_dist)
         print(f"Strictly Decreasing Cost: {strict_dist.tolist()}...")
 

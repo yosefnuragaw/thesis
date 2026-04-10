@@ -221,7 +221,7 @@ if __name__ == '__main__':
         print(f"\n{'='*10} Direction: {dir} {'='*10}")
 
         print(f"\n--- Statistics for {dir} ---")
-
+        print(matrix[-1,:])
         # 2. Distance Cost (First Column of the TRANSPOSED matrix)
         # Note: This was originally the first ROW of your un-transposed matrix.
         # raw_dist = matrix[:, 0]

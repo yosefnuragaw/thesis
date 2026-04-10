@@ -70,7 +70,7 @@ class RAPR(PatcherEngine):
                 for batch in self.loader:
                     for input_ids, attention_mask in zip(batch["input_ids"], batch["attention_mask"]):
                         with torch.no_grad():
-                            model(input_ids=input_ids, attention_mask=attention_mask)
+                            model(input_ids=input_ids.to(model.device), attention_mask=attention_mask.to(model.device))
 
                 for layer in range(N):
                     if isinstance(model.model.layers[layer], BlockWrapper):

@@ -206,6 +206,8 @@ if __name__ == '__main__':
                 cleaned[i] = np.nan # Or 0 depending on your preference
             else:
                 current_min = cleaned[i]
+                cleaned[i] = 1.
+        cleaned[i] = 1.
         return cleaned
 
     for dir in result.keys():

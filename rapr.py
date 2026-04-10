@@ -221,7 +221,6 @@ if __name__ == '__main__':
         print(f"\n{'='*10} Direction: {dir} {'='*10}")
 
         print(f"\n--- Statistics for {dir} ---")
-        print(matrix[0,:])
         raw_dist =  np.nanmean(matrix, axis=0)
         strict_dist = mask_to_strictly_decreasing(raw_dist)
         print(f"Raw Cost: {raw_dist.tolist()}...")

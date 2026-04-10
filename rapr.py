@@ -95,7 +95,7 @@ class RAPR(PatcherEngine):
         )
         model.warnings_issued = {}
         model.to("cuda" if torch.cuda.is_available() else "cpu")
-        for layer in range(self.layers):
+        for layer in self.layers:
             model.model.layers[layer] = BlockWrapper(
                         model.model.layers[layer], 
                         hidden_dim=model.config.hidden_size, 

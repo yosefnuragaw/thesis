@@ -389,7 +389,95 @@ def calculate_compounded_blowout_weights(matrices_dict, multipliers_tested):
     W = max_safe_multipliers / np.max(max_safe_multipliers)
     return W, max_safe_multipliers
 
+def _draw_heatmap(ax, fig, rgba: np.ndarray, norm, cmap, N: int):
 
+    """
+
+    Display the heatmap with:
+
+    x = Steered Layer (32 on left → 1 on right)
+
+    y = Layer Index (0 at bottom → 31 at top, displayed 31 top → 0 bottom)
+
+    Mask (white) is top-right; data is bottom-left.
+
+    """
+
+    # Transpose so (x=steered, y=layer_index), then flip both axes for orientation
+
+    display = rgba.transpose(1, 0, 2)[:, ::-1, :]
+
+    ax.imshow(display, aspect="auto", origin="lower", interpolation="nearest")
+
+
+
+    # Colorbar
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+
+    sm.set_array([])
+
+    cbar = fig.colorbar(sm, ax=ax, pad=0.02, fraction=0.04)
+
+    cbar.set_label("Cosine Distance (Mean)", fontsize=10)
+
+    cbar.ax.yaxis.set_tick_params(color="black", labelsize=8)
+
+    cbar.outline.set_edgecolor("black")
+
+    cbar.outline.set_linewidth(1.0)
+
+
+
+    ticks = list(range(N))
+
+
+
+    # X ticks: steered layer 32→1 (left to right)
+
+    x_labels = [i for i in range(N)]
+
+    ax.set_xticks(ticks)
+
+    ax.set_xticklabels(x_labels, fontsize=7)
+
+
+
+    # Y ticks: layer index 31→0 (top to bottom, origin=lower so reversed)
+
+    y_labels = [str(N - 1 - i) for i in range(N)]
+
+    ax.set_yticks(ticks)
+
+    ax.set_yticklabels(y_labels, fontsize=7)
+
+
+
+    ax.tick_params(axis="both", which="both", direction="in", length=3)
+
+    ax.set_xlabel("Layer Index (0 → 31)", fontsize=11, labelpad=6)
+
+    ax.set_ylabel("Layer Index (31 → 0)", fontsize=11, labelpad=6)
+
+    ax.set_title("Cosine-Distance Heatmap", fontsize=13, pad=8, fontweight="bold")
+
+
+
+    # Faint grid every 4
+
+    for v in range(0, N, 4):
+
+    ax.axvline(v - 0.5, color="black", lw=0.4, alpha=0.15)
+
+    ax.axhline(v - 0.5, color="black", lw=0.4, alpha=0.15)
+
+
+
+    ax.text(0.99, 0.99, "white = inactive",
+
+    transform=ax.transAxes, fontsize=7.5, color="#555",
+
+    ha="right", va="top")
 def build_heatmap_rgba(
 
     heat: np.ndarray,

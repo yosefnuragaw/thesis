@@ -677,18 +677,18 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     tokenizer.pad_token = tokenizer.eos_token
 
-    loader = produce_dataloader(behavior="power-seeking", tokenizer=tokenizer)
+    loader = produce_dataloader(behavior="wealth-seeking", tokenizer=tokenizer)
 
     engine = RAPR(
         model_name=model_id,
-        vec_dir="pretrained_vector/power-seeking/llama-3/all",
+        vec_dir="pretrained_vector/wealth-seeking/llama-3/all",
         layers=list(range(32)),
-        eval_epoch=3,
+        eval_epoch=9,
         loader=loader,
         verbose=True,
     )
 
-    multipliers_to_test = [0.1,0.5,1.,1.5,2]
+    multipliers_to_test = [0.1]
     print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
 
     sweep_results = engine.compute_matrix_sweep(multipliers_to_test)

@@ -23,7 +23,7 @@ class ScriptArguments:
     judge_name: Optional[str] = field(default="openai/gpt-oss-20b", metadata={"help": "Judge Model id"})
     behavior: Optional[str] = field(default="power-seeking", metadata={"help": "the behavior"})
     layer: Optional[List[int]] = field(default_factory=lambda: list(range(26)), metadata={"help": "the layer the steering vector extracted from"})
-    multipliers: Optional[List[float]] = field(default_factory=lambda: [2,1.5,1,0.5,-0.5,-1,-1.5,-2], metadata={"help": "the multipliers evaluated"})
+    multipliers: Optional[List[float]] = field(default_factory=lambda: [3,2,1,-1,-2,-3], metadata={"help": "the multipliers evaluated"})
     vec_dir: Optional[str] = field(default="vector/power-seeking_gemma-3", metadata={"help": "Directory where .pt vectors are saved"})
     answer_dir: Optional[str] = field(default="generation_results/gemma3-1b", metadata={"help": "Directory where answers are saved"})
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})

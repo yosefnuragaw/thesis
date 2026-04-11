@@ -683,7 +683,7 @@ if __name__ == "__main__":
         model_name=model_id,
         vec_dir="pretrained_vector/power-seeking/llama-3/all",
         layers=list(range(32)),
-        eval_epoch=9,
+        eval_epoch=3,
         loader=loader,
         verbose=True,
     )

@@ -51,6 +51,14 @@ class ScriptArguments:
         default_factory=lambda: list(1 for x in range(26)), 
         metadata={"help": "Weight layer"}
     )
+    pos_range: Optional[List[int]] = field(
+        default_factory=lambda: list(int.Maxx for x in range(26)), 
+        metadata={"help": "Weight layer"}
+    )
+    pos_range: Optional[List[int]] = field(
+        default_factory=lambda: list(0 for x in range(26)), 
+        metadata={"help": "Weight layer"}
+    )
     total_layer: Optional[int] = field(default=200, metadata={"help": "LLM total number of layers"})
 
     multipliers: Optional[List[float]] = field(

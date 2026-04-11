@@ -279,7 +279,7 @@ class RAPR(PatcherEngine):
         
         max_m = max(multipliers) 
         min_m_array = np.full(num_layers, float(max_m))
-        max_m_array = np.full(num_layers, float(min_m_array))
+        max_m_array = np.full(num_layers, 0.)
         for m in sweep_results[direction].keys():
             full_load_row = sweep_results[direction][m].T[-1, :]
             rows.append(full_load_row)

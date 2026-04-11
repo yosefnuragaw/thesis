@@ -275,8 +275,7 @@ class RAPR(PatcherEngine):
         # list of arrays, each shape (32,)
         rows = []
         for m in sweep_results[direction].keys():
-            print(sweep_results[direction][m].T)
-            full_load_row = sweep_results[direction][m][0, :]
+            full_load_row = sweep_results[direction][m].T[-1, :]
             rows.append(full_load_row)
         
         # 2. Compute the Mean Distance across the sweep for each layer
@@ -589,7 +588,7 @@ if __name__ == "__main__":
         verbose=True,
     )
 
-    multipliers_to_test = [1]
+    multipliers_to_test = [0.5,1,1.5,2.0]
     print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
 
     sweep_results = engine.compute_matrix_sweep(multipliers_to_test)

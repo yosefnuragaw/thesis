@@ -575,30 +575,28 @@ def plot_sweep_heatmaps(sweep_results, multipliers_tested, build_heatmap_rgba, _
         plt.close(fig)
         print(f"Saved: {fname}")
         
-def _minmax_scale(matrix: np.ndarray) -> np.ndarray:
-    """Scale a matrix to [0, 1] using its own finite min/max, NaNs preserved."""
-    out  = np.full_like(matrix, np.nan, dtype=float)
-    mask = ~np.isnan(matrix)
-    if mask.any():
-        lo, hi = matrix[mask].min(), matrix[mask].max()
-        if hi > lo:
-            out[mask] = (matrix[mask] - lo) / (hi - lo)
-        else:
-            out[mask] = 0.0
-    return out
+
 
 def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgba, _draw_heatmap):
-    """
-    For each multiplier:
-      1. Min-max scale the +1 matrix to [0,1]
-      2. Min-max scale the -1 matrix to [0,1]
-      3. Diff = scaled_pos - scaled_neg
-         > 0 → blue  (positive steering dominates)
-         < 0 → red   (negative steering dominates)
-    Layout, size, and white background match plot_sweep_heatmaps exactly.
-    """
+    def _minmax_scale(matrix: np.ndarray) -> np.ndarray:
+        """Scale a matrix to [0, 1] using its own finite min/max, NaNs preserved."""
+        out  = np.full_like(matrix, np.nan, dtype=float)
+        mask = ~np.isnan(matrix)
+        if mask.any():
+            lo, hi = matrix[mask].min(), matrix[mask].max()
+            if hi > lo:
+                out[mask] = (matrix[mask] - lo) / (hi - lo)
+            else:
+                out[mask] = 0.0
+        return out
+
     n_muls = len(multipliers_tested)
-    fig, axes = plt.subplots(1, n_muls, figsize=(6 * n_muls, 6), sharey=True)
+    fig, axes = plt.subplots(
+        1, n_muls,
+        figsize=(6 * n_muls, 6),
+        sharey=True,
+        constrained_layout=True,   # replaces tight_layout — handles colorbars cleanly
+    )
     fig.patch.set_facecolor("white")
     if n_muls == 1:
         axes = [axes]
@@ -609,7 +607,6 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
         N=256,
     )
 
-    # Build scaled diffs first so we can derive a single shared norm
     all_diffs = []
     for m in multipliers_tested:
         scaled_pos = _minmax_scale(sweep_results[1][m].T)
@@ -626,7 +623,7 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
         active_mask = ~np.isnan(diff)
 
         rgba               = cmap(norm(np.where(active_mask, diff, 0.0)))
-        rgba[~active_mask] = [0.85, 0.85, 0.85, 1.0]   # light gray for NaN (matches white bg)
+        rgba[~active_mask] = [0.85, 0.85, 0.85, 1.0]
 
         ax.imshow(
             rgba, aspect="auto", origin="upper",
@@ -643,28 +640,29 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
         ax.set_yticks(range(0, N, 1))
         ax.tick_params(labelsize=7)
 
-        # Match the spine style of the normal heatmap
         for spine in ax.spines.values():
             spine.set_edgecolor("#cccccc")
             spine.set_linewidth(0.8)
 
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
-    cbar = fig.colorbar(sm, ax=axes, fraction=0.015, pad=0.02)
-    cbar.set_label("Δ Cosine distance  (+1) - (-1)  [min-max scaled]", fontsize=10)
+
+    # Use fig.colorbar with a dedicated inset — constrained_layout manages spacing
+    cbar = fig.colorbar(sm, ax=axes, fraction=0.015, pad=0.02, shrink=0.85)
+    cbar.set_label("Δ Cosine distance  (+1) − (−1)  [min-max scaled]", fontsize=10)
     cbar.ax.tick_params(labelsize=8)
 
     fig.text(
-        0.5, -0.03,
-        "Blue = positive steering weaker   |   Red = negative steering stronger",
+        0.5, -0.01,
+        "Blue = positive steering weaker   |   Red = negative steering weaker",
         ha="center", fontsize=10, color="#444444",
     )
     fig.suptitle(
-        "Diff Heatmap Sweep — Direction (+1) minus Direction (-1)  [per-matrix min-max scaled]",
-        fontsize=13, fontweight="bold", y=1.02,
+        "Diff Heatmap Sweep (−1)  [min-max scaled]",
+        fontsize=13, fontweight="bold",
     )
 
-    plt.tight_layout()
+    # No plt.tight_layout() call — constrained_layout handles it automatically
     fname = "heatmap_sweep_diff.png"
     plt.savefig(fname, dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)

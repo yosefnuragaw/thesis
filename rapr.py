@@ -387,37 +387,7 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer) -> DataLoader:
     )
 
 
-# ---------------------------------------------------------
-# Blowout weight calculation
-# ---------------------------------------------------------
 
-def calculate_compounded_blowout_weights(matrices_dict, multipliers_tested):
-    num_layers = 32
-    max_safe_multipliers = np.zeros(num_layers)
-
-    for layer in range(num_layers):
-        best_distance = float("inf")
-        best_m        = 0.0
-
-        for m in multipliers_tested:
-            compounded_distance = matrices_dict[m][layer, 0]
-
-            if np.isnan(compounded_distance):
-                continue
-
-            if compounded_distance < best_distance:
-                best_distance = compounded_distance
-                best_m        = m
-            else:
-                break
-
-        if best_m == 0.0 and len(multipliers_tested) > 0:
-            best_m = multipliers_tested[0]
-
-        max_safe_multipliers[layer] = best_m
-
-    W = max_safe_multipliers / np.max(max_safe_multipliers)
-    return W, max_safe_multipliers
 
 def _draw_heatmap(ax, fig, rgba: np.ndarray, norm, cmap, N: int):
 
@@ -686,30 +656,12 @@ if __name__ == "__main__":
         verbose=True,
     )
 
-    multipliers_to_test = [0.1]
+    multipliers_to_test = [0.5]
     print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
 
     sweep_results = engine.compute_matrix_sweep(multipliers_to_test)
     plot_sweep_heatmaps(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
     plot_sweep_diff_heatmap(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
-
-    print("\n" + "=" * 40)
-    print("ANALYSIS FOR DIRECTION: +1 (UNSAFE)")
-    print("=" * 40)
-    matrices_pos = {m: sweep_results[1][m].T for m in multipliers_to_test}
-    W_pos, max_m_pos = calculate_compounded_blowout_weights(matrices_pos, multipliers_to_test)
-    print(f"Absolute Max Safe Multipliers:\n{max_m_pos}")
-    print(f"Normalized Weight Profile (W_pos) [0 to 1]:\n{np.round(W_pos, 3).tolist()}")
-
-    print("\n" + "=" * 40)
-    print("ANALYSIS FOR DIRECTION: -1 (SAFE)")
-    print("=" * 40)
-    matrices_neg = {m: sweep_results[-1][m].T for m in multipliers_to_test}
-    W_neg, max_m_neg = calculate_compounded_blowout_weights(matrices_neg, multipliers_to_test)
-    print(f"Absolute Max Safe Multipliers:\n{max_m_neg}")
-    print(f"Normalized Weight Profile (W_neg) [0 to 1]:\n{np.round(W_neg, 3).tolist()}")
-
-    print("\nCalibration Complete. Use these arrays in your final inference script!")
 
     w_pos = engine.compute_weight(sweep_results, direction=1)
     w_neg = engine.compute_weight(sweep_results, direction=-1)

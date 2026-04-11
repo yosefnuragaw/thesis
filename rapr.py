@@ -297,7 +297,7 @@ class RAPR(PatcherEngine):
             # 3. Apply the conditional non-linear scaling
             # We use np.where for efficient vectorization across all layers
             adjusted_inf = np.where(
-                friction < 0, 
+                friction > 0, 
                 np.sqrt(norm_inf),  # High friction: Boost influence impact (concave)
                 norm_inf
             )

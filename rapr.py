@@ -298,9 +298,7 @@ class RAPR(PatcherEngine):
                 
         # 4. Normalize optimal_ms to [0, 1] to create your W profile
         w_final = optimal_ms / np.max(optimal_ms)
-        
-        # 5. Apply the 'Baseline Shield'
-        w_final[:8] = 0.0
+    
         
         return w_final,optimal_ms
 

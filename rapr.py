@@ -297,19 +297,29 @@ class RAPR(PatcherEngine):
         for l in range(32):
             # Extract the distance curve for this specific layer
             layer_distances = np.vstack(rows)[:, l]
+            min_found = False
+            max_found = False
             
-            # 2. Scan through multipliers from lowest to highest
             for idx, m in enumerate(multipliers):
                 dist = layer_distances[idx]
                 
-                # 3. If the distance drops below the threshold, the layer has 'Activated'
-                if dist <= 0.85:
+                # 3a. Find the MINIMUM required force (Drops below 0.85)
+                if dist <= 0.85 and not min_found:
                     min_m_array[l] = float(m)
+                    min_found = True
+
+                # 3b. Find the MAXIMUM safe force (Drops below 0.75)
+                if dist <= 0.75 and not max_found:
+                    max_m_array[l] = float(m)
+                    max_found = True
+
+                # 4. Only break if we have found BOTH bounds
+                if min_found and max_found:
                     break
 
+        operating_windows = [(float(min_v), float(max_v)) for min_v, max_v in zip(min_m_array, max_m_array)]
 
-
-        return norm_sensitivity,min_m_array
+        return norm_sensitivity,operating_windows
 
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(
@@ -629,6 +639,6 @@ if __name__ == "__main__":
     w_neg,opneg = engine.compute_weight(sweep_results, direction=-1)
 
     print(f'pos_weight: {w_pos.tolist()}')
-    print(f'pos_range: {oppos.tolist()}')
+    print(f'pos_range: {oppos}')
     print(f'neg_weight: {w_neg.tolist()}')
-    print(f'neg_range: {opneg.tolist()}')
+    print(f'neg_range: {opneg}')

@@ -12,7 +12,11 @@ from torch.utils.data import DataLoader
 import os
 import numpy as np
 from datasets import load_dataset
-
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+from matplotlib.colors import LinearSegmentedColormap
 
 from models.dataset import MultipleOptionDataset
 from models.model import BlockWrapper
@@ -170,6 +174,20 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer):
     ) 
     return eval_loader
 
+# def build_heatmap_rgba(
+#     heat: np.ndarray,
+#     active: np.ndarray,
+#     stat: LinearSegmentedColormap,
+# ) -> tuple:
+#     """Return (rgba, norm) with inactive cells painted white."""
+    
+#     vmin = float(np.nanmin(heat[active]))
+#     vmax = 1.0
+#     norm = plt.Normalize(vmin=vmin, vmax=vmax)
+#     rgba = cmap(norm(heat))
+#     rgba[~active] = [1.0, 1.0, 1.0, 1.0]
+#     return rgba, norm
+
 if __name__ == '__main__':
     model_id = "meta-llama/Llama-3.1-8B-Instruct"
 
@@ -236,7 +254,7 @@ if __name__ == '__main__':
         norm_row_avg = min_max_normalize(raw_dist) 
 
         key = 'pos' if dir == 1 else 'neg'
-        final[3][key] = np.where(strict_dist == 0., norm_row_avg ** 3, norm_row_avg)
+        final[3][key] = np.where(strict_dist == 0., norm_row_avg ** 0.5, norm_row_avg)
         final[2][key] = np.where(strict_dist == 0., norm_row_avg ** 2, norm_row_avg)
         final[1][key] = np.where(strict_dist == 0., norm_row_avg ** 1, norm_row_avg)
 

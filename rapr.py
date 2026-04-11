@@ -290,7 +290,7 @@ class RAPR(PatcherEngine):
         # --- THE CONTRAST SHIFT ---
         # 1. Calculate Sensitivity: How much did the layer deviate from 'Identity' (1.0)?
         # Higher value = Layer is more responsive to steering.
-        sensitivity = avg_dist** 2
+        sensitivity = avg_dist
         norm_sensitivity = sensitivity / np.max(sensitivity)
             
         for l in range(32):

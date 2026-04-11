@@ -302,7 +302,7 @@ def get_prompts(
     behavior,
     system_prompt=SYSTEM_PROMPT,
     generation_prompt: bool = True,
-    k: int = 60,
+    k: int = 30,
     seed: int = 42,
 ):
     path = f"./data/{behavior}/train.csv"

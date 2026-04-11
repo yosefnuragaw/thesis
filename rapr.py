@@ -307,7 +307,7 @@ class RAPR(PatcherEngine):
             # Apply your 0.5 to 1.5 scaling logic based on the sensitivity
             # layers that 'favor' the direction get 1.5, others get 0.5
             scaled_weights = 0.25 + (norm_diff * 1.0) 
-            return scaled_weights
+            return norm_diff
 
         weights_pos = finalize_weights(diff_for_pos)
         weights_neg = finalize_weights(diff_for_neg)

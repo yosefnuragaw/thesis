@@ -69,6 +69,7 @@ class RAPR(PatcherEngine):
                             
                 for batch in self.loader:
                     for input_ids, attention_mask in zip(batch["input_ids"], batch["attention_mask"]):
+                        print(f"Shape of input_ids: {input_ids.shape}")
                         with torch.no_grad():
                             if direction > 0:
                                 input_ids = input_ids[0:1, :]

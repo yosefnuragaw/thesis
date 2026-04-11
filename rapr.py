@@ -271,36 +271,37 @@ class RAPR(PatcherEngine):
         return sweep_results
 
     def compute_weight(self, sweep_results, direction):
-        multipliers = sorted(sweep_results[direction].keys())
-        num_layers = 32
-        optimal_ms = np.zeros(num_layers)
+        # 1. Collect Row 0 (Full Load) from every multiplier tested
+        # list of arrays, each shape (32,)
+        rows = []
+        for m in sweep_results[direction].keys():
+            full_load_row = sweep_results[direction][m].T[-1, :]
+            rows.append(full_load_row)
         
-        # 1. Stack the Full Load rows: Shape (num_multipliers, 32)
-        data = np.vstack([sweep_results[direction][m].T[-1, :] for m in multipliers])
-        
-        for l in range(num_layers):
-            distances = data[:, l]
+        # 2. Compute the Mean Distance across the sweep for each layer
+        # Shape: (32,)
+        avg_dist = np.nanmean(np.vstack(rows), axis=0)
+
+        # --- THE CONTRAST SHIFT ---
+        # 1. Calculate Sensitivity: How much did the layer deviate from 'Identity' (1.0)?
+        # Higher value = Layer is more responsive to steering.
+        sensitivity = 1.0 - avg_dist
             
-            # 2. Fit a 2nd-degree polynomial (Parabola)
-            # poly_coeffs = [A, B, C] for Am^2 + Bm + C
-            poly_coeffs = np.polyfit(multipliers, distances, 2)
-            A, B = poly_coeffs[0], poly_coeffs[1]
-            
-            # 3. Find the vertex (Minimum)
-            # If A > 0, it's a 'cup' shape with a real minimum
-            if A > 0:
-                m_star = -B / (2 * A)
-                # Clip to your experimental range to keep it grounded
-                optimal_ms[l] = np.clip(m_star, min(multipliers), max(multipliers))
-            else:
-                # If the curve is flat or upside down, use the best multiplier seen
-                optimal_ms[l] = multipliers[np.argmin(distances)]
-                
-        # 4. Normalize optimal_ms to [0, 1] to create your W profile
-        w_final = optimal_ms / np.max(optimal_ms)
-    
+        # 3. Clean up NaNs (if any)
+        # avg_distances = np.nan_to_num(avg_distances, nan=1.0)
         
-        return w_final,optimal_ms
+        # # 4. Weight Calculation: 1 - MinMax
+        # # Layers with the LOWEST average distance get the HIGHEST weight
+        # d_min = np.min(avg_distances)
+        # d_max = np.max(avg_distances)
+        
+        # if d_max == d_min:
+        #     weights = np.zeros_like(avg_distances)
+        # else:
+        #     weights = 1.0 - (avg_distances - d_min) / (d_max - d_min)
+
+        
+        return sensitivity
 
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(
@@ -616,10 +617,8 @@ if __name__ == "__main__":
 
     print("\nCalibration Complete. Use these arrays in your final inference script!")
 
-    w_pos,oppos = engine.compute_weight(sweep_results, direction=1)
-    w_neg,opneg = engine.compute_weight(sweep_results, direction=-1)
+    w_pos = engine.compute_weight(sweep_results, direction=1)
+    w_neg = engine.compute_weight(sweep_results, direction=-1)
 
     print(f'pos_weight: {w_pos}')
-    print(f'pos_cap: {oppos}')
-    print(f'neg_weight: {w_neg}')
-    print(f'neg_cap: {opneg}')
+    print(f'pos_weight: {w_neg}')

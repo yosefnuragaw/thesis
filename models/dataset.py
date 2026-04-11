@@ -26,7 +26,9 @@ class MultipleOptionDataset(Dataset):
         tokenized_row_ids = []
         tokenized_row_mask = []
 
-        for option in self.prompts[index]:
+        
+        directions = []
+        for i, option in enumerate(self.prompts[index]):
             full_text = f"{context_str}{option}{self.eos_token}"
             
             tok = self.tokenizer(
@@ -37,6 +39,11 @@ class MultipleOptionDataset(Dataset):
             
             tokenized_row_ids.append(tok.input_ids.squeeze(0))
             tokenized_row_mask.append(tok.attention_mask.squeeze(0))
+            
+            # Map index 0 to Direction 1, and index 1 to Direction -1
+            # (Adjust this math if you actually want 0 and 1!)
+            dir_value = 1 if i == 0 else -1 
+            directions.append(dir_value)
 
         decoded = [self.tokenizer.convert_ids_to_tokens(ids) for ids in tokenized_row_ids]
         return {
@@ -44,6 +51,7 @@ class MultipleOptionDataset(Dataset):
             "input_ids": tokenized_row_ids,
             "attention_mask": tokenized_row_mask,
             "label": self.labels[index],
+            'd':directions,
             "decode": decoded
         }
     

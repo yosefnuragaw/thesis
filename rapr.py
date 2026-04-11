@@ -270,50 +270,46 @@ class RAPR(PatcherEngine):
 
         return sweep_results
 
-    def compute_weight(self, sweep_results):
-        """
-        Computes dynamic layer weights based on the relative delta between 
-        positive (+1) and negative (-1) steering sweeps.
-        """
-        # 1. Compute average Column-wise (x-axis) impact across all multipliers
-        # This represents: "When I intervene at layer X, what is the total downstream impact?"
+    def compute_weight(self, sweep_results, direction):
+        # 1. Gather sensitivities across the sweep
+        # Shape of each heatmap: (32, 32) -> Rows=Readout, Cols=Intervention
+        muls = list(sweep_results[direction].keys())
+        # sens_matrix shape: (len(muls), 32, 32)
+        sens_matrix = np.array([1.0 - sweep_results[direction][m].T for m in muls])
         
-        # --- POSITIVE STEERING (+1) CALCULATION ---
-        pos_muls = list(sweep_results[1].keys())
-        # Mean across columns (axis 0 of the transpose = Layer Index)
-        # We use (1 - dist) to turn distance into "proximity/sensitivity"
-        pos_col_avg = np.nanmean([1.0 - sweep_results[1][m].T for m in pos_muls], axis=(0, 2))
+        # 2. Influence Vector (Column-wise mean)
+        # "Which layer, when steered, has the most reach?"
+        # We mean over muls and then over the readout rows
+        influence_vec = np.nanmean(sens_matrix, axis=(0, 1))
         
-        # --- NEGATIVE STEERING (-1) CALCULATION ---
-        neg_muls = list(sweep_results[-1].keys())
-        neg_col_avg = np.nanmean([1.0 - sweep_results[-1][m].T for m in neg_muls], axis=(0, 2))
-
-        # 2. Compute the Diff Matrices
-        # Weight for +1 Steering: Sensitivity to +1 minus Sensitivity to -1
-        # Weight for -1 Steering: Sensitivity to -1 minus Sensitivity to +1
+        # 3. Friction Vector (Row-wise mean of the DIFF matrix)
+        # "At which depth does the model naturally resist this direction?"
+        opp_direction = -1 * direction
+        # Compute the Diff Matrix: (Target Sens - Distractor Sens)
+        diff_matrix = sens_matrix - np.array([1.0 - sweep_results[opp_direction][m].T for m in muls])
         
-        diff_for_pos = pos_col_avg - neg_col_avg
-        diff_for_neg = neg_col_avg - pos_col_avg
+        # Friction is the row-wise average of this diff
+        # High negative value = high resistance at that readout depth
+        friction_vec = np.nanmean(diff_matrix, axis=(0, 2))
         
-        # 3. Apply Multiplier logic
-        # We want to boost where the diff is positive (meaning target direction dominates)
-        # and attenuate where the diff is negative (meaning target direction is resisted)
-        
-        def finalize_weights(diff_array):
-            # We normalize the diff to a [0, 1] range to use as a gain controller
-            # Layers with high positive diff get higher weights
-            norm_diff = (diff_array - np.min(diff_array)) / (np.max(diff_array) - np.min(diff_array) + 1e-8)
+        # 4. Combine: Weight = Base_Influence * Dynamic_Gain(Friction)
+        def finalize_opo_weights(influence, friction):
+            # Normalize influence to [0, 1]
+            norm_inf = (influence - np.min(influence)) / (np.max(influence) - np.min(influence) + 1e-8)
             
-            # Apply your 0.5 to 1.5 scaling logic based on the sensitivity
-            # layers that 'favor' the direction get 1.5, others get 0.5
-            scaled_weights = 0.25 + (norm_diff * 1.0) 
-            return norm_diff
+            # Normalize friction to [0, 1] 
+            # (Where 0 = Max Resistance/Deep Red or Blue, 1 = Max Yield)
+            norm_fric = (friction - np.min(friction)) / (np.max(friction) - np.min(friction) + 1e-8)
+            
+            # Inverse friction logic: Spike gain where the row-wise resistance is high
+            # Gain range [0.5, 1.5]
+            gain_multiplier = 1.5 - (norm_fric * 1.0)
+            
+            # The final weight is the influence throttled by the structural friction
+            return norm_inf * gain_multiplier
 
-        weights_pos = finalize_weights(diff_for_pos)
-        weights_neg = finalize_weights(diff_for_neg)
-
-        return weights_pos, weights_neg
-
+        return finalize_opo_weights(influence_vec, friction_vec)
+    
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(
             self.model_name,

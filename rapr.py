@@ -518,7 +518,7 @@ def plot_sweep_heatmaps(sweep_results, multipliers_tested, build_heatmap_rgba, _
             axes = [axes]
 
         for ax, m in zip(axes, multipliers_tested):
-            matrix      = sweep_results[direction][m]
+            matrix      = sweep_results[direction][m].T
             active_mask = ~np.isnan(matrix)
             cmap        = plt.get_cmap("viridis")
             rgba, norm  = build_heatmap_rgba(matrix, active_mask, cmap)

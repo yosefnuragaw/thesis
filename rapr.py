@@ -390,9 +390,72 @@ def calculate_compounded_blowout_weights(matrices_dict, multipliers_tested):
     return W, max_safe_multipliers
 
 
-# ---------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------
+def build_heatmap_rgba(
+
+    heat: np.ndarray,
+
+    active: np.ndarray,
+
+    cmap, # Fixed variable name from 'stat' to 'cmap' to match usage
+
+    ) -> tuple:
+
+    """Return (rgba, norm) with inactive cells painted white."""
+
+    vmin = float(np.nanmin(heat[active]))
+
+    vmax = 1.0 # Or use np.nanmax(heat[active]) if you want dynamic max
+
+    norm = plt.Normalize(vmin=vmin, vmax=vmax)
+
+    rgba = cmap(norm(heat))
+
+    rgba[~active] = [1.0, 1.0, 1.0, 1.0] # Paint inactive white
+
+    return rgba, norm
+
+def plot_sweep_heatmaps(sweep_results, multipliers_tested, build_heatmap_rgba, _draw_heatmap):
+    """
+    For each direction (+1, -1), plots all multiplier heatmaps
+    concatenated horizontally into a single wide figure.
+    """
+    for direction in [1, -1]:
+        n_muls = len(multipliers_tested)
+        fig, axes = plt.subplots(
+            1, n_muls,
+            figsize=(6 * n_muls, 6),
+            sharey=True,
+        )
+        if n_muls == 1:
+            axes = [axes]
+
+        for ax, m in zip(axes, multipliers_tested):
+            matrix      = sweep_results[direction][m]
+            active_mask = ~np.isnan(matrix)
+            cmap        = plt.get_cmap("viridis")
+            rgba, norm  = build_heatmap_rgba(matrix, active_mask, cmap)
+            N           = matrix.shape[0]
+
+            _draw_heatmap(ax, fig, rgba, norm, cmap, N)
+            ax.set_title(f"Mul: {m}", fontsize=11, pad=6, fontweight="bold")
+
+            # Only leftmost axis keeps the y-label
+            if ax != axes[0]:
+                ax.set_ylabel("")
+
+        dir_label = "+1 (Unsafe)" if direction == 1 else "-1 (Safe)"
+        fig.suptitle(
+            f"Cosine-Distance Heatmap Sweep — Direction: {dir_label}",
+            fontsize=13,
+            fontweight="bold",
+            y=1.02,
+        )
+
+        plt.tight_layout()
+        fname = f"heatmap_sweep_dir{'pos' if direction == 1 else 'neg'}.png"
+        plt.savefig(fname, dpi=300, bbox_inches="tight")
+        plt.close(fig)
+        print(f"Saved: {fname}")
 
 if __name__ == "__main__":
     model_id = "meta-llama/Llama-3.1-8B-Instruct"
@@ -416,6 +479,7 @@ if __name__ == "__main__":
     print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
 
     sweep_results = engine.compute_matrix_sweep(multipliers_to_test)
+    plot_sweep_heatmaps(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
 
     print("\n" + "=" * 40)
     print("ANALYSIS FOR DIRECTION: +1 (UNSAFE)")

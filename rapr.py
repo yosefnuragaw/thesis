@@ -293,20 +293,13 @@ class RAPR(PatcherEngine):
         def finalize_opo_weights(influence, friction):
             # 1. Normalize both to [0, 1]
             norm_inf = (influence - np.min(influence)) / (np.max(influence) - np.min(influence) + 1e-8)
-            norm_fric = (friction - np.min(friction)) / (np.max(friction) - np.min(friction) + 1e-8)
-            
-            print(norm_fric)
-            # 2. Define the "Friction Threshold" 
-            # Since 0 is Max Resistance and 1 is Max Yield, 
-            # 'High Friction' layers are those with low norm_fric values.
-            friction_threshold = 0.5
-            
+        
             # 3. Apply the conditional non-linear scaling
             # We use np.where for efficient vectorization across all layers
             adjusted_inf = np.where(
-                norm_fric < friction_threshold, 
+                friction < 0, 
                 np.sqrt(norm_inf),  # High friction: Boost influence impact (concave)
-                norm_inf**2         # Low friction/Yield: Dampen influence impact (convex)
+                norm_inf
             )
             
 

@@ -289,17 +289,17 @@ class RAPR(PatcherEngine):
         sensitivity = 1.0 - avg_dist
             
         # 3. Clean up NaNs (if any)
-        avg_distances = np.nan_to_num(avg_distances, nan=1.0)
+        # avg_distances = np.nan_to_num(avg_distances, nan=1.0)
         
-        # 4. Weight Calculation: 1 - MinMax
-        # Layers with the LOWEST average distance get the HIGHEST weight
-        d_min = np.min(avg_distances)
-        d_max = np.max(avg_distances)
+        # # 4. Weight Calculation: 1 - MinMax
+        # # Layers with the LOWEST average distance get the HIGHEST weight
+        # d_min = np.min(avg_distances)
+        # d_max = np.max(avg_distances)
         
-        if d_max == d_min:
-            weights = np.zeros_like(avg_distances)
-        else:
-            weights = 1.0 - (avg_distances - d_min) / (d_max - d_min)
+        # if d_max == d_min:
+        #     weights = np.zeros_like(avg_distances)
+        # else:
+        #     weights = 1.0 - (avg_distances - d_min) / (d_max - d_min)
 
         
         return sensitivity

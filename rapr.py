@@ -70,7 +70,7 @@ class RAPR(PatcherEngine):
                 for batch in self.loader:
                     for input_ids, attention_mask in zip(batch["input_ids"], batch["attention_mask"]):
                         with torch.no_grad():
-                            model(input_ids=input_ids.to(model.device), attention_mask=attention_mask.to(model.device))
+                            model(input_ids=input_ids[0].to(model.device), attention_mask=attention_mask[0].to(model.device))
 
                 for layer in range(N):
                     if isinstance(model.model.layers[layer], BlockWrapper) and layer in current_layers:
@@ -131,7 +131,6 @@ def get_prompts(tokenizer, behavior, system_prompt=SYSTEM_PROMPT, generation_pro
     for row in dataset:
         if row['question'] is not None:  
             messages = [
-                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": row['question']},
             ]
             full_prompt = tokenizer.apply_chat_template(
@@ -141,7 +140,7 @@ def get_prompts(tokenizer, behavior, system_prompt=SYSTEM_PROMPT, generation_pro
             )
             
             questions.append(full_prompt)
-            current_options = [row[col] for col in ['matching','not_matching'] if col in row and row[col] is not None]
+            current_options = ['' for col in ['matching','not_matching'] if col in row and row[col] is not None]
             prompts.append(current_options)
             labels.append('')
 

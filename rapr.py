@@ -214,9 +214,15 @@ if __name__ == '__main__':
 
         cleaned[0] = 1.
         return cleaned
-
+    
+    final = {
+            1:{'pos':None,'neg':None},
+            2:{'pos':None,'neg':None},
+            3:{'pos':None,'neg':None}
+        }
     for dir in result.keys():
         # .T flips the matrix: rows become columns
+        
         matrix = result[dir].T 
         
         print(f"\n{'='*10} Direction: {dir} {'='*10}")
@@ -228,19 +234,13 @@ if __name__ == '__main__':
         print(f"Strictly Decreasing Cost: {strict_dist.tolist()}...")
 
         row_avg = np.nanmean(matrix, axis=1)
-        norm_row_avg = row_avg
+        norm_row_avg = min_max_normalize(row_avg)
         print(f"Layer Weights :  {row_avg.tolist()}...")
         print(f"Layer Weights (Norm/Rev):  {norm_row_avg.tolist()}")
 
-        weigh = np.where(strict_dist == 0., norm_row_avg ** 3, norm_row_avg)
-        print(3)
-        print(weigh.tolist())
+        key = 'pos' if dir == 1 else 'neg'
+        final[3][key] = np.where(strict_dist == 0., norm_row_avg ** 3, norm_row_avg)
+        final[2][key] = np.where(strict_dist == 0., norm_row_avg ** 2, norm_row_avg)
+        final[1][key] = np.where(strict_dist == 0., norm_row_avg ** 1, norm_row_avg)
 
-        weigh = np.where(strict_dist == 0., norm_row_avg ** 2, norm_row_avg)
-        print(2)
-        print(weigh.tolist())
-
-        weigh = np.where(strict_dist == 0., norm_row_avg ** 1, norm_row_avg)
-        print(1)
-        print(weigh.tolist())
-
+    print(final)

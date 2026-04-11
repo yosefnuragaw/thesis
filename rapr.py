@@ -574,53 +574,64 @@ def plot_sweep_heatmaps(sweep_results, multipliers_tested, build_heatmap_rgba, _
         plt.savefig(fname, dpi=300, bbox_inches="tight")
         plt.close(fig)
         print(f"Saved: {fname}")
+        
+def _minmax_scale(matrix: np.ndarray) -> np.ndarray:
+    """Scale a matrix to [0, 1] using its own finite min/max, NaNs preserved."""
+    out  = np.full_like(matrix, np.nan, dtype=float)
+    mask = ~np.isnan(matrix)
+    if mask.any():
+        lo, hi = matrix[mask].min(), matrix[mask].max()
+        if hi > lo:
+            out[mask] = (matrix[mask] - lo) / (hi - lo)
+        else:
+            out[mask] = 0.0
+    return out
 
 def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgba, _draw_heatmap):
     """
-    For each multiplier, computes (direction+1 - direction-1) matrix.
-    Positive diff → blue (positive steering dominates).
-    Negative diff → red (negative steering dominates).
-    All multipliers concatenated horizontally into one figure.
+    For each multiplier:
+      1. Min-max scale the +1 matrix to [0,1]
+      2. Min-max scale the -1 matrix to [0,1]
+      3. Diff = scaled_pos - scaled_neg
+         > 0 → blue  (positive steering dominates)
+         < 0 → red   (negative steering dominates)
+    Layout, size, and white background match plot_sweep_heatmaps exactly.
     """
     n_muls = len(multipliers_tested)
-    fig, axes = plt.subplots(
-        1, n_muls,
-        figsize=(6 * n_muls, 6),
-        sharey=True,
-    )
+    fig, axes = plt.subplots(1, n_muls, figsize=(6 * n_muls, 6), sharey=True)
+    fig.patch.set_facecolor("white")
     if n_muls == 1:
         axes = [axes]
 
-    # Symmetric diverging colormap: negative=red, zero=white, positive=blue
     cmap = LinearSegmentedColormap.from_list(
         "red_white_blue",
-        ["#d62728", "#ffffff", "#1f77b4"],  # red → white → blue
+        ["#d62728", "#ffffff", "#1f77b4"],
         N=256,
     )
 
-    # Find global vmax across all multipliers for a consistent shared scale
+    # Build scaled diffs first so we can derive a single shared norm
     all_diffs = []
     for m in multipliers_tested:
-        pos_mat = sweep_results[1][m].T
-        neg_mat = sweep_results[-1][m].T
-        diff    = pos_mat - neg_mat
-        all_diffs.append(diff)
+        scaled_pos = _minmax_scale(sweep_results[1][m].T)
+        scaled_neg = _minmax_scale(sweep_results[-1][m].T)
+        all_diffs.append(scaled_pos - scaled_neg)
 
     finite_vals = np.concatenate([d[~np.isnan(d)] for d in all_diffs])
-    vmax = np.nanmax(np.abs(finite_vals))   # symmetric around 0
+    vmax = np.nanmax(np.abs(finite_vals))
     norm = plt.Normalize(vmin=-vmax, vmax=vmax)
 
     for ax, m, diff in zip(axes, multipliers_tested, all_diffs):
+        ax.set_facecolor("white")
         N           = diff.shape[0]
         active_mask = ~np.isnan(diff)
 
-        # Build RGBA manually using the diverging cmap + shared norm
-        rgba = cmap(norm(np.where(active_mask, diff, 0.0)))
-        rgba[~active_mask] = [0.15, 0.15, 0.15, 1.0]   # dark gray for NaN cells
+        rgba               = cmap(norm(np.where(active_mask, diff, 0.0)))
+        rgba[~active_mask] = [0.85, 0.85, 0.85, 1.0]   # light gray for NaN (matches white bg)
 
-        ax.imshow(rgba, aspect="auto", origin="upper",
-                  extent=[-0.5, N - 0.5, N - 0.5, -0.5])
-
+        ax.imshow(
+            rgba, aspect="auto", origin="upper",
+            extent=[-0.5, N - 0.5, N - 0.5, -0.5],
+        )
         ax.set_title(f"Mul: {m}", fontsize=11, pad=6, fontweight="bold")
         ax.set_xlabel("Layer index", fontsize=9)
         if ax == axes[0]:
@@ -632,28 +643,30 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
         ax.set_yticks(range(0, N, 4))
         ax.tick_params(labelsize=7)
 
-    # Shared colorbar on the right
+        # Match the spine style of the normal heatmap
+        for spine in ax.spines.values():
+            spine.set_edgecolor("#cccccc")
+            spine.set_linewidth(0.8)
+
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
     cbar = fig.colorbar(sm, ax=axes, fraction=0.015, pad=0.02)
-    cbar.set_label("Δ Cosine distance  (+1) (-1)", fontsize=10)
+    cbar.set_label("Δ Cosine distance  (+1) - (-1)  [min-max scaled]", fontsize=10)
     cbar.ax.tick_params(labelsize=8)
 
-    # Annotation band
     fig.text(
         0.5, -0.03,
-        "Blue = positive steering stronger   |   Red = negative steering stronger",
+        "Blue = positive steering weaker   |   Red = negative steering stronger",
         ha="center", fontsize=10, color="#444444",
     )
-
     fig.suptitle(
-        "Diff Heatmap Sweep — Direction (+1) minus Direction (−1)",
+        "Diff Heatmap Sweep — Direction (+1) minus Direction (-1)  [per-matrix min-max scaled]",
         fontsize=13, fontweight="bold", y=1.02,
     )
 
     plt.tight_layout()
     fname = "heatmap_sweep_diff.png"
-    plt.savefig(fname, dpi=300, bbox_inches="tight")
+    plt.savefig(fname, dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"Saved: {fname}")
 

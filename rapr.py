@@ -67,7 +67,7 @@ class RAPR(PatcherEngine):
                             layer_device = next(model.model.layers[layer].parameters()).device
                             steering_vector = torch.load(vec_path, map_location=layer_device)
                             model.model.layers[layer].set_vector(steering_vector)
-                            model.model.layers[layer].set_multiplier(direction*2)
+                            model.model.layers[layer].set_multiplier(direction*3)
                         else:
                             raise ValueError(f"Vector not found at {vec_path}")
                             

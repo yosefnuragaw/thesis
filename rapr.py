@@ -236,9 +236,9 @@ if __name__ == '__main__':
         norm_row_avg = min_max_normalize(raw_dist) 
 
         key = 'pos' if dir == 1 else 'neg'
-        final[3][key] = np.where(strict_dist == 0., norm_row_avg ** 3, norm_row_avg)
-        final[2][key] = np.where(strict_dist == 0., norm_row_avg ** 2, norm_row_avg)
-        final[1][key] = np.where(strict_dist == 0., norm_row_avg ** 1, norm_row_avg)
+        final[3][key] = np.where(strict_dist == 0.,  0.5, norm_row_avg)
+        final[2][key] = np.where(strict_dist == 0., 0.25, norm_row_avg)
+        final[1][key] = np.where(strict_dist == 0., 0., norm_row_avg)
 
     for key in final.keys():
         pos = final[key]['pos']

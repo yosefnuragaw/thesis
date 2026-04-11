@@ -285,7 +285,8 @@ class RAPR(PatcherEngine):
         # --- THE CONTRAST SHIFT ---
         # 1. Calculate Sensitivity: How much did the layer deviate from 'Identity' (1.0)?
         # Higher value = Layer is more responsive to steering.
-        sensitivity = 1.0 - avg_dist
+        sensitivity = (1.0 - avg_dist)** 2
+        norm_sensitivity = sensitivity / np.max(sensitivity)
             
         # 3. Clean up NaNs (if any)
         # avg_distances = np.nan_to_num(avg_distances, nan=1.0)
@@ -301,7 +302,7 @@ class RAPR(PatcherEngine):
         #     weights = 1.0 - (avg_distances - d_min) / (d_max - d_min)
 
         
-        return sensitivity
+        return norm_sensitivity
 
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(
@@ -621,4 +622,4 @@ if __name__ == "__main__":
     w_neg = engine.compute_weight(sweep_results, direction=-1)
 
     print(f'pos_weight: {w_pos}')
-    print(f'pos_weight: {w_neg}')
+    print(f'neg_weight: {w_neg}')

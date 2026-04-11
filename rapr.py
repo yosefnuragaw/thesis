@@ -307,7 +307,7 @@ class RAPR(PatcherEngine):
                     min_m_array[l] = float(m)
                     break
 
-                if dist <= 0.65:
+                if dist <= 0.75:
                     max_m_array[l] = float(m)
                     break
 

@@ -288,29 +288,13 @@ class RAPR(PatcherEngine):
         ops_sens_matrix = np.array(sweep_results[opp_direction][0.5].T)
         print('neg',ops_sens_matrix)
         
-        diff_matrix = np.nanmean(sens_matrix, axis = 1) - np.nanmean(ops_sens_matrix, axis = 1)
-        print(diff_matrix)
+        friction_vec = np.nanmean(sens_matrix, axis = 1) - np.nanmean(ops_sens_matrix, axis = 1)
+        print(friction_vec)
         # Friction is the row-wise average of this diff
         # High negative value = high resistance at that readout depth
-        friction_vec = np.nanmean(diff_matrix, axis=(0, 2))
-        
-        # 4. Combine: Weight = Base_Influence * Dynamic_Gain(Friction)
-        def finalize_opo_weights(influence, friction):
-            # 1. Normalize both to [0, 1]
-            norm_inf = (influence - np.min(influence)) / (np.max(influence) - np.min(influence) + 1e-8)
-        
-            # 3. Apply the conditional non-linear scaling
-            # We use np.where for efficient vectorization across all layers
-            adjusted_inf = np.where(
-                friction > 0, 
-                np.sqrt(norm_inf),  # High friction: Boost influence impact (concave)
-                norm_inf
-            )
-            
-
-            return adjusted_inf 
-
-        return finalize_opo_weights(influence_vec, friction_vec)
+        influence = influence_vec + friction_vec*2
+        norm_inf = (influence - np.min(influence)) / (np.max(influence) - np.min(influence) + 1e-8)
+        return norm_inf(influence_vec, friction_vec)
     
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(

@@ -276,6 +276,7 @@ class RAPR(PatcherEngine):
         rows = []
         for m in sweep_results[direction].keys():
             full_load_row = sweep_results[direction][m].T[-1, :]
+            print(full_load_row)
             rows.append(full_load_row)
         
         # 2. Compute the Mean Distance across the sweep for each layer

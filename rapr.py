@@ -244,5 +244,5 @@ if __name__ == '__main__':
         pos = 1-final[key]['pos']+final[key]['neg']
         neg = 1-final[key]['neg']+final[key]['pos']
         print(key)
-        print(f'pos_weight: {pos.tolist()}')
-        print(f'neg_weight: {neg.tolist()}')
+        print(f'pos_weight: {min_max_normalize(pos).tolist()}')
+        print(f'neg_weight: {min_max_normalize(neg).tolist()}')

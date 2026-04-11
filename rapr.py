@@ -276,6 +276,7 @@ class RAPR(PatcherEngine):
         muls = list(sweep_results[direction].keys())
         # sens_matrix shape: (len(muls), 32, 32)
         sens_matrix = np.array([1.0 - sweep_results[direction][m].T for m in muls])
+        print(sens_matrix)
         
         # 2. Influence Vector (Column-wise mean)
         # "Which layer, when steered, has the most reach?"

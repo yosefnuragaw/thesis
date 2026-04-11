@@ -68,7 +68,7 @@ class RAPR(PatcherEngine):
                             raise ValueError(f"Vector not found at {vec_path}")
                             
                 for batch in self.loader:
-                    for input_ids, attention_mask,d in zip(batch["input_ids"], batch["attention_mask"],batch["directions"]):
+                    for input_ids, attention_mask,d in zip(batch["input_ids"], batch["attention_mask"],batch["d"]):
                         with torch.no_grad():
                             if d > 0:
                                 input_ids = input_ids[0:1, :]

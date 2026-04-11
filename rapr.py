@@ -275,7 +275,7 @@ class RAPR(PatcherEngine):
         # list of arrays, each shape (32,)
         rows = []
         for m in sweep_results[direction].keys():
-            # Get the 'Full Load' row where idx was 31 (saved at index 0)
+            print(sweep_results[direction][m])
             full_load_row = sweep_results[direction][m][0, :]
             rows.append(full_load_row)
         

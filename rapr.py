@@ -279,7 +279,7 @@ class RAPR(PatcherEngine):
         
         max_m = max(multipliers) 
         min_m_array = np.full(num_layers, float(max_m))
-        max_m_array = np.full(num_layers, 0.)
+        max_m_array = np.full(num_layers, float(max_m))
         for m in sweep_results[direction].keys():
             full_load_row = sweep_results[direction][m].T[-1, :]
             rows.append(full_load_row)
@@ -311,7 +311,7 @@ class RAPR(PatcherEngine):
                     max_m_array[l] = float(m)
                     break
 
-        operating_windows = list(zip(min_m_array, max_m_array))
+        operating_windows = [(float(min_v), float(max_v)) for min_v, max_v in zip(min_m_array, max_m_array)]
 
         return norm_sensitivity,operating_windows
 

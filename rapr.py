@@ -226,11 +226,14 @@ if __name__ == '__main__':
         matrix = result[dir].T 
         
         print(f"\n{'='*10} Direction: {dir} {'='*10}")
+
+        print(f"\n--- Statistics for {dir} ---")
         raw_dist =  np.nanmean(matrix, axis=0)
         strict_dist = mask_to_strictly_decreasing(raw_dist)
+    
 
         row_avg = np.nanmean(matrix, axis=1)
-        norm_row_avg = min_max_normalize(row_avg)
+        norm_row_avg = row_avg 
 
         key = 'pos' if dir == 1 else 'neg'
         final[3][key] = np.where(strict_dist == 0., norm_row_avg ** 3, norm_row_avg)

@@ -113,7 +113,7 @@ class RAPR(PatcherEngine):
         model.eval()
         return model
     
-def get_prompts(tokenizer, behavior, system_prompt=SYSTEM_PROMPT, generation_prompt:bool = True, k:int = 30, seed:int = 42):
+def get_prompts(tokenizer, behavior, system_prompt=SYSTEM_PROMPT, generation_prompt:bool = True, k:int = 60, seed:int = 42):
     path = f"./data/{behavior}/train.csv"
     if not os.path.exists(path):
          raise FileNotFoundError(f"Data file not found: {path}")

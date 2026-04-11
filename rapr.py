@@ -275,7 +275,7 @@ class RAPR(PatcherEngine):
         # list of arrays, each shape (32,)
         rows = []
         for m in sweep_results[direction].keys():
-            print(sweep_results[direction][m])
+            print(sweep_results[direction][m].T)
             full_load_row = sweep_results[direction][m][0, :]
             rows.append(full_load_row)
         

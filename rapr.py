@@ -467,9 +467,9 @@ def _draw_heatmap(ax, fig, rgba: np.ndarray, norm, cmap, N: int):
 
     for v in range(0, N, 4):
 
-    ax.axvline(v - 0.5, color="black", lw=0.4, alpha=0.15)
+        ax.axvline(v - 0.5, color="black", lw=0.4, alpha=0.15)
 
-    ax.axhline(v - 0.5, color="black", lw=0.4, alpha=0.15)
+        ax.axhline(v - 0.5, color="black", lw=0.4, alpha=0.15)
 
 
 

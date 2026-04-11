@@ -275,6 +275,7 @@ class RAPR(PatcherEngine):
         # Shape of each heatmap: (32, 32) -> Rows=Readout, Cols=Intervention
         muls = list(sweep_results[direction].keys())
         # sens_matrix shape: (len(muls), 32, 32)
+        print('+++++++++++++++++++++++++++')
         sens_matrix = np.array(sweep_results[direction][0.5].T)
         print(sens_matrix)
         print('==========================')
@@ -286,6 +287,8 @@ class RAPR(PatcherEngine):
         opp_direction = -1 * direction
         ops_sens_matrix = np.array(sweep_results[opp_direction][0.5].T)[-1,:]
         print(ops_sens_matrix)
+        print('---------------------------')
+        print(influence_vec-ops_sens_matrix)
         diff_matrix = sens_matrix - np.array([sweep_results[opp_direction][m].T for m in muls])
         
         # Friction is the row-wise average of this diff

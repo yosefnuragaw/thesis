@@ -228,7 +228,7 @@ if __name__ == '__main__':
         print(f"Strictly Decreasing Cost: {strict_dist.tolist()}...")
 
         row_avg = np.nanmean(matrix, axis=1)
-        norm_row_avg = 1-min_max_normalize(row_avg)
+        norm_row_avg = row_avg
         print(f"Layer Weights :  {row_avg.tolist()}...")
         print(f"Layer Weights (Norm/Rev):  {norm_row_avg.tolist()}")
 

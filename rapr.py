@@ -281,8 +281,14 @@ class RAPR(PatcherEngine):
         
         # 2. Compute the Mean Distance across the sweep for each layer
         # Shape: (32,)
-        avg_distances = np.nanmean(rows, axis=0)
-        
+        avg_dist = np.nanmean(np.vstack(rows), axis=0)
+        avg_dist = np.nan_to_num(avg_dist, nan=1.0)
+
+        # --- THE CONTRAST SHIFT ---
+        # 1. Calculate Sensitivity: How much did the layer deviate from 'Identity' (1.0)?
+        # Higher value = Layer is more responsive to steering.
+        sensitivity = 1.0 - avg_dist
+            
         # 3. Clean up NaNs (if any)
         avg_distances = np.nan_to_num(avg_distances, nan=1.0)
         
@@ -297,7 +303,7 @@ class RAPR(PatcherEngine):
             weights = 1.0 - (avg_distances - d_min) / (d_max - d_min)
 
         
-        return weights
+        return sensitivity
 
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(

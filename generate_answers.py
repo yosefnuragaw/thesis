@@ -44,19 +44,11 @@ class ScriptArguments:
         metadata={"help": "the layer the steering vector extracted from"}
     )
     pos_weight: Optional[List[int]] = field(
-        default_factory=lambda: list(1 for x in range(32)), 
+        default_factory=lambda: list(1 for x in range(26)), 
         metadata={"help": "Weight layer"}
     )
     neg_weight: Optional[List[int]] = field(
-        default_factory=lambda: list(1 for x in range(32)), 
-        metadata={"help": "Weight layer"}
-    )
-    pos_range: Optional[List[int]] = field(
-        default_factory=lambda: list(None for x in range(32)), 
-        metadata={"help": "Weight layer"}
-    )
-    neg_range: Optional[List[int]] = field(
-        default_factory=lambda: list(None for x in range(32)), 
+        default_factory=lambda: list(1 for x in range(26)), 
         metadata={"help": "Weight layer"}
     )
     total_layer: Optional[int] = field(default=200, metadata={"help": "LLM total number of layers"})
@@ -203,7 +195,6 @@ def main(baseline:bool, args: ScriptArguments)->None:
     if not baseline:
         for multiplier in args.multipliers:
             w = args.pos_weight if multiplier > 0 else args.neg_weight
-            ops = args.pos_range if multiplier > 0 else args.neg_range
             for idx,weight in zip(args.layer,w):
                 if isinstance(model.model.layers[idx], BlockWrapper):
                     model.model.layers[idx].set_multiplier(multiplier*weight)

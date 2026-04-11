@@ -271,28 +271,33 @@ class RAPR(PatcherEngine):
         return sweep_results
 
     def compute_weight(self, sweep_results, direction):
-        # 1. Collect Row 0 (Full Load) from every multiplier tested
-        # list of arrays, each shape (32,)
-        rows = []
-        multipliers = sorted(sweep_results[direction].keys())
-        num_layers = 32
-        
-        max_m = max(multipliers) 
-        min_m_array = np.full(num_layers, float(max_m))
-        max_m_array = np.full(num_layers, float(min_m_array))
-        for m in sweep_results[direction].keys():
-            full_load_row = sweep_results[direction][m].T[-1, :]
-            rows.append(full_load_row)
-        
-        # 2. Compute the Mean Distance across the sweep for each layer
-        # Shape: (32,)
-        avg_dist = np.nanmean(np.vstack(rows), axis=0)
+        all_traj = []
+        all_end = []
 
-        # --- THE CONTRAST SHIFT ---
-        # 1. Calculate Sensitivity: How much did the layer deviate from 'Identity' (1.0)?
-        # Higher value = Layer is more responsive to steering.
-        sensitivity = avg_dist
-        norm_sensitivity = sensitivity / np.max(sensitivity)
+        for m in sweep_results[direction].keys():
+            heatmap = sweep_results[direction][m] # Shape (32, 32)
+            
+            # 1. Row-wise: How much does layer i disrupt the entire path?
+            # Use nanmean to ignore the "future" layers (white area)
+            row_impact = 1.0 - np.nanmean(heatmap, axis=1)
+            all_traj.append(row_impact)
+            
+            # 2. Last Column: How much does layer i change the final output?
+            # Index -1 is the measurement at layer 31
+            end_impact = 1.0 - heatmap[:, -1]
+            all_end.append(end_impact)
+        
+        # Aggregate across the multiplier sweep
+        avg_traj = np.nanmean(np.vstack(all_traj), axis=0)
+        avg_end = np.nanmean(np.vstack(all_end), axis=0)
+
+        # --- COMBINATION STRATEGY ---
+        # We multiply them so a layer must be high in BOTH to get a high weight.
+        # This filters out "volatile but self-correcting" layers.
+        combined_score = avg_traj * avg_end
+        
+        # Normalize 0.0 to 1.0
+        norm_sensitivity = (combined_score - np.min(combined_score)) / (np.max(combined_score) - np.min(combined_score))
             
         return norm_sensitivity
 

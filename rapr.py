@@ -274,6 +274,11 @@ class RAPR(PatcherEngine):
         # 1. Collect Row 0 (Full Load) from every multiplier tested
         # list of arrays, each shape (32,)
         rows = []
+        multipliers = sorted(sweep_results[direction].keys())
+        num_layers = 32
+        
+        max_m = max(multipliers) 
+        min_m_array = np.full(num_layers, float(max_m))
         for m in sweep_results[direction].keys():
             full_load_row = sweep_results[direction][m].T[-1, :]
             rows.append(full_load_row)
@@ -288,21 +293,21 @@ class RAPR(PatcherEngine):
         sensitivity = (1.0 - avg_dist)** 2
         norm_sensitivity = sensitivity / np.max(sensitivity)
             
-        # 3. Clean up NaNs (if any)
-        # avg_distances = np.nan_to_num(avg_distances, nan=1.0)
-        
-        # # 4. Weight Calculation: 1 - MinMax
-        # # Layers with the LOWEST average distance get the HIGHEST weight
-        # d_min = np.min(avg_distances)
-        # d_max = np.max(avg_distances)
-        
-        # if d_max == d_min:
-        #     weights = np.zeros_like(avg_distances)
-        # else:
-        #     weights = 1.0 - (avg_distances - d_min) / (d_max - d_min)
+        for l in range(32):
+            # Extract the distance curve for this specific layer
+            layer_distances = np.vstack(rows)[:, l]
+            
+            # 2. Scan through multipliers from lowest to highest
+            for idx, m in enumerate(multipliers):
+                dist = layer_distances[idx]
+                
+                # 3. If the distance drops below the threshold, the layer has 'Activated'
+                if dist <= 0.85:
+                    min_m_array[l] = m
+                    break
 
         
-        return norm_sensitivity
+        return norm_sensitivity*min_m_array
 
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(

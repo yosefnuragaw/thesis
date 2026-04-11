@@ -26,32 +26,19 @@ from utils import set_seed
 # ---------------------------------------------------------
 # Dataset
 # ---------------------------------------------------------
+
 def rapr_collate_fn(batch: list) -> dict:
     return {
-        "input_ids":       torch.stack([s["input_ids"]       for s in batch]),  # [B, num_options, L]
-        "attention_mask":  torch.stack([s["attention_mask"]   for s in batch]),  # [B, num_options, L]
-        "d":               torch.stack([s["d"]                for s in batch]),  # [B, num_options]
-        "question_length": torch.tensor([s["question_length"] for s in batch]),  # [B]
-        "label":           [s["label"]  for s in batch],                         # list[str]
-        "decode":          [s["decode"] for s in batch],                         # list[list[list[str]]]
+        "input_ids":       torch.stack([s["input_ids"]       for s in batch]),
+        "attention_mask":  torch.stack([s["attention_mask"]   for s in batch]),
+        "d":               torch.stack([s["d"]                for s in batch]),
+        "question_length": torch.tensor([s["question_length"] for s in batch]),
+        "label":           [s["label"]  for s in batch],
+        "decode":          [s["decode"] for s in batch],
     }
 
+
 class PaddedMultipleOptionDataset(Dataset):
-    """
-    Tokenises every (question, option) pair once at construction time,
-    then pads all sequences to a uniform length so the default collator
-    can stack them into [B, num_options, L] tensors without a custom
-    collate_fn.
-
-    __getitem__ returns:
-      input_ids:       [num_options, max_length]   int64
-      attention_mask:  [num_options, max_length]   int64  (0 on pad positions)
-      d:               [num_options]               int64  (+1 / -1)
-      question_length: scalar int
-      label:           str
-      decode:          list[list[str]]
-    """
-
     def __init__(
         self,
         tokenizer,
@@ -129,10 +116,10 @@ class PaddedMultipleOptionDataset(Dataset):
 
         padded_ids   = torch.stack(
             [self._pad(ids, L, self.pad_id) for ids in sample["raw_ids"]]
-        )  # [num_options, L]
+        )
         padded_masks = torch.stack(
             [self._pad(msk, L, 0) for msk in sample["raw_masks"]]
-        )  # [num_options, L]
+        )
 
         return {
             "question_length": sample["question_length"],
@@ -158,7 +145,7 @@ class PatcherEngine:
         pass
 
     @abstractmethod
-    def __init_model(self) -> AutoModelForCausalLM:
+    def _init_model(self) -> AutoModelForCausalLM:
         pass
 
 
@@ -180,18 +167,55 @@ class RAPR(PatcherEngine):
         self.verbose    = verbose
 
     def compute_matrix_sweep(self, multipliers: List[float]):
-        """
-        Sweeps over multipliers.  For each (multiplier, direction, layer-subset)
-        combination it runs two separate batched forward passes:
-          - direction == +1 : positive options (d == 1) forwarded one-by-one
-          - direction == -1 : negative options (d == -1) forwarded as one batch
-        """
         N    = len(self.layers)
         sweep_results = {1: {}, -1: {}}
 
-        model = self._RAPR__init_model()          # name-mangled private call
+        model = self._init_model()
         base  = sorted(self.layers, reverse=True)
 
+        # ── Cache vectors from disk once ───────────────────────────────────
+        print("Caching steering vectors...")
+        vec_cache = {}
+        for layer in self.layers:
+            vec_path = f"{self.vec_dir}/vec_ep{self.eval_epoch}_layer{layer}.pt"
+            if not os.path.exists(vec_path):
+                raise ValueError(f"Vector not found at {vec_path}")
+            vec_cache[layer] = torch.load(vec_path, map_location="cpu")
+
+        # ── Set vectors ONCE — they never change across the entire sweep ───
+        for layer in self.layers:
+            if isinstance(model.model.layers[layer], BlockWrapper):
+                layer_device = next(model.model.layers[layer].parameters()).device
+                model.model.layers[layer].set_vector(vec_cache[layer].to(layer_device))
+                model.model.layers[layer].set_multiplier(0.0)   # start inactive
+        print(f"Vectors set on all {len(self.layers)} layers.")
+
+        # ── Pre-collect all samples from loader once ───────────────────────
+        print("Pre-collecting dataset into memory...")
+        all_pos_ids, all_pos_masks = [], []
+        all_neg_ids, all_neg_masks = [], []
+
+        for batch in self.loader:
+            d_vals = batch["d"]
+            ids    = batch["input_ids"]
+            masks  = batch["attention_mask"]
+            for i in range(ids.shape[0]):
+                for j in range(ids.shape[1]):
+                    if d_vals[i, j].item() > 0:
+                        all_pos_ids.append(ids[i, j])
+                        all_pos_masks.append(masks[i, j])
+                    else:
+                        all_neg_ids.append(ids[i, j])
+                        all_neg_masks.append(masks[i, j])
+
+        # Pre-stack and move to GPU once
+        pos_ids_gpu   = torch.stack(all_pos_ids).to(model.device)
+        pos_masks_gpu = torch.stack(all_pos_masks).to(model.device)
+        neg_ids_gpu   = torch.stack(all_neg_ids).to(model.device)
+        neg_masks_gpu = torch.stack(all_neg_masks).to(model.device)
+        print(f"Collected {pos_ids_gpu.shape[0]} pos / {neg_ids_gpu.shape[0]} neg samples.")
+
+        # ── Sweep ──────────────────────────────────────────────────────────
         for m in multipliers:
             stat = {
                 1:  np.full((N, N), np.nan),
@@ -200,69 +224,37 @@ class RAPR(PatcherEngine):
 
             for direction in [1, -1]:
                 pbar = (
-                    tqdm(base, desc=f"[Dir: {direction} | Mul: {m}]", ncols=100)
+                    tqdm(base, desc=f"[Dir: {direction:+d} | Mul: {m}]", ncols=100)
                     if self.verbose else base
                 )
 
                 for idx, _ in enumerate(pbar):
                     current_layers = base[: idx + 1]
 
-                    # ── Set vectors & multipliers ────────────────────────────
+                    # Only touch the multiplier scalar — vector already loaded
                     for layer in self.layers:
-                        if (
-                            isinstance(model.model.layers[layer], BlockWrapper)
-                            and layer in current_layers
-                        ):
-                            vec_path = (
-                                f"{self.vec_dir}/vec_ep{self.eval_epoch}_layer{layer}.pt"
-                            )
-                            if not os.path.exists(vec_path):
-                                raise ValueError(f"Vector not found at {vec_path}")
+                        if isinstance(model.model.layers[layer], BlockWrapper):
+                            if layer in current_layers:
+                                model.model.layers[layer].set_multiplier(direction * m)
+                            else:
+                                model.model.layers[layer].set_multiplier(0.0)
 
-                            layer_device   = next(model.model.layers[layer].parameters()).device
-                            steering_vector = torch.load(vec_path, map_location=layer_device)
-                            model.model.layers[layer].set_vector(steering_vector)
-                            model.model.layers[layer].set_multiplier(direction * m)
-
-                    # ── Collect samples by direction ─────────────────────────
-                    # batch["input_ids"]      : [B, num_options, L]
-                    # batch["d"]              : [B, num_options]
-                    # option index 0 → d == +1 (positive/matching)
-                    # option index 1 → d == -1 (negative/not-matching)
-                    pos_ids, pos_masks = [], []
-                    neg_ids, neg_masks = [], []
-
-                    for batch in self.loader:
-                        # batch dims: [B, num_options, L]
-                        for i in range(batch["input_ids"].shape[0]):         # over batch
-                            for j in range(batch["input_ids"].shape[1]):     # over options
-                                d_val = batch["d"][i, j].item()
-                                ids   = batch["input_ids"][i, j]             # [L]
-                                mask  = batch["attention_mask"][i, j]        # [L]
-                                if d_val > 0:
-                                    pos_ids.append(ids)
-                                    pos_masks.append(mask)
-                                else:
-                                    neg_ids.append(ids)
-                                    neg_masks.append(mask)
-
-                    # ── Forward passes ───────────────────────────────────────
+                    # ── Forward pass ───────────────────────────────────────
                     with torch.no_grad():
-                        if direction == 1 and pos_ids:
-                            # Positives: one-by-one (matched responses isolated)
-                            for ids, mask in zip(pos_ids, pos_masks):
+                        if direction == 1:
+                            chunk_size = 32
+                            for start in range(0, pos_ids_gpu.shape[0], chunk_size):
                                 model(
-                                    input_ids=ids.unsqueeze(0).to(model.device),
-                                    attention_mask=mask.unsqueeze(0).to(model.device),
+                                    input_ids=pos_ids_gpu[start:start + chunk_size],
+                                    attention_mask=pos_masks_gpu[start:start + chunk_size],
                                 )
+                        else:
+                            model(
+                                input_ids=neg_ids_gpu,
+                                attention_mask=neg_masks_gpu,
+                            )
 
-                        elif direction == -1 and neg_ids:
-                            # Negatives: single batched forward pass
-                            batched_ids   = torch.stack(neg_ids).to(model.device)   # [N_neg, L]
-                            batched_masks = torch.stack(neg_masks).to(model.device)
-                            model(input_ids=batched_ids, attention_mask=batched_masks)
-
-                    # ── Harvest statistics ───────────────────────────────────
+                    # ── Harvest statistics ─────────────────────────────────
                     for layer in range(N):
                         if (
                             isinstance(model.model.layers[layer], BlockWrapper)
@@ -278,10 +270,10 @@ class RAPR(PatcherEngine):
 
         return sweep_results
 
-    def compute_weight(stat: dict):
+    def compute_weight(self, stat: dict):
         pass
 
-    def __init_model(self) -> AutoModelForCausalLM:
+    def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(
             self.model_name,
             attn_implementation="flash_attention_2",
@@ -370,10 +362,6 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer) -> DataLoader:
 # ---------------------------------------------------------
 
 def calculate_compounded_blowout_weights(matrices_dict, multipliers_tested):
-    """
-    Calculates the maximum safe multiplier before Off-Manifold decay
-    by looking exclusively at Column 0 (the fully compounded state).
-    """
     num_layers = 32
     max_safe_multipliers = np.zeros(num_layers)
 
@@ -391,7 +379,7 @@ def calculate_compounded_blowout_weights(matrices_dict, multipliers_tested):
                 best_distance = compounded_distance
                 best_m        = m
             else:
-                break   # decay detected
+                break
 
         if best_m == 0.0 and len(multipliers_tested) > 0:
             best_m = multipliers_tested[0]

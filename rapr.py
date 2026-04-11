@@ -574,6 +574,7 @@ def plot_sweep_heatmaps(sweep_results, multipliers_tested, build_heatmap_rgba, _
         plt.savefig(fname, dpi=300, bbox_inches="tight")
         plt.close(fig)
         print(f"Saved: {fname}")
+
 def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgba, _draw_heatmap):
     """
     For each multiplier, computes (direction+1 - direction-1) matrix.
@@ -635,7 +636,7 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
     cbar = fig.colorbar(sm, ax=axes, fraction=0.015, pad=0.02)
-    cbar.set_label("Δ Cosine distance  (+1) − (−1)", fontsize=10)
+    cbar.set_label("Δ Cosine distance  (+1) (-1)", fontsize=10)
     cbar.ax.tick_params(labelsize=8)
 
     # Annotation band

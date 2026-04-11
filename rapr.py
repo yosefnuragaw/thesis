@@ -639,8 +639,8 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
         else:
             ax.set_ylabel("")
 
-        ax.set_xticks(range(0, N, 4))
-        ax.set_yticks(range(0, N, 4))
+        ax.set_xticks(range(0, N, 1))
+        ax.set_yticks(range(0, N, 1))
         ax.tick_params(labelsize=7)
 
         # Match the spine style of the normal heatmap
@@ -688,7 +688,7 @@ if __name__ == "__main__":
         verbose=True,
     )
 
-    multipliers_to_test = [0.1,0.5,1.]
+    multipliers_to_test = [0.1,0.5,1.,1.5.2]
     print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
 
     sweep_results = engine.compute_matrix_sweep(multipliers_to_test)

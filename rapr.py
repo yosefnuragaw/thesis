@@ -295,6 +295,7 @@ class RAPR(PatcherEngine):
             norm_inf = (influence - np.min(influence)) / (np.max(influence) - np.min(influence) + 1e-8)
             norm_fric = (friction - np.min(friction)) / (np.max(friction) - np.min(friction) + 1e-8)
             
+            print(norm_fric)
             # 2. Define the "Friction Threshold" 
             # Since 0 is Max Resistance and 1 is Max Yield, 
             # 'High Friction' layers are those with low norm_fric values.

@@ -670,7 +670,7 @@ if __name__ == "__main__":
     plot_sweep_heatmaps(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
     plot_sweep_diff_heatmap(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
 
-    w_pos,w_neg = engine.compute_weight(sweep_results)
+    w_pos,w_neg = engine.compute_weight(sweep_results,direction=1),engine.compute_weight(sweep_results,direction=-1)
 
     print(f'pos_weight: {w_pos.tolist()}')
     print(f'neg_weight: {w_neg.tolist()}')

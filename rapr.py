@@ -633,6 +633,6 @@ if __name__ == "__main__":
     w_neg,opneg = engine.compute_weight(sweep_results, direction=-1)
 
     print(f'pos_weight: {w_pos.tolist()}')
-    print(f'pos_range: {oppos.tolist()}')
+    print(f'pos_range: {oppos}')
     print(f'neg_weight: {w_neg.tolist()}')
-    print(f'neg_range: {opneg.tolist()}')
+    print(f'neg_range: {opneg}')

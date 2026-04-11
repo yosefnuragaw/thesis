@@ -294,12 +294,14 @@ class RAPR(PatcherEngine):
         # --- COMBINATION STRATEGY ---
         # We multiply them so a layer must be high in BOTH to get a high weight.
         # This filters out "volatile but self-correcting" layers.
-        combined_score = avg_traj * avg_end
+        weights = avg_traj 
+        mask = avg_end > 0.9
+        weights[mask] = avg_traj[mask]**0.5
         
         # Normalize 0.0 to 1.0
-        norm_sensitivity = (combined_score - np.min(combined_score)) / (np.max(combined_score) - np.min(combined_score))
+        # norm_sensitivity = (combined_score - np.min(combined_score)) / (np.max(combined_score) - np.min(combined_score))
             
-        return norm_sensitivity
+        return weights
 
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(

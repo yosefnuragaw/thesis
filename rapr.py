@@ -275,19 +275,15 @@ class RAPR(PatcherEngine):
         # Shape of each heatmap: (32, 32) -> Rows=Readout, Cols=Intervention
         muls = list(sweep_results[direction].keys())
         # sens_matrix shape: (len(muls), 32, 32)
-        sens_matrix = np.array([1.0 - sweep_results[direction][m].T for m in muls])
+        sens_matrix = np.array([sweep_results[direction][m].T for m in muls])
         print(sens_matrix)
-        
-        # 2. Influence Vector (Column-wise mean)
-        # "Which layer, when steered, has the most reach?"
-        # We mean over muls and then over the readout rows
+    
         influence_vec = np.nanmean(sens_matrix, axis=(0, 1))
         
         # 3. Friction Vector (Row-wise mean of the DIFF matrix)
         # "At which depth does the model naturally resist this direction?"
         opp_direction = -1 * direction
-        # Compute the Diff Matrix: (Target Sens - Distractor Sens)
-        diff_matrix = sens_matrix - np.array([1.0 - sweep_results[opp_direction][m].T for m in muls])
+        diff_matrix = sens_matrix - np.array([sweep_results[opp_direction][m].T for m in muls])
         
         # Friction is the row-wise average of this diff
         # High negative value = high resistance at that readout depth
@@ -295,19 +291,25 @@ class RAPR(PatcherEngine):
         
         # 4. Combine: Weight = Base_Influence * Dynamic_Gain(Friction)
         def finalize_opo_weights(influence, friction):
-            # Normalize influence to [0, 1]
+            # 1. Normalize both to [0, 1]
             norm_inf = (influence - np.min(influence)) / (np.max(influence) - np.min(influence) + 1e-8)
-            
-            # Normalize friction to [0, 1] 
-            # (Where 0 = Max Resistance/Deep Red or Blue, 1 = Max Yield)
             norm_fric = (friction - np.min(friction)) / (np.max(friction) - np.min(friction) + 1e-8)
             
-            # Inverse friction logic: Spike gain where the row-wise resistance is high
-            # Gain range [0.5, 1.5]
-            gain_multiplier = 1.25 - (norm_fric * 1.0)
+            # 2. Define the "Friction Threshold" 
+            # Since 0 is Max Resistance and 1 is Max Yield, 
+            # 'High Friction' layers are those with low norm_fric values.
+            friction_threshold = 0.5
             
-            # The final weight is the influence throttled by the structural friction
-            return norm_inf * gain_multiplier
+            # 3. Apply the conditional non-linear scaling
+            # We use np.where for efficient vectorization across all layers
+            adjusted_inf = np.where(
+                norm_fric < friction_threshold, 
+                np.sqrt(norm_inf),  # High friction: Boost influence impact (concave)
+                norm_inf**2         # Low friction/Yield: Dampen influence impact (convex)
+            )
+            
+
+            return adjusted_inf 
 
         return finalize_opo_weights(influence_vec, friction_vec)
     

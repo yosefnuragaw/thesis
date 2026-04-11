@@ -279,7 +279,7 @@ class RAPR(PatcherEngine):
         
         max_m = max(multipliers) 
         min_m_array = np.full(num_layers, float(max_m))
-        max_m_array = np.full(num_layers, float(max_m))
+        max_m_array = np.full(num_layers, float(min_m_array))
         for m in sweep_results[direction].keys():
             full_load_row = sweep_results[direction][m].T[-1, :]
             rows.append(full_load_row)
@@ -294,32 +294,7 @@ class RAPR(PatcherEngine):
         sensitivity = avg_dist
         norm_sensitivity = sensitivity / np.max(sensitivity)
             
-        for l in range(32):
-            # Extract the distance curve for this specific layer
-            layer_distances = np.vstack(rows)[:, l]
-            min_found = False
-            max_found = False
-            
-            for idx, m in enumerate(multipliers):
-                dist = layer_distances[idx]
-                
-                # 3a. Find the MINIMUM required force (Drops below 0.85)
-                if dist <= 0.95 and not min_found:
-                    min_m_array[l] = float(m)
-                    min_found = True
-
-                # 3b. Find the MAXIMUM safe force (Drops below 0.75)
-                if dist <= 0.85 and not max_found:
-                    max_m_array[l] = float(m)
-                    max_found = True
-
-                # 4. Only break if we have found BOTH bounds
-                if min_found and max_found:
-                    break
-
-        operating_windows = [(float(min_v), float(max_v)) for min_v, max_v in zip(min_m_array, max_m_array)]
-
-        return norm_sensitivity,operating_windows
+        return norm_sensitivity
 
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(
@@ -635,10 +610,8 @@ if __name__ == "__main__":
 
     print("\nCalibration Complete. Use these arrays in your final inference script!")
 
-    w_pos,oppos = engine.compute_weight(sweep_results, direction=1)
-    w_neg,opneg = engine.compute_weight(sweep_results, direction=-1)
+    w_pos = engine.compute_weight(sweep_results, direction=1)
+    w_neg = engine.compute_weight(sweep_results, direction=-1)
 
     print(f'pos_weight: {w_pos.tolist()}')
-    print(f'pos_range: {oppos}')
     print(f'neg_weight: {w_neg.tolist()}')
-    print(f'neg_range: {opneg}')

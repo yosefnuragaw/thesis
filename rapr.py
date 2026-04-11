@@ -270,8 +270,34 @@ class RAPR(PatcherEngine):
 
         return sweep_results
 
-    def compute_weight(self, stat: dict):
-        pass
+    def compute_weight(self, sweep_results, direction):
+        # 1. Collect Row 0 (Full Load) from every multiplier tested
+        # list of arrays, each shape (32,)
+        rows = []
+        for m in sweep_results[direction].keys():
+            # Get the 'Full Load' row where idx was 31 (saved at index 0)
+            full_load_row = sweep_results[direction][m][0, :]
+            rows.append(full_load_row)
+        
+        # 2. Compute the Mean Distance across the sweep for each layer
+        # Shape: (32,)
+        avg_distances = np.nanmean(rows, axis=0)
+        
+        # 3. Clean up NaNs (if any)
+        avg_distances = np.nan_to_num(avg_distances, nan=1.0)
+        
+        # 4. Weight Calculation: 1 - MinMax
+        # Layers with the LOWEST average distance get the HIGHEST weight
+        d_min = np.min(avg_distances)
+        d_max = np.max(avg_distances)
+        
+        if d_max == d_min:
+            weights = np.zeros_like(avg_distances)
+        else:
+            weights = 1.0 - (avg_distances - d_min) / (d_max - d_min)
+
+        
+        return weights
 
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(
@@ -544,34 +570,7 @@ def plot_sweep_heatmaps(sweep_results, multipliers_tested, build_heatmap_rgba, _
         plt.savefig(fname, dpi=300, bbox_inches="tight")
         plt.close(fig)
         print(f"Saved: {fname}")
-def compute_weight_averaged_sweep(self, sweep_results, direction):
-    # 1. Collect Row 0 (Full Load) from every multiplier tested
-    # list of arrays, each shape (32,)
-    rows = []
-    for m in sweep_results[direction].keys():
-        # Get the 'Full Load' row where idx was 31 (saved at index 0)
-        full_load_row = sweep_results[direction][m][0, :]
-        rows.append(full_load_row)
-    
-    # 2. Compute the Mean Distance across the sweep for each layer
-    # Shape: (32,)
-    avg_distances = np.nanmean(rows, axis=0)
-    
-    # 3. Clean up NaNs (if any)
-    avg_distances = np.nan_to_num(avg_distances, nan=1.0)
-    
-    # 4. Weight Calculation: 1 - MinMax
-    # Layers with the LOWEST average distance get the HIGHEST weight
-    d_min = np.min(avg_distances)
-    d_max = np.max(avg_distances)
-    
-    if d_max == d_min:
-        weights = np.zeros_like(avg_distances)
-    else:
-        weights = 1.0 - (avg_distances - d_min) / (d_max - d_min)
 
-    
-    return weights
 if __name__ == "__main__":
     model_id = "meta-llama/Llama-3.1-8B-Instruct"
 
@@ -614,8 +613,8 @@ if __name__ == "__main__":
 
     print("\nCalibration Complete. Use these arrays in your final inference script!")
 
-    w_pos = engine.compute_weight_averaged_sweep(sweep_results, direction=1)
-    w_neg = engine.compute_weight_averaged_sweep(sweep_results, direction=-1)
+    w_pos = engine.compute_weight(sweep_results, direction=1)
+    w_neg = engine.compute_weight(sweep_results, direction=-1)
 
     print(f'pos_weight: {W_pos}')
     print(f'pos_weight: {W_neg}')

@@ -275,10 +275,11 @@ class RAPR(PatcherEngine):
         # Shape of each heatmap: (32, 32) -> Rows=Readout, Cols=Intervention
         muls = list(sweep_results[direction].keys())
         # sens_matrix shape: (len(muls), 32, 32)
-        sens_matrix = np.array([sweep_results[direction][m].T for m in muls])
+        sens_matrix = np.array(sweep_results[direction][0.5].T)
         print(sens_matrix)
         print('==========================')
-        influence_vec = np.nanmean(sens_matrix, axis=(0, 1))
+        # influence_vec = np.nanmean(sens_matrix, axis=(0, 1))
+        influence_vec= sens_matrix[-1.:]
         print(influence_vec)
         # 3. Friction Vector (Row-wise mean of the DIFF matrix)
         # "At which depth does the model naturally resist this direction?"

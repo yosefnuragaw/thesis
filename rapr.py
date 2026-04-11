@@ -280,6 +280,7 @@ class RAPR(PatcherEngine):
         
         # 2. Compute the Mean Distance across the sweep for each layer
         # Shape: (32,)
+        print(np.vstack(rows))
         avg_dist = np.nanmean(np.vstack(rows), axis=0)
 
         # --- THE CONTRAST SHIFT ---

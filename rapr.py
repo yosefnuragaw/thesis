@@ -574,6 +574,87 @@ def plot_sweep_heatmaps(sweep_results, multipliers_tested, build_heatmap_rgba, _
         plt.savefig(fname, dpi=300, bbox_inches="tight")
         plt.close(fig)
         print(f"Saved: {fname}")
+def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgba, _draw_heatmap):
+    """
+    For each multiplier, computes (direction+1 - direction-1) matrix.
+    Positive diff → blue (positive steering dominates).
+    Negative diff → red (negative steering dominates).
+    All multipliers concatenated horizontally into one figure.
+    """
+    n_muls = len(multipliers_tested)
+    fig, axes = plt.subplots(
+        1, n_muls,
+        figsize=(6 * n_muls, 6),
+        sharey=True,
+    )
+    if n_muls == 1:
+        axes = [axes]
+
+    # Symmetric diverging colormap: negative=red, zero=white, positive=blue
+    cmap = LinearSegmentedColormap.from_list(
+        "red_white_blue",
+        ["#d62728", "#ffffff", "#1f77b4"],  # red → white → blue
+        N=256,
+    )
+
+    # Find global vmax across all multipliers for a consistent shared scale
+    all_diffs = []
+    for m in multipliers_tested:
+        pos_mat = sweep_results[1][m].T
+        neg_mat = sweep_results[-1][m].T
+        diff    = pos_mat - neg_mat
+        all_diffs.append(diff)
+
+    finite_vals = np.concatenate([d[~np.isnan(d)] for d in all_diffs])
+    vmax = np.nanmax(np.abs(finite_vals))   # symmetric around 0
+    norm = plt.Normalize(vmin=-vmax, vmax=vmax)
+
+    for ax, m, diff in zip(axes, multipliers_tested, all_diffs):
+        N           = diff.shape[0]
+        active_mask = ~np.isnan(diff)
+
+        # Build RGBA manually using the diverging cmap + shared norm
+        rgba = cmap(norm(np.where(active_mask, diff, 0.0)))
+        rgba[~active_mask] = [0.15, 0.15, 0.15, 1.0]   # dark gray for NaN cells
+
+        ax.imshow(rgba, aspect="auto", origin="upper",
+                  extent=[-0.5, N - 0.5, N - 0.5, -0.5])
+
+        ax.set_title(f"Mul: {m}", fontsize=11, pad=6, fontweight="bold")
+        ax.set_xlabel("Layer index", fontsize=9)
+        if ax == axes[0]:
+            ax.set_ylabel("Layer subset depth", fontsize=9)
+        else:
+            ax.set_ylabel("")
+
+        ax.set_xticks(range(0, N, 4))
+        ax.set_yticks(range(0, N, 4))
+        ax.tick_params(labelsize=7)
+
+    # Shared colorbar on the right
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    cbar = fig.colorbar(sm, ax=axes, fraction=0.015, pad=0.02)
+    cbar.set_label("Δ Cosine distance  (+1) − (−1)", fontsize=10)
+    cbar.ax.tick_params(labelsize=8)
+
+    # Annotation band
+    fig.text(
+        0.5, -0.03,
+        "Blue = positive steering stronger   |   Red = negative steering stronger",
+        ha="center", fontsize=10, color="#444444",
+    )
+
+    fig.suptitle(
+        "Diff Heatmap Sweep — Direction (+1) minus Direction (−1)",
+        fontsize=13, fontweight="bold", y=1.02,
+    )
+
+    plt.tight_layout()
+    fname = "heatmap_sweep_diff.png"
+    plt.savefig(fname, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Saved: {fname}")
 
 if __name__ == "__main__":
     model_id = "meta-llama/Llama-3.1-8B-Instruct"
@@ -593,11 +674,12 @@ if __name__ == "__main__":
         verbose=True,
     )
 
-    multipliers_to_test = [0.5,1,1.5,2.0]
+    multipliers_to_test = [0.1,0.5,1.]
     print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
 
     sweep_results = engine.compute_matrix_sweep(multipliers_to_test)
     plot_sweep_heatmaps(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
+    plot_sweep_diff_heatmap(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
 
     print("\n" + "=" * 40)
     print("ANALYSIS FOR DIRECTION: +1 (UNSAFE)")

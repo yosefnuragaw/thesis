@@ -230,7 +230,7 @@ if __name__ == '__main__':
                 current_min = cleaned[i]
                 cleaned[i] = 1.
 
-        cleaned[0] = 1.
+        cleaned[0] = 0
         return cleaned
     
     final = {
@@ -254,7 +254,7 @@ if __name__ == '__main__':
         norm_row_avg = min_max_normalize(raw_dist) 
 
         key = 'pos' if dir == 1 else 'neg'
-        final[3][key] = np.where(strict_dist == 0., norm_row_avg ** 0.5, norm_row_avg**2)
+        final[3][key] = np.where(strict_dist == 0., norm_row_avg, 0.2)
         final[2][key] = np.where(strict_dist == 0., norm_row_avg ** 2, norm_row_avg)
         final[1][key] = np.where(strict_dist == 0., norm_row_avg ** 1, norm_row_avg)
 

@@ -279,6 +279,7 @@ class RAPR(PatcherEngine):
         
         max_m = max(multipliers) 
         min_m_array = np.full(num_layers, float(max_m))
+        max_m_array = np.full(num_layers, float(min_m_array))
         for m in sweep_results[direction].keys():
             full_load_row = sweep_results[direction][m].T[-1, :]
             rows.append(full_load_row)
@@ -306,8 +307,13 @@ class RAPR(PatcherEngine):
                     min_m_array[l] = m
                     break
 
-        
-        return norm_sensitivity*min_m_array
+                if dist >= 0.65:
+                    max_m_array[l] = m
+                    break
+
+        operating_windows = list(zip(min_m_array, max_m_array))
+
+        return norm_sensitivity,operating_windows
 
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(
@@ -623,8 +629,10 @@ if __name__ == "__main__":
 
     print("\nCalibration Complete. Use these arrays in your final inference script!")
 
-    w_pos = engine.compute_weight(sweep_results, direction=1)
-    w_neg = engine.compute_weight(sweep_results, direction=-1)
+    w_pos,oppos = engine.compute_weight(sweep_results, direction=1)
+    w_neg,opneg = engine.compute_weight(sweep_results, direction=-1)
 
     print(f'pos_weight: {w_pos.tolist()}')
+    print(f'pos_range: {oppos.tolist()}')
     print(f'neg_weight: {w_neg.tolist()}')
+    print(f'neg_range: {opneg.tolist()}')

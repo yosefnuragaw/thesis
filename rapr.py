@@ -270,38 +270,49 @@ class RAPR(PatcherEngine):
 
         return sweep_results
 
-    def compute_weight(self, sweep_results, direction):
-        all_traj = []
-        all_end = []
-
-        for m in sweep_results[direction].keys():
-            heatmap = sweep_results[direction][m] # Shape (32, 32)
-            
-            # 1. Row-wise: How much does layer i disrupt the entire path?
-            # Use nanmean to ignore the "future" layers (white area)
-            row_impact = 1.0 - np.nanmean(heatmap, axis=1)
-            all_traj.append(row_impact)
-            
-            # 2. Last Column: How much does layer i change the final output?
-            # Index -1 is the measurement at layer 31
-            end_impact = 1.0 - heatmap[:, -1]
-            all_end.append(end_impact)
+    def compute_weight(self, sweep_results):
+        """
+        Computes dynamic layer weights based on the relative delta between 
+        positive (+1) and negative (-1) steering sweeps.
+        """
+        # 1. Compute average Column-wise (x-axis) impact across all multipliers
+        # This represents: "When I intervene at layer X, what is the total downstream impact?"
         
-        # Aggregate across the multiplier sweep
-        avg_traj = np.nanmean(np.vstack(all_traj), axis=0)
-        avg_end = np.nanmean(np.vstack(all_end), axis=0)
-
-        # --- COMBINATION STRATEGY ---
-        # We multiply them so a layer must be high in BOTH to get a high weight.
-        # This filters out "volatile but self-correcting" layers.
-        weights = avg_traj 
-        mask = avg_end > 0.9
-        weights[mask] = avg_traj[mask]**0.5
+        # --- POSITIVE STEERING (+1) CALCULATION ---
+        pos_muls = list(sweep_results[1].keys())
+        # Mean across columns (axis 0 of the transpose = Layer Index)
+        # We use (1 - dist) to turn distance into "proximity/sensitivity"
+        pos_col_avg = np.nanmean([1.0 - sweep_results[1][m].T for m in pos_muls], axis=(0, 2))
         
-        # Normalize 0.0 to 1.0
-        # norm_sensitivity = (combined_score - np.min(combined_score)) / (np.max(combined_score) - np.min(combined_score))
+        # --- NEGATIVE STEERING (-1) CALCULATION ---
+        neg_muls = list(sweep_results[-1].keys())
+        neg_col_avg = np.nanmean([1.0 - sweep_results[-1][m].T for m in neg_muls], axis=(0, 2))
+
+        # 2. Compute the Diff Matrices
+        # Weight for +1 Steering: Sensitivity to +1 minus Sensitivity to -1
+        # Weight for -1 Steering: Sensitivity to -1 minus Sensitivity to +1
+        
+        diff_for_pos = pos_col_avg - neg_col_avg
+        diff_for_neg = neg_col_avg - pos_col_avg
+        
+        # 3. Apply Multiplier logic
+        # We want to boost where the diff is positive (meaning target direction dominates)
+        # and attenuate where the diff is negative (meaning target direction is resisted)
+        
+        def finalize_weights(diff_array):
+            # We normalize the diff to a [0, 1] range to use as a gain controller
+            # Layers with high positive diff get higher weights
+            norm_diff = (diff_array - np.min(diff_array)) / (np.max(diff_array) - np.min(diff_array) + 1e-8)
             
-        return weights
+            # Apply your 0.5 to 1.5 scaling logic based on the sensitivity
+            # layers that 'favor' the direction get 1.5, others get 0.5
+            scaled_weights = 0.5 + (norm_diff * 1.0) 
+            return scaled_weights
+
+        weights_pos = finalize_weights(diff_for_pos)
+        weights_neg = finalize_weights(diff_for_neg)
+
+        return weights_pos, weights_neg
 
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(
@@ -663,8 +674,7 @@ if __name__ == "__main__":
     plot_sweep_heatmaps(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
     plot_sweep_diff_heatmap(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
 
-    w_pos = engine.compute_weight(sweep_results, direction=1)
-    w_neg = engine.compute_weight(sweep_results, direction=-1)
+    w_pos,w_neg = engine.compute_weight(sweep_results)
 
     print(f'pos_weight: {w_pos.tolist()}')
     print(f'neg_weight: {w_neg.tolist()}')

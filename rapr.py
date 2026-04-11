@@ -304,11 +304,11 @@ class RAPR(PatcherEngine):
                 
                 # 3. If the distance drops below the threshold, the layer has 'Activated'
                 if dist <= 0.85:
-                    min_m_array[l] = m
+                    min_m_array[l] = float(m)
                     break
 
                 if dist >= 0.65:
-                    max_m_array[l] = m
+                    max_m_array[l] = float(m)
                     break
 
         operating_windows = list(zip(min_m_array, max_m_array))

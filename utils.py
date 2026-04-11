@@ -118,3 +118,6 @@ def batch_logps(logits: torch.Tensor, ids: torch.Tensor, pad_id: int | None = No
         
     token_logps = torch.gather(logits.log_softmax(-1), dim=-1, index=ids.unsqueeze(-1)).squeeze(-1)
     return token_logps, loss_mask
+
+
+

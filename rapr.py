@@ -304,12 +304,12 @@ class RAPR(PatcherEngine):
                 dist = layer_distances[idx]
                 
                 # 3a. Find the MINIMUM required force (Drops below 0.85)
-                if dist <= 0.85 and not min_found:
+                if dist <= 0.95 and not min_found:
                     min_m_array[l] = float(m)
                     min_found = True
 
                 # 3b. Find the MAXIMUM safe force (Drops below 0.75)
-                if dist <= 0.75 and not max_found:
+                if dist <= 0.85 and not max_found:
                     max_m_array[l] = float(m)
                     max_found = True
 

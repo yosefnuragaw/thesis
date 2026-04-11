@@ -70,7 +70,7 @@ class RAPR(PatcherEngine):
                 for batch in self.loader:
                     for input_ids, attention_mask in zip(batch["input_ids"], batch["attention_mask"]):
                         with torch.no_grad():
-                            model(input_ids=input_ids[0].to(model.device), attention_mask=attention_mask[0].to(model.device))
+                            model(input_ids=input_ids[0,:].to(model.device), attention_mask=attention_mask[0,:].to(model.device))
 
                 for layer in range(N):
                     if isinstance(model.model.layers[layer], BlockWrapper) and layer in current_layers:
@@ -113,7 +113,7 @@ class RAPR(PatcherEngine):
         model.eval()
         return model
     
-def get_prompts(tokenizer, behavior, system_prompt=SYSTEM_PROMPT, generation_prompt:bool = True, k:int = 60, seed:int = 42):
+def get_prompts(tokenizer, behavior, system_prompt=SYSTEM_PROMPT, generation_prompt:bool = True, k:int = 30, seed:int = 42):
     path = f"./data/{behavior}/train.csv"
     if not os.path.exists(path):
          raise FileNotFoundError(f"Data file not found: {path}")

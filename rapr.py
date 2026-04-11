@@ -277,8 +277,8 @@ class RAPR(PatcherEngine):
         # sens_matrix shape: (len(muls), 32, 32)
         sens_matrix = np.array([sweep_results[direction][m].T for m in muls])
         print(sens_matrix)
-    
-        influence_vec = 1-np.nanmean(sens_matrix, axis=(0, 1))
+        print('==========================')
+        influence_vec = np.nanmean(sens_matrix, axis=(0, 1))
         print(influence_vec)
         # 3. Friction Vector (Row-wise mean of the DIFF matrix)
         # "At which depth does the model naturally resist this direction?"
@@ -336,7 +336,7 @@ def get_prompts(
     behavior,
     system_prompt=SYSTEM_PROMPT,
     generation_prompt: bool = True,
-    k: int = 100,
+    k: int = 30,
     seed: int = 42,
 ):
     path = f"./data/{behavior}/train.csv"

@@ -232,8 +232,8 @@ if __name__ == '__main__':
         strict_dist = mask_to_strictly_decreasing(raw_dist)
     
 
-        row_avg = np.nanmean(matrix, axis=1)
-        norm_row_avg = row_avg 
+        # row_avg = np.nanmean(matrix, axis=1)
+        norm_row_avg = raw_dist 
 
         key = 'pos' if dir == 1 else 'neg'
         final[3][key] = np.where(strict_dist == 0., norm_row_avg ** 3, norm_row_avg)

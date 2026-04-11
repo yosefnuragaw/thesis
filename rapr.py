@@ -281,7 +281,6 @@ class RAPR(PatcherEngine):
         # 2. Compute the Mean Distance across the sweep for each layer
         # Shape: (32,)
         avg_dist = np.nanmean(np.vstack(rows), axis=0)
-        avg_dist = np.nan_to_num(avg_dist, nan=1.0)
 
         # --- THE CONTRAST SHIFT ---
         # 1. Calculate Sensitivity: How much did the layer deviate from 'Identity' (1.0)?

@@ -307,13 +307,9 @@ class RAPR(PatcherEngine):
                     min_m_array[l] = float(m)
                     break
 
-                if dist <= 0.75:
-                    max_m_array[l] = float(m)
-                    break
 
-        operating_windows = [(float(min_v), float(max_v)) for min_v, max_v in zip(min_m_array, max_m_array)]
 
-        return norm_sensitivity,operating_windows
+        return norm_sensitivity,min_m_array
 
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(
@@ -633,6 +629,6 @@ if __name__ == "__main__":
     w_neg,opneg = engine.compute_weight(sweep_results, direction=-1)
 
     print(f'pos_weight: {w_pos.tolist()}')
-    print(f'pos_range: {oppos}')
+    print(f'pos_range: {oppos.tolist()}')
     print(f'neg_weight: {w_neg.tolist()}')
-    print(f'neg_range: {opneg}')
+    print(f'neg_range: {opneg.tolist()}')

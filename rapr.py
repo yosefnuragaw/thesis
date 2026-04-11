@@ -243,4 +243,9 @@ if __name__ == '__main__':
         final[2][key] = np.where(strict_dist == 0., norm_row_avg ** 2, norm_row_avg)
         final[1][key] = np.where(strict_dist == 0., norm_row_avg ** 1, norm_row_avg)
 
-    print(final)
+    for key in final.keys():
+        pos = 1-final[key]['pos']+final[key]['neg']
+        neg = 1-final[key]['neg']+final[key]['pos']
+
+        print(f'pos_weight: {pos.tolist()}')
+        print(f'neg_weight: {neg.tolist()}')

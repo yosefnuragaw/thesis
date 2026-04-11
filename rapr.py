@@ -333,7 +333,7 @@ def get_prompts(
     behavior,
     system_prompt=SYSTEM_PROMPT,
     generation_prompt: bool = True,
-    k: int = 30,
+    k: int = 60,
     seed: int = 42,
 ):
     path = f"./data/{behavior}/train.csv"
@@ -621,5 +621,5 @@ if __name__ == "__main__":
     w_pos = engine.compute_weight(sweep_results, direction=1)
     w_neg = engine.compute_weight(sweep_results, direction=-1)
 
-    print(f'pos_weight: {w_pos}')
-    print(f'neg_weight: {w_neg}')
+    print(f'pos_weight: {w_pos.tolist()}')
+    print(f'neg_weight: {w_neg.tolist()}')

@@ -294,7 +294,7 @@ class RAPR(PatcherEngine):
         # High negative value = high resistance at that readout depth
         influence = influence_vec + friction_vec*2
         norm_inf = (influence - np.min(influence)) / (np.max(influence) - np.min(influence) + 1e-8)
-        return norm_inf(influence_vec, friction_vec)
+        return norm_inf
     
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(

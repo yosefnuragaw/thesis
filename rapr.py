@@ -233,13 +233,13 @@ if __name__ == '__main__':
 
         weigh = np.where(strict_dist == 0., norm_row_avg ** 3, norm_row_avg)
         print(3)
-        print(weigh)
+        print(weigh.tolist())
 
         weigh = np.where(strict_dist == 0., norm_row_avg ** 2, norm_row_avg)
         print(2)
-        print(weigh)
+        print(weigh.tolist())
 
         weigh = np.where(strict_dist == 0., norm_row_avg ** 1, norm_row_avg)
         print(1)
-        print(weigh)
+        print(weigh.tolist())
 

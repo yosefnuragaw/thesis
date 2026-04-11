@@ -574,7 +574,7 @@ def plot_sweep_heatmaps(sweep_results, multipliers_tested, build_heatmap_rgba, _
         plt.savefig(fname, dpi=300, bbox_inches="tight")
         plt.close(fig)
         print(f"Saved: {fname}")
-
+        
 def _minmax_scale(matrix: np.ndarray) -> np.ndarray:
     """Scale a matrix to [0, 1] using its own finite min/max, NaNs preserved."""
     out  = np.full_like(matrix, np.nan, dtype=float)
@@ -600,12 +600,8 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
     n_muls = len(multipliers_tested)
     fig, axes = plt.subplots(1, n_muls, figsize=(6 * n_muls, 6), sharey=True)
     fig.patch.set_facecolor("white")
-    
-    # Ensure axes is an iterable list even if there's only 1 multiplier
     if n_muls == 1:
         axes = [axes]
-    else:
-        axes = axes.flatten().tolist()
 
     cmap = LinearSegmentedColormap.from_list(
         "red_white_blue",
@@ -620,8 +616,9 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
         scaled_neg = _minmax_scale(sweep_results[-1][m].T)
         all_diffs.append(scaled_pos - scaled_neg)
 
-    # --- CHANGED: Fixed range to make colors pop easier ---
-    norm = plt.Normalize(vmin=-0.1, vmax=0.1)
+    finite_vals = np.concatenate([d[~np.isnan(d)] for d in all_diffs])
+    vmax = np.nanmax(np.abs(finite_vals))
+    norm = plt.Normalize(vmin=-vmax, vmax=vmax)
 
     for ax, m, diff in zip(axes, multipliers_tested, all_diffs):
         ax.set_facecolor("white")
@@ -653,16 +650,13 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
 
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
-    
-    # --- CHANGED: Moved colorbar strictly outside on the right ---
-    # Using the axes list directly allocates space properly without overlapping
-    cbar = fig.colorbar(sm, ax=axes, fraction=0.02, pad=0.04)
+    cbar = fig.colorbar(sm, ax=axes, fraction=0.015, pad=0.02)
     cbar.set_label("Δ Cosine distance  (+1) - (-1)  [min-max scaled]", fontsize=10)
     cbar.ax.tick_params(labelsize=8)
 
     fig.text(
         0.5, -0.03,
-        "Blue = positive steering weaker   |   Red = negative steering weaker",
+        "Blue = positive steering weaker   |   Red = negative steering stronger",
         ha="center", fontsize=10, color="#444444",
     )
     fig.suptitle(
@@ -675,7 +669,7 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
     plt.savefig(fname, dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"Saved: {fname}")
-    
+
 if __name__ == "__main__":
     model_id = "meta-llama/Llama-3.1-8B-Instruct"
 

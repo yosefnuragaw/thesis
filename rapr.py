@@ -281,14 +281,14 @@ class RAPR(PatcherEngine):
         print('==========================')
         # influence_vec = np.nanmean(sens_matrix, axis=(0, 1))
         influence_vec= sens_matrix[-1,:]
-        print(influence_vec)
+        print('pos',influence_vec)
         # 3. Friction Vector (Row-wise mean of the DIFF matrix)
         # "At which depth does the model naturally resist this direction?"
         opp_direction = -1 * direction
         ops_sens_matrix = np.array(sweep_results[opp_direction][0.5].T)[-1,:]
-        print(ops_sens_matrix)
+        print('neg',ops_sens_matrix)
         print('---------------------------')
-        print(influence_vec-ops_sens_matrix)
+        print('d',influence_vec-ops_sens_matrix)
         diff_matrix = sens_matrix - np.array([sweep_results[opp_direction][m].T for m in muls])
         
         # Friction is the row-wise average of this diff

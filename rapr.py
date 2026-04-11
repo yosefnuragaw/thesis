@@ -26,6 +26,15 @@ from utils import set_seed
 # ---------------------------------------------------------
 # Dataset
 # ---------------------------------------------------------
+def rapr_collate_fn(batch: list) -> dict:
+    return {
+        "input_ids":       torch.stack([s["input_ids"]       for s in batch]),  # [B, num_options, L]
+        "attention_mask":  torch.stack([s["attention_mask"]   for s in batch]),  # [B, num_options, L]
+        "d":               torch.stack([s["d"]                for s in batch]),  # [B, num_options]
+        "question_length": torch.tensor([s["question_length"] for s in batch]),  # [B]
+        "label":           [s["label"]  for s in batch],                         # list[str]
+        "decode":          [s["decode"] for s in batch],                         # list[list[list[str]]]
+    }
 
 class PaddedMultipleOptionDataset(Dataset):
     """
@@ -352,6 +361,7 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer) -> DataLoader:
         batch_size=32,
         shuffle=False,
         num_workers=0,
+        collate_fn=rapr_collate_fn,
     )
 
 

@@ -303,7 +303,7 @@ class RAPR(PatcherEngine):
             
             # Inverse friction logic: Spike gain where the row-wise resistance is high
             # Gain range [0.5, 1.5]
-            gain_multiplier = 1.5 - (norm_fric * 1.0)
+            gain_multiplier = 1.25 - (norm_fric * 1.0)
             
             # The final weight is the influence throttled by the structural friction
             return norm_inf * gain_multiplier
@@ -339,7 +339,7 @@ def get_prompts(
     behavior,
     system_prompt=SYSTEM_PROMPT,
     generation_prompt: bool = True,
-    k: int = 60,
+    k: int = 100,
     seed: int = 42,
 ):
     path = f"./data/{behavior}/train.csv"
@@ -663,7 +663,7 @@ if __name__ == "__main__":
         verbose=True,
     )
 
-    multipliers_to_test = [0.1,0.5,1.0]
+    multipliers_to_test = [0.5]
     print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
 
     sweep_results = engine.compute_matrix_sweep(multipliers_to_test)

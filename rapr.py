@@ -241,8 +241,8 @@ if __name__ == '__main__':
         final[1][key] = np.where(strict_dist == 0., norm_row_avg ** 1, norm_row_avg)
 
     for key in final.keys():
-        pos = 1-final[key]['pos']+final[key]['neg']
-        neg = 1-final[key]['neg']+final[key]['pos']
+        pos = final[key]['pos']
+        neg = final[key]['neg']
         print(key)
         print(f'pos_weight: {pos.tolist()}')
         print(f'neg_weight: {neg.tolist()}')

@@ -639,7 +639,7 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
 if __name__ == "__main__":
     for x,e in enumerate([3,3,6]):
         model_id = "meta-llama/Llama-3.1-8B-Instruct"
-        id = "pretrained_vector/power-seeking/llama-3/all" if x == 0 else f"pretrained_vector/power-seeking/llama-3/all-{x}"
+        id = "pretrained_vector/power-seeking/llama-3/all" if x+1 == 1 else f"pretrained_vector/power-seeking/llama-3/all-{x+1}"
         device    = "cuda" if torch.cuda.is_available() else "cpu"
         tokenizer = AutoTokenizer.from_pretrained(model_id)
         tokenizer.pad_token = tokenizer.eos_token
@@ -658,8 +658,8 @@ if __name__ == "__main__":
         print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
 
         sweep_results = engine.compute_matrix_sweep(multipliers_to_test)
-        plot_sweep_heatmaps(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap, id=x)
-        plot_sweep_diff_heatmap(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap, id=x)
+        plot_sweep_heatmaps(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap, id= 'all' if x == 0 else f'all-{x+1}')
+        plot_sweep_diff_heatmap(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap, id='all' if x == 0 else f'all-{x+1}')
 
         w_pos,w_neg = engine.compute_weight(sweep_results,direction=1),engine.compute_weight(sweep_results,direction=-1)
 

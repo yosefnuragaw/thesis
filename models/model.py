@@ -87,17 +87,30 @@ class BlockWrapper(torch.nn.Module):
         self.rel_norm_space = []
 
     def forward(self, hidden_states, *args, **kwargs):
+        # 1. Grab sequence length BEFORE the block
+        seq_len = hidden_states.shape[1]
+        
+        # 2. Run the standard forward pass
         output = self.block(hidden_states, *args, **kwargs)
 
+        # 3. THE PREFILL GATE
+        # If seq_len == 1, the model is generating text. DO NOT STEER.
+        if seq_len == 1:
+            return output
+
+        # ==========================================
+        # If we reach here, seq_len > 1 (PREFILL PHASE)
+        # ==========================================
         with torch.no_grad():
             out_tensor = output[0] if isinstance(output, tuple) else output
-            avg_hidden = hidden_states.detach().mean(dim=1)
+            
+            # Note: Because we are in prefill, avg_output is averaging
+            # across ALL tokens in the prompt.
             avg_output = out_tensor.detach().mean(dim=1)
-            # cos_sim = torch.nn.functional.cosine_similarity(avg_hidden, avg_output, dim=-1)
-            # cos_sim_c= torch.clamp(cos_sim, min=-1.0, max=1.0) 
+            
             current_vec = (self.multiplier * self.vec).to(avg_output.device)
             cos_sim = torch.nn.functional.cosine_similarity(avg_output, current_vec, dim=-1)
-            cos_sim_c= torch.clamp(cos_sim, min=-1.0, max=1.0) 
+            cos_sim_c = torch.clamp(cos_sim, min=-1.0, max=1.0) 
             cos_dis = 1 - cos_sim_c
             self.cosine_space.append(cos_dis)
 
@@ -111,17 +124,15 @@ class BlockWrapper(torch.nn.Module):
 
         if self.skip:
             if self.skip == 'llbds':
-                # llbds = 1.0 + self.gate_mask(cos_dis, 'b').to(output[0].device) - torch.clamp(cos_dis.to(output[0].device), min=0.0, max=1.0)
                 llbds = cos_dis.to(output[0].device)
                 mask = mask * llbds
 
-        # llbds =  1 +  0.8 - cos_dis
-        # mask = mask * llbds
-
+        # Ensure mask broadcasts correctly
         if isinstance(mask, torch.Tensor):
             while mask.dim() < hidden_states.dim():
                 mask = mask.unsqueeze(-1)
 
+        # Apply the prefill steering!
         if isinstance(output, tuple):
             self.buffer_space.append(output[0].detach().mean(dim=1).cpu())
             modified_hidden = output[0] + (mask * self.vec.to(output[0].device))

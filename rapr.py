@@ -545,7 +545,7 @@ def plot_sweep_heatmaps(sweep_results, multipliers_tested, build_heatmap_rgba, _
         
 
 
-def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgba, _draw_heatmap):
+def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgba, _draw_heatmap,id):
     def _minmax_scale(matrix: np.ndarray) -> np.ndarray:
         """Scale a matrix to [0, 1] using its own finite min/max, NaNs preserved."""
         out  = np.full_like(matrix, np.nan, dtype=float)

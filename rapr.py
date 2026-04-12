@@ -297,7 +297,12 @@ class RAPR(PatcherEngine):
         
         # 5. Combine and Normalize (Additive "Battering Ram" strategy)
         influence = influence_vec + friction_vec
-        norm_inf = __norm(influence)
+        norm_base_inf = __norm(influence)
+        norm_inf = np.where(
+            friction_vec < 0, 
+            norm_base_inf + 2 * friction_vec, 
+            norm_base_inf + friction_vec # Maintain Battering Ram for resisted layers
+        )
         
         return norm_inf
     

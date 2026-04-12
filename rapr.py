@@ -270,32 +270,35 @@ class RAPR(PatcherEngine):
 
         return sweep_results
 
-    def compute_weight(self, sweep_results, direction, mul):
-        # 1. Gather sensitivities across the sweep
+    def compute_weight(self, sweep_results, direction):
         def __norm(arr):
-           return (arr - np.min(arr)) / (np.max(arr) - np.min(arr) + 1e-8)
-        # Shape of each heatmap: (32, 32) -> Rows=Readout, Cols=Intervention
-        muls = list(sweep_results[direction].keys())
-        # sens_matrix shape: (len(muls), 32, 32)
-        print('+++++++++++++++++++++++++++')
-        sens_matrix = np.array(sweep_results[direction][mul].T)
-        print(sens_matrix)
-        print('==========================')
-        # influence_vec = np.nanmean(sens_matrix, axis=(0, 1))
-        influence_vec= sens_matrix[-1,:]
-        print('pos',influence_vec)
-        # 3. Friction Vector (Row-wise mean of the DIFF matrix)
-        # "At which depth does the model naturally resist this direction?"
-        opp_direction = -1 * direction
-        ops_sens_matrix = np.array(sweep_results[opp_direction][mul].T)
-        print('neg',ops_sens_matrix)
+            return (arr - np.min(arr)) / (np.max(arr) - np.min(arr) + 1e-8)
         
-        friction_vec = np.nanmean(sens_matrix, axis = 1) - np.nanmean(ops_sens_matrix, axis = 1)
-        print(friction_vec)
-        # Friction is the row-wise average of this diff
-        # High negative value = high resistance at that readout depth
+        # 1. Identify all multipliers dynamically
+        muls = list(sweep_results[direction].keys())
+        opp_direction = -1 * direction
+        
+        # 2. Build 3D Matrices -> Shape: (Num_Muls, Readout, Intervention)
+        sens_matrix_3d = np.array([sweep_results[direction][m].T for m in muls])
+        ops_sens_matrix_3d = np.array([sweep_results[opp_direction][m].T for m in muls])
+        
+        # 3. Calculate Influence (Final Layer Impact)
+        # sens_matrix_3d[:, -1, :] extracts the last readout layer for ALL multipliers
+        # We take the mean across axis 0 (the multipliers) to get the average impact
+        influence_vec = np.nanmean(sens_matrix_3d[:, -1, :], axis=0)
+        
+        # 4. Calculate Friction
+        # We want the row-wise average (Readout depth), so we must average across:
+        # Axis 0 (Multipliers) AND Axis 2 (Intervention layers)
+        avg_sens = np.nanmean(sens_matrix_3d, axis=(0, 2))
+        avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 2))
+        
+        friction_vec = avg_sens - avg_ops_sens
+        
+        # 5. Combine and Normalize (Additive "Battering Ram" strategy)
         influence = influence_vec + friction_vec
         norm_inf = __norm(influence)
+        
         return norm_inf
     
     def _init_model(self) -> AutoModelForCausalLM:
@@ -327,7 +330,7 @@ def get_prompts(
     behavior,
     system_prompt=SYSTEM_PROMPT,
     generation_prompt: bool = True,
-    k: int = 30,
+    k: int = 100,
     seed: int = 42,
 ):
     path = f"./data/{behavior}/train.csv"
@@ -650,15 +653,14 @@ if __name__ == "__main__":
         loader=loader,
         verbose=True,
     )
-    mul = 1.
-    multipliers_to_test = [mul]
+    multipliers_to_test = [0.1,0.5,1.0]
     print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
 
     sweep_results = engine.compute_matrix_sweep(multipliers_to_test)
     plot_sweep_heatmaps(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
     plot_sweep_diff_heatmap(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
 
-    w_pos,w_neg = engine.compute_weight(sweep_results,direction=1,mul=mul),engine.compute_weight(sweep_results,direction=-1,mul=mul)
+    w_pos,w_neg = engine.compute_weight(sweep_results,direction=1),engine.compute_weight(sweep_results,direction=-1)
 
     print(f'pos_weight: {w_pos.tolist()}')
     print(f'neg_weight: {w_neg.tolist()}')

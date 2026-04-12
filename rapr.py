@@ -304,7 +304,7 @@ class RAPR(PatcherEngine):
         norm_inf = __norm(influence)
         
         
-        return np.max(norm_inf,0.)
+        return np.maximum(norm_inf, 0.0)
     
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(
@@ -335,7 +335,7 @@ def get_prompts(
     behavior,
     system_prompt=SYSTEM_PROMPT,
     generation_prompt: bool = True,
-    k: int = 128,
+    k: int = 32,
     seed: int = 42,
 ):
     path = f"./data/{behavior}/train.csv"

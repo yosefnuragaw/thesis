@@ -299,7 +299,7 @@ class RAPR(PatcherEngine):
         influence = influence_vec 
         norm_inf = np.where(
             friction_vec < 0, 
-            influence + 2*friction_vec, 
+            influence + friction_vec, 
             influence + 2*friction_vec # Maintain Battering Ram for resisted layers
         )
         

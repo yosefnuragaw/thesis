@@ -299,10 +299,10 @@ class RAPR(PatcherEngine):
         
         # Positive friction (resistance) becomes a penalty (-).
         # Negative friction (assistance) becomes a reward (+).
-        gated_friction = -norm_friction * influence_vec
+        gated_friction = -norm_friction * influence_vec*0.2
         
         # 6. Combine and cap
-        influence = influence_vec*0.2 + gated_friction
+        influence = influence_vec + gated_friction
         
         return np.maximum(influence, 0.0)
     

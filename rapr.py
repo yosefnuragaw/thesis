@@ -335,7 +335,7 @@ def get_prompts(
     behavior,
     system_prompt=SYSTEM_PROMPT,
     generation_prompt: bool = True,
-    k: int = 30,
+    k: int = 100,
     seed: int = 42,
 ):
     path = f"./data/{behavior}/train.csv"
@@ -383,7 +383,7 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer) -> DataLoader:
 
     return DataLoader(
         dataset=dataset,
-        batch_size=100,
+        batch_size=32,
         shuffle=False,
         num_workers=0,
         collate_fn=rapr_collate_fn,

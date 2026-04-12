@@ -296,8 +296,8 @@ class RAPR(PatcherEngine):
         friction_vec = avg_sens - avg_ops_sens
         gated_friction = np.where(
         friction_vec > 0, 
-        3*friction_vec,                 # Reward resistance fully (Battering Ram)
-        friction_vec  
+        -influence_vec,                 # Reward resistance fully (Battering Ram)
+        0  
     )
         # 5. Combine and Normalize (Additive "Battering Ram" strategy)
         influence = influence_vec+gated_friction
@@ -335,7 +335,7 @@ def get_prompts(
     behavior,
     system_prompt=SYSTEM_PROMPT,
     generation_prompt: bool = True,
-    k: int = 32,
+    k: int = 100,
     seed: int = 42,
 ):
     path = f"./data/{behavior}/train.csv"
@@ -658,7 +658,7 @@ if __name__ == "__main__":
         loader=loader,
         verbose=True,
     )
-    multipliers_to_test = [0.1,0.5, 1.0]
+    multipliers_to_test = [0.1,0.5, 1.0, 1.5,2.0]
     print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
 
     sweep_results = engine.compute_matrix_sweep(multipliers_to_test)

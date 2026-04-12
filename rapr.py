@@ -290,19 +290,18 @@ class RAPR(PatcherEngine):
         # 4. Calculate Friction
         # We want the row-wise average (Readout depth), so we must average across:
         # Axis 0 (Multipliers) AND Axis 2 (Intervention layers)
-        avg_sens = np.nanmean(sens_matrix_3d, axis=(0, 1))
-        avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 1))
+        avg_sens = np.nanmean(sens_matrix_3d, axis=(0, 2))
+        avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 2))
+        
         friction_vec = avg_sens - avg_ops_sens
+        max_friction = np.max(np.abs(friction_vec)) + 1e-8
+        norm_friction = friction_vec / max_friction # Range: [-1.0 to 1.0]
         
-        # 5. Extract ONLY the direction (1, -1, or 0)
-        friction_direction = np.sign(friction_vec)
+        # Positive friction (resistance) becomes a penalty (-).
+        # Negative friction (assistance) becomes a reward (+).
+        gated_friction = -norm_friction * influence_vec
         
-        # 6. Apply fixed penalty/reward based on direction
-        # If friction is positive (1) -> Penalty: -(1) * influence * 0.5
-        # If friction is negative (-1) -> Reward: -(-1) * influence * 0.5
-        gated_friction = -friction_direction * (influence_vec * 0.5)
-        
-        # 7. Combine and cap
+        # 6. Combine and cap
         influence = influence_vec + gated_friction
         
         return np.maximum(influence, 0.0)

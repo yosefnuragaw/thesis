@@ -296,11 +296,7 @@ class RAPR(PatcherEngine):
         friction_vec = avg_sens - avg_ops_sens
         
         # 5. Combine and Normalize (Additive "Battering Ram" strategy)
-        influence = np.where(
-            friction_vec < 0, 
-            influence_vec, 
-            influence_vec + friction_vec # Maintain Battering Ram for resisted layers
-        )
+        influence = influence_vec+friction_vec
         norm_inf = __norm(influence)
         
         

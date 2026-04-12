@@ -297,7 +297,7 @@ class RAPR(PatcherEngine):
         gated_friction = np.where(
         friction_vec > 0, 
         friction_vec,                 # Reward resistance fully (Battering Ram)
-        friction_vec * 0.1
+        friction_vec * 0.25 
     )
         # 5. Combine and Normalize (Additive "Battering Ram" strategy)
         influence = influence_vec+gated_friction
@@ -648,13 +648,13 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     tokenizer.pad_token = tokenizer.eos_token
 
-    loader = produce_dataloader(behavior="wealth-seeking", tokenizer=tokenizer)
+    loader = produce_dataloader(behavior="power-seeking", tokenizer=tokenizer)
 
     engine = RAPR(
         model_name=model_id,
-        vec_dir="pretrained_vector/wealth-seeking/llama-3/all",
+        vec_dir="pretrained_vector/power-seeking/llama-3/all",
         layers=list(range(32)),
-        eval_epoch=9,
+        eval_epoch=3,
         loader=loader,
         verbose=True,
     )

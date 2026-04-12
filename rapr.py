@@ -300,7 +300,7 @@ class RAPR(PatcherEngine):
         norm_inf = np.where(
             friction_vec < 0, 
             influence + friction_vec, 
-            influence + 2*friction_vec # Maintain Battering Ram for resisted layers
+            influence + friction_vec # Maintain Battering Ram for resisted layers
         )
         
         norm_inf = __norm(influence)
@@ -336,7 +336,7 @@ def get_prompts(
     behavior,
     system_prompt=SYSTEM_PROMPT,
     generation_prompt: bool = True,
-    k: int = 30,
+    k: int = 128,
     seed: int = 42,
 ):
     path = f"./data/{behavior}/train.csv"

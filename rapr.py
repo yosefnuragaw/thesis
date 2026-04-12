@@ -296,16 +296,15 @@ class RAPR(PatcherEngine):
         friction_vec = avg_sens - avg_ops_sens
         
         # 5. Combine and Normalize (Additive "Battering Ram" strategy)
-        influence = influence_vec 
+        influence = influence_vec + friction_vec
+        norm_base_inf = __norm(influence)
         norm_inf = np.where(
             friction_vec < 0, 
-            influence + friction_vec, 
-            influence + friction_vec # Maintain Battering Ram for resisted layers
+            norm_base_inf + 2 * friction_vec, 
+            norm_base_inf + friction_vec # Maintain Battering Ram for resisted layers
         )
         
-        norm_inf = __norm(influence)
-        
-        return np.maximum(norm_inf, 0)
+        return norm_inf
     
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(
@@ -336,8 +335,8 @@ def get_prompts(
     behavior,
     system_prompt=SYSTEM_PROMPT,
     generation_prompt: bool = True,
-    k: int = 128,
-    seed: int = 41,
+    k: int = 30,
+    seed: int = 42,
 ):
     path = f"./data/{behavior}/train.csv"
     if not os.path.exists(path):

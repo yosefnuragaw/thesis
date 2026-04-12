@@ -285,7 +285,7 @@ class RAPR(PatcherEngine):
         # 3. Calculate Influence (Final Layer Impact)
         # sens_matrix_3d[:, -1, :] extracts the last readout layer for ALL multipliers
         # We take the mean across axis 0 (the multipliers) to get the average impact
-        influence_vec = 1-__norm(np.nanmean(sens_matrix_3d[:, -1, :], axis=0))
+        influence_vec = __norm(np.nanmean(sens_matrix_3d[:, -1, :], axis=0))
         
         # 4. Calculate Friction
         # We want the row-wise average (Readout depth), so we must average across:

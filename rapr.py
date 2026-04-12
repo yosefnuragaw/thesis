@@ -300,8 +300,8 @@ class RAPR(PatcherEngine):
         norm_base_inf = __norm(influence)
         norm_inf = np.where(
             friction_vec < 0, 
-            norm_base_inf + 2*friction_vec, 
-            norm_base_inf + 2*friction_vec # Maintain Battering Ram for resisted layers
+            norm_base_inf + friction_vec, 
+            norm_base_inf + friction_vec # Maintain Battering Ram for resisted layers
         )
         return np.maximum(norm_inf, 0)
     

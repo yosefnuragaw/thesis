@@ -294,15 +294,15 @@ class RAPR(PatcherEngine):
         avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 2))
         
         friction_vec = avg_sens - avg_ops_sens
-        gated_friction = np.where(
-        friction_vec > 0, 
-        -influence_vec*0.5,                 # Reward resistance fully (Battering Ram)
-        influence_vec*0.5
-    )
-        # 5. Combine and Normalize (Additive "Battering Ram" strategy)
-        influence = influence_vec+gated_friction
-        # norm_inf = __norm(influence)
+        max_friction = np.max(np.abs(friction_vec)) + 1e-8
+        norm_friction = friction_vec / max_friction # Range: [-1.0 to 1.0]
         
+        # Positive friction (resistance) becomes a penalty (-).
+        # Negative friction (assistance) becomes a reward (+).
+        gated_friction = -norm_friction * (influence_vec * 0.5)
+        
+        # 6. Combine and cap
+        influence = influence_vec + gated_friction
         
         return np.maximum(influence, 0.0)
     

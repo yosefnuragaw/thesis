@@ -500,7 +500,7 @@ def build_heatmap_rgba(
 
     return rgba, norm
 
-def plot_sweep_heatmaps(sweep_results, multipliers_tested, build_heatmap_rgba, _draw_heatmap):
+def plot_sweep_heatmaps(sweep_results, multipliers_tested, build_heatmap_rgba, _draw_heatmap, id):
     """
     For each direction (+1, -1), plots all multiplier heatmaps
     concatenated horizontally into a single wide figure.
@@ -538,7 +538,7 @@ def plot_sweep_heatmaps(sweep_results, multipliers_tested, build_heatmap_rgba, _
         )
 
         plt.tight_layout()
-        fname = f"heatmap_sweep_dir{'pos' if direction == 1 else 'neg'}.png"
+        fname = f"all-{id}-heatmap_sweep_dir{'pos' if direction == 1 else 'neg'}.png"
         plt.savefig(fname, dpi=300, bbox_inches="tight")
         plt.close(fig)
         print(f"Saved: {fname}")
@@ -631,36 +631,37 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
     )
 
     # No plt.tight_layout() call — constrained_layout handles it automatically
-    fname = "heatmap_sweep_diff.png"
+    fname = f"all-{id}-heatmap_sweep_diff.png"
     plt.savefig(fname, dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"Saved: {fname}")
 
 if __name__ == "__main__":
-    model_id = "meta-llama/Llama-3.1-8B-Instruct"
+    for x in range(2):
+        model_id = "meta-llama/Llama-3.1-8B-Instruct"
+        id = "pretrained_vector/power-seeking/llama-3/all" if x == 0 else f"pretrained_vector/power-seeking/llama-3/all-x{x}"
+        device    = "cuda" if torch.cuda.is_available() else "cpu"
+        tokenizer = AutoTokenizer.from_pretrained(model_id)
+        tokenizer.pad_token = tokenizer.eos_token
 
-    device    = "cuda" if torch.cuda.is_available() else "cpu"
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
-    tokenizer.pad_token = tokenizer.eos_token
+        loader = produce_dataloader(behavior="power-seeking", tokenizer=tokenizer)
 
-    loader = produce_dataloader(behavior="power-seeking", tokenizer=tokenizer)
+        engine = RAPR(
+            model_name=model_id,
+            vec_dir=id,
+            layers=list(range(32)),
+            eval_epoch=3,
+            loader=loader,
+            verbose=True,
+        )
+        multipliers_to_test = [0.1,1.0, 2.0, 3.0]
+        print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
 
-    engine = RAPR(
-        model_name=model_id,
-        vec_dir="pretrained_vector/power-seeking/llama-3/all",
-        layers=list(range(32)),
-        eval_epoch=3,
-        loader=loader,
-        verbose=True,
-    )
-    multipliers_to_test = [0.1,1.0, 2.0, 3.0]
-    print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
+        sweep_results = engine.compute_matrix_sweep(multipliers_to_test)
+        plot_sweep_heatmaps(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
+        plot_sweep_diff_heatmap(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
 
-    sweep_results = engine.compute_matrix_sweep(multipliers_to_test)
-    plot_sweep_heatmaps(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
-    plot_sweep_diff_heatmap(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
+        w_pos,w_neg = engine.compute_weight(sweep_results,direction=1),engine.compute_weight(sweep_results,direction=-1)
 
-    w_pos,w_neg = engine.compute_weight(sweep_results,direction=1),engine.compute_weight(sweep_results,direction=-1)
-
-    print(f'pos_weight: {w_pos.tolist()}')
-    print(f'neg_weight: {w_neg.tolist()}')
+        print(f'pos_weight: {w_pos.tolist()}')
+        print(f'neg_weight: {w_neg.tolist()}')

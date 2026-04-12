@@ -296,8 +296,8 @@ class RAPR(PatcherEngine):
         friction_vec = avg_sens - avg_ops_sens
         gated_friction = np.where(
         friction_vec > 0, 
-        -influence_vec,                 # Reward resistance fully (Battering Ram)
-        0  
+        -influence_vec*0.5,                 # Reward resistance fully (Battering Ram)
+        influence_vec*0.5
     )
         # 5. Combine and Normalize (Additive "Battering Ram" strategy)
         influence = influence_vec+gated_friction

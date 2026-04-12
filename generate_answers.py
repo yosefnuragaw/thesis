@@ -40,15 +40,15 @@ class ScriptArguments:
     )
     behavior: Optional[str] = field(default="power-seeking", metadata={"help": "the behavior"})
     layer: Optional[List[int]] = field(
-        default_factory=lambda: list(range(26)), 
+        default_factory=lambda: list(range(32)), 
         metadata={"help": "the layer the steering vector extracted from"}
     )
     pos_weight: Optional[List[int]] = field(
-        default_factory=lambda: list(1 for x in range(26)), 
+        default_factory=lambda: list(1 for x in range(32)), 
         metadata={"help": "Weight layer"}
     )
     neg_weight: Optional[List[int]] = field(
-        default_factory=lambda: list(1 for x in range(26)), 
+        default_factory=lambda: list(1 for x in range(32)), 
         metadata={"help": "Weight layer"}
     )
     total_layer: Optional[int] = field(default=200, metadata={"help": "LLM total number of layers"})

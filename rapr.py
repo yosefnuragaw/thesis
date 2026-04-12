@@ -651,7 +651,7 @@ if __name__ == "__main__":
         verbose=True,
     )
 
-    multipliers_to_test = [0.5]
+    multipliers_to_test = [0.1]
     print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
 
     sweep_results = engine.compute_matrix_sweep(multipliers_to_test)

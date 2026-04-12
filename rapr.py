@@ -383,7 +383,7 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer) -> DataLoader:
 
     return DataLoader(
         dataset=dataset,
-        batch_size=32,
+        batch_size=100,
         shuffle=False,
         num_workers=0,
         collate_fn=rapr_collate_fn,

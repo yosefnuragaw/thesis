@@ -297,12 +297,14 @@ class RAPR(PatcherEngine):
         
         # 5. Combine and Normalize (Additive "Battering Ram" strategy)
         influence = influence_vec 
-        norm_base_inf = __norm(influence)
         norm_inf = np.where(
             friction_vec < 0, 
-            norm_base_inf + 0.5*friction_vec, 
-            norm_base_inf + 0.5*friction_vec # Maintain Battering Ram for resisted layers
+            influence + 2*friction_vec, 
+            influence + 2*friction_vec # Maintain Battering Ram for resisted layers
         )
+        
+        norm_inf = __norm(influence)
+        
         return np.maximum(norm_inf, 0)
     
     def _init_model(self) -> AutoModelForCausalLM:

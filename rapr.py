@@ -294,7 +294,7 @@ class RAPR(PatcherEngine):
         print(friction_vec)
         # Friction is the row-wise average of this diff
         # High negative value = high resistance at that readout depth
-        influence = influence_vec - friction_vec
+        influence = influence_vec + friction_vec
         norm_inf = __norm(influence)
         return norm_inf
     

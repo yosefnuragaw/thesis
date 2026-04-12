@@ -301,10 +301,10 @@ class RAPR(PatcherEngine):
     )
         # 5. Combine and Normalize (Additive "Battering Ram" strategy)
         influence = influence_vec+gated_friction
-        norm_inf = __norm(influence)
+        # norm_inf = __norm(influence)
         
         
-        return np.maximum(norm_inf, 0.0)
+        return np.maximum(influence, 0.0)
     
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(

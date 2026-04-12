@@ -270,7 +270,7 @@ class RAPR(PatcherEngine):
 
         return sweep_results
 
-    def compute_weight(self, sweep_results, direction):
+    def compute_weight(self, sweep_results, direction, mul):
         # 1. Gather sensitivities across the sweep
         def __norm(arr):
            return (arr - np.min(arr)) / (np.max(arr) - np.min(arr) + 1e-8)
@@ -278,7 +278,7 @@ class RAPR(PatcherEngine):
         muls = list(sweep_results[direction].keys())
         # sens_matrix shape: (len(muls), 32, 32)
         print('+++++++++++++++++++++++++++')
-        sens_matrix = np.array(sweep_results[direction][0.1].T)
+        sens_matrix = np.array(sweep_results[direction][mul].T)
         print(sens_matrix)
         print('==========================')
         # influence_vec = np.nanmean(sens_matrix, axis=(0, 1))
@@ -287,7 +287,7 @@ class RAPR(PatcherEngine):
         # 3. Friction Vector (Row-wise mean of the DIFF matrix)
         # "At which depth does the model naturally resist this direction?"
         opp_direction = -1 * direction
-        ops_sens_matrix = np.array(sweep_results[opp_direction][0.1].T)
+        ops_sens_matrix = np.array(sweep_results[opp_direction][mul].T)
         print('neg',ops_sens_matrix)
         
         friction_vec = np.nanmean(sens_matrix, axis = 1) - np.nanmean(ops_sens_matrix, axis = 1)
@@ -650,15 +650,15 @@ if __name__ == "__main__":
         loader=loader,
         verbose=True,
     )
-
-    multipliers_to_test = [0.1]
+    mul = 1.
+    multipliers_to_test = [mul]
     print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
 
     sweep_results = engine.compute_matrix_sweep(multipliers_to_test)
     plot_sweep_heatmaps(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
     plot_sweep_diff_heatmap(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap)
 
-    w_pos,w_neg = engine.compute_weight(sweep_results,direction=1),engine.compute_weight(sweep_results,direction=-1)
+    w_pos,w_neg = engine.compute_weight(sweep_results,direction=1,mul=mul),engine.compute_weight(sweep_results,direction=-1,mul=mul)
 
     print(f'pos_weight: {w_pos.tolist()}')
     print(f'neg_weight: {w_neg.tolist()}')

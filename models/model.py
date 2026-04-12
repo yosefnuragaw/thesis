@@ -81,7 +81,7 @@ class BlockWrapper(torch.nn.Module):
 
         self.skip =skip
         self.gen_step = 0 
-        self.steer_k = 10
+        self.steer_k = 64
         self.buffer = buffer
         self.buffer_space = []
         self.cosine_space = []

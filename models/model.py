@@ -81,51 +81,13 @@ class BlockWrapper(torch.nn.Module):
 
         self.skip =skip
         self.gen_step = 0 
-        self.steer_k = 64
         self.buffer = buffer
         self.buffer_space = []
         self.cosine_space = []
         self.rel_norm_space = []
     
     def forward(self, hidden_states, *args, **kwargs):
-        seq_len = hidden_states.shape[1]
         output = self.block(hidden_states, *args, **kwargs)
-
-        if seq_len == 1:
-            if self.steer_k > 0 and self.gen_step < self.steer_k:
-                self.gen_step += 1
-
-                mask = self.multiplier
-
-                if self.skip == 'llbds':
-                    with torch.no_grad():
-                        out_tensor = output[0] if isinstance(output, tuple) else output
-                        avg_output = out_tensor.detach().mean(dim=1)
-                        current_vec = (self.multiplier * self.vec).to(avg_output.device)
-                        cos_sim = torch.nn.functional.cosine_similarity(avg_output, current_vec, dim=-1)
-                        cos_dis = 1 - torch.clamp(cos_sim, min=-1.0, max=1.0)
-                        llbds = cos_dis.to(out_tensor.device)
-                        mask = mask * llbds
-
-                if isinstance(mask, torch.Tensor):
-                    while mask.dim() < hidden_states.dim():
-                        mask = mask.unsqueeze(-1)
-
-                if isinstance(output, tuple):
-                    modified_hidden = output[0] + (mask * self.vec.to(output[0].device))
-                    output = (modified_hidden,) + output[1:]
-                elif isinstance(output, torch.Tensor):
-                    output = output + (mask * self.vec.to(output.device))
-
-            else:
-                self.gen_step += 1
-
-            return output
-
-        # ==========================================
-        # If we reach here, seq_len > 1 (PREFILL PHASE)
-        # ==========================================
-        self.gen_step = 0
 
         with torch.no_grad():
             out_tensor = output[0] if isinstance(output, tuple) else output
@@ -144,7 +106,7 @@ class BlockWrapper(torch.nn.Module):
             rel_norm = vec_norm / output_norm_safe
             self.rel_norm_space.append(rel_norm)
             
-        mask = self.multiplier 
+        mask = self.multiplier * cos_dis
 
         if self.skip:
             if self.skip == 'llbds':

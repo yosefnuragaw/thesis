@@ -161,7 +161,6 @@ def generate_answers(
         temperature=temperature,
         batch_size=batch_size,
         return_full_text=False, 
-        repetition_penalty=1.15,
         generation_config=None
     ), total=len(prompt_loader), desc="Generating Answers"):
         

@@ -639,7 +639,7 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
 if __name__ == "__main__":
     for x,e in enumerate([3,3,6]):
         model_id = "meta-llama/Llama-3.1-8B-Instruct"
-        id = "pretrained_vector/power-seeking/llama-3/all" if x == 0 else f"pretrained_vector/power-seeking/llama-3/all-x{x}"
+        id = "pretrained_vector/power-seeking/llama-3/all" if x == 0 else f"pretrained_vector/power-seeking/llama-3/all-{x}"
         device    = "cuda" if torch.cuda.is_available() else "cpu"
         tokenizer = AutoTokenizer.from_pretrained(model_id)
         tokenizer.pad_token = tokenizer.eos_token

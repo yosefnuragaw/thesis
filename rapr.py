@@ -290,12 +290,12 @@ class RAPR(PatcherEngine):
         ops_sens_matrix = np.array(sweep_results[opp_direction][0.5].T)
         print('neg',ops_sens_matrix)
         
-        friction_vec = __norm(np.nanmean(sens_matrix, axis = 1)) - __norm(np.nanmean(ops_sens_matrix, axis = 1))
+        friction_vec = np.nanmean(sens_matrix, axis = 1) - np.nanmean(ops_sens_matrix, axis = 1)
         print(friction_vec)
         # Friction is the row-wise average of this diff
         # High negative value = high resistance at that readout depth
-        influence = influence_vec + friction_vec
-        norm_inf = (influence - np.min(influence)) / (np.max(influence) - np.min(influence) + 1e-8)
+        influence = influence_vec - friction_vec
+        norm_inf = __norm(influence)
         return norm_inf
     
     def _init_model(self) -> AutoModelForCausalLM:

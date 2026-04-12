@@ -294,12 +294,12 @@ class RAPR(PatcherEngine):
         avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 2))
         
         friction_vec = avg_sens - avg_ops_sens
-        max_friction = np.max(np.abs(friction_vec)) + 1e-8
-        norm_friction = friction_vec / max_friction # Range: [-1.0 to 1.0]
+        # max_friction = np.max(np.abs(friction_vec)) + 1e-8
+        # norm_friction = friction_vec / max_friction # Range: [-1.0 to 1.0]
         
         # Positive friction (resistance) becomes a penalty (-).
         # Negative friction (assistance) becomes a reward (+).
-        gated_friction = -norm_friction * influence_vec * 1.5
+        gated_friction = friction_vec / np.abs(friction_vec) * influence_vec  * 0.5
         
         # 6. Combine and cap
         influence = influence_vec + gated_friction

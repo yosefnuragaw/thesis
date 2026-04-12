@@ -303,8 +303,7 @@ class RAPR(PatcherEngine):
             norm_base_inf + 2 * friction_vec, 
             norm_base_inf + friction_vec # Maintain Battering Ram for resisted layers
         )
-        
-        return norm_inf
+        return np.maximum(norm_inf, 0)
     
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(

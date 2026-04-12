@@ -650,7 +650,7 @@ if __name__ == "__main__":
             model_name=model_id,
             vec_dir=id,
             layers=list(range(32)),
-            eval_epoch=3,
+            eval_epoch=e,
             loader=loader,
             verbose=True,
         )
@@ -658,8 +658,8 @@ if __name__ == "__main__":
         print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
 
         sweep_results = engine.compute_matrix_sweep(multipliers_to_test)
-        plot_sweep_heatmaps(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap, id= 'all' if x == 0 else f'all-{x+1}')
-        plot_sweep_diff_heatmap(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap, id='all' if x == 0 else f'all-{x+1}')
+        plot_sweep_heatmaps(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap, id= 'all' if x == 0 else f'{x+1}')
+        plot_sweep_diff_heatmap(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap, id='all' if x == 0 else f'{x+1}')
 
         w_pos,w_neg = engine.compute_weight(sweep_results,direction=1),engine.compute_weight(sweep_results,direction=-1)
 

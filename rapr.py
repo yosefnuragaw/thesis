@@ -337,7 +337,7 @@ def get_prompts(
     system_prompt=SYSTEM_PROMPT,
     generation_prompt: bool = True,
     k: int = 128,
-    seed: int = 42,
+    seed: int = 41,
 ):
     path = f"./data/{behavior}/train.csv"
     if not os.path.exists(path):

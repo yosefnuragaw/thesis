@@ -300,7 +300,7 @@ class RAPR(PatcherEngine):
         friction_vec * 0.25 
     )
         # 5. Combine and Normalize (Additive "Battering Ram" strategy)
-        influence = influence_vec+friction_vec
+        influence = influence_vec+gated_friction
         norm_inf = __norm(influence)
         
         

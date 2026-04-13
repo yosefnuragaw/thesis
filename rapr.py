@@ -678,7 +678,7 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     tokenizer.pad_token = tokenizer.eos_token
 
-    loader = produce_dataloader(behavior=script_args.ibehavior, tokenizer=tokenizer)
+    loader = produce_dataloader(behavior=script_args.behavior, tokenizer=tokenizer)
 
     engine = RAPR(
         model_name=model_id,

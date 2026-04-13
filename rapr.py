@@ -304,8 +304,8 @@ class RAPR(PatcherEngine):
         ]
 
         multipliers = [
-            -0.9, 
-            0.2
+            -1.0, 
+            0.
         ]
 
         # Apply the conditions, defaulting to 0.0 if friction_vec is exactly 0

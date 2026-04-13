@@ -672,7 +672,7 @@ if __name__ == "__main__":
         script_args = hf_parser.parse_json_file(json_file=args.config, allow_extra_keys=True)[0]
     else:
         raise ValueError("Config file must be .yaml or .json")
-    model_id = script_args.id
+    model_id = script_args.model_name_or_path
     id = script_args.vec_dir
     device    = "cuda" if torch.cuda.is_available() else "cpu"
     tokenizer = AutoTokenizer.from_pretrained(model_id)

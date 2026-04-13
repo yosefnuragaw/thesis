@@ -104,7 +104,7 @@ class BlockWrapper(torch.nn.Module):
             
         mask = self.multiplier 
 
-        if self.skip == 'llbds' and self.gate_mask is not None:        
+        if self.skip == 'adap' and self.gate_mask is not None:        
             mask = mask * torch.nn.functional.relu( self.gate_mask() - cos_sim_c)
 
         if isinstance(mask, torch.Tensor):

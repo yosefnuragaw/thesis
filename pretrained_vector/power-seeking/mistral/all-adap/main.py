@@ -12,7 +12,7 @@ def download_best_bipo_step():
     
     entity = "yosefnuragaw"
     project = "Final-Power-Seeking"
-    run_id = "jdzs36du" 
+    run_id = "0mwtts2y" 
     
     print("Fetching run history (Max 10,000 rows)...")
     run = api.run(f"{entity}/{project}/{run_id}")
@@ -59,7 +59,23 @@ def download_best_bipo_step():
     print(f"-------------------------\n")
 
     # 6. Download the artifacts
-    base_name = f"power-seeking-mistral-7b-all-2-similarity-abs-linear-1-sens-{run_id}_steering-vec-layer"
+    base_name = f"power-seeking-mistral-7b-all-2-adap-{run_id}_steering-vec-layer"
+    layers = range(32)
+    
+    print(f"Starting download of {len(layers)} artifacts...")
+    for layer in layers:
+        artifact_identifier = f"{entity}/{project}/{base_name}{layer}:{best_version_str}"
+        try:
+            artifact = api.artifact(artifact_identifier)
+            save_path = f"./"
+            artifact.download(root=save_path)
+            print(f"Successfully downloaded Layer {layer} ({best_version_str})")
+        except Exception as e:
+            # We pass silently because not all layers might be saved
+            print(f"Error downloading layer {layer}: {e}")
+            pass
+
+    base_name = f"power-seeking-mistral-7b-all-2-adap-{run_id}_gate-layer"
     layers = range(32)
     
     print(f"Starting download of {len(layers)} artifacts...")

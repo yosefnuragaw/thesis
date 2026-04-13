@@ -69,7 +69,7 @@ class BlockWrapper(torch.nn.Module):
         if gate_function is not None:
             if skip == 'llds':
                 self.gate_mask= MaskGate(hidden_dim = hidden_dim, dtype=self.init_dtype, function=gate_function)
-            elif skip == 'llbds':
+            elif skip == 'adap':
                 self.gate_mask = MaskGate2(hidden_dim = hidden_dim, dtype=self.init_dtype, function=gate_function)
             
         else:

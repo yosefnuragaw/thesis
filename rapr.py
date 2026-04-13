@@ -296,7 +296,7 @@ class RAPR(PatcherEngine):
         avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 2))
         
         friction_vec = avg_sens - avg_ops_sens
-        gated_friction = -np.sign(friction_vec) * (influence_vec * 0.5)
+        gated_friction = -np.sign(friction_vec) * (influence_vec * 0.25)
         
         # 6. Combine and cap
         influence = influence_vec + gated_friction

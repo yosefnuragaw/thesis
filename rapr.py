@@ -1,3 +1,5 @@
+import argparse
+from dataclasses import dataclass, field
 from transformers import (
     AutoModelForCausalLM, 
     AutoTokenizer, 
@@ -543,8 +545,6 @@ def plot_sweep_heatmaps(sweep_results, multipliers_tested, build_heatmap_rgba, _
         plt.close(fig)
         print(f"Saved: {fname}")
         
-
-
 def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgba, _draw_heatmap,id):
     def _minmax_scale(matrix: np.ndarray) -> np.ndarray:
         """Scale a matrix to [0, 1] using its own finite min/max, NaNs preserved."""
@@ -636,32 +636,66 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
     plt.close(fig)
     print(f"Saved: {fname}")
 
+
+@dataclass
+class ScriptArguments:
+    """
+    The arguments for the DPO eval script, matching the training config structure.
+    """
+    id: Optional[str] = field(default="baseline", metadata={"help": "Run id"})
+    model_name_or_path: Optional[str] = field(
+        default="google/gemma-3-1b-it",
+        metadata={"help": "The model checkpoint for weights initialization."}
+    )
+    total_layer: Optional[int] = field(default=200, metadata={"help": "LLM total number of layers"})
+    behavior: Optional[str] = field(default="power-seeking", metadata={"help": "the behavior"})
+    layer: Optional[List[int]] = field(
+        default_factory=lambda: list(range(26)), 
+        metadata={"help": "the layer the steering vector extracted from"}
+    )
+    vec_dir: Optional[str] = field(
+        default=None,
+        metadata={"help": "Directory where .pt vectors are saved"}
+    )
+    eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
+
 if __name__ == "__main__":
-    for x,e in enumerate([3,3,6]):
-        model_id = "meta-llama/Llama-3.1-8B-Instruct"
-        id = "pretrained_vector/power-seeking/llama-3/all" if x+1 == 1 else f"pretrained_vector/power-seeking/llama-3/all-{x+1}"
-        device    = "cuda" if torch.cuda.is_available() else "cpu"
-        tokenizer = AutoTokenizer.from_pretrained(model_id)
-        tokenizer.pad_token = tokenizer.eos_token
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", "-c", type=str, required=True, help="Path to your YAML config file")
+    parser.add_argument("--task", "-t", type=str, required=False, default="both", help="Visualize eval progress")
+    args, remaining = parser.parse_known_args()
 
-        loader = produce_dataloader(behavior="power-seeking", tokenizer=tokenizer)
+    hf_parser = HfArgumentParser(ScriptArguments)
+    if args.config.endswith(".yaml"):
+        script_args = hf_parser.parse_yaml_file(yaml_file=args.config, allow_extra_keys=True)[0]
+    elif args.config.endswith(".json"):
+        script_args = hf_parser.parse_json_file(json_file=args.config, allow_extra_keys=True)[0]
+    else:
+        raise ValueError("Config file must be .yaml or .json")
+    model_id = script_args.id
+    id = script_args.vec_dir
+    device    = "cuda" if torch.cuda.is_available() else "cpu"
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    tokenizer.pad_token = tokenizer.eos_token
 
-        engine = RAPR(
-            model_name=model_id,
-            vec_dir=id,
-            layers=list(range(32)),
-            eval_epoch=e,
-            loader=loader,
-            verbose=True,
-        )
-        multipliers_to_test = [0.1,1.0, 2.0, 3.0]
-        print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
+    loader = produce_dataloader(behavior=script_args.ibehavior, tokenizer=tokenizer)
 
-        sweep_results = engine.compute_matrix_sweep(multipliers_to_test)
-        plot_sweep_heatmaps(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap, id= 'all' if x == 0 else f'{x+1}')
-        plot_sweep_diff_heatmap(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap, id='all' if x == 0 else f'{x+1}')
+    engine = RAPR(
+        model_name=model_id,
+        vec_dir=id,
+        layers=script_args.layer,
+        eval_epoch=script_args.eval_epoch,
+        loader=loader,
+        verbose=True,
+    )
+    multipliers_to_test = [0.1,1.0, 2.0, 3.0]
+    print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")
 
-        w_pos,w_neg = engine.compute_weight(sweep_results,direction=1),engine.compute_weight(sweep_results,direction=-1)
+    sweep_results = engine.compute_matrix_sweep(multipliers_to_test)
+    plot_sweep_heatmaps(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap, id= id)
+    plot_sweep_diff_heatmap(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap, id=id)
 
-        print(f'pos_weight: {w_pos.tolist()}')
-        print(f'neg_weight: {w_neg.tolist()}')
+    w_pos,w_neg = engine.compute_weight(sweep_results,direction=1),engine.compute_weight(sweep_results,direction=-1)
+
+    print(f'pos_weight: {w_pos.tolist()}')
+    print(f'neg_weight: {w_neg.tolist()}')

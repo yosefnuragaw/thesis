@@ -30,19 +30,20 @@ class MaskGate(torch.nn.Module):
 
 
 class MaskGate2(torch.nn.Module):
-    def __init__(self, hidden_dim: int, dtype: torch.dtype = torch.float32, function: str = "sigmoid"):
+    def __init__(self, hidden_dim: int, dtype: torch.dtype = torch.float32, function: str = "softplus1"):
         super().__init__()
 
         func_map = {
-            "sigmoid": torch.nn.Sigmoid(),
-            "tanh": torch.nn.Tanh(),
-            "softplus": torch.nn.Softplus()
+            "relu":      lambda x: torch.nn.functional.relu(x),
+            "softplus":  lambda x: torch.nn.functional.softplus(x),
+            "softplus1": lambda x: torch.nn.functional.softplus(x - 1),  # starts ~0, smoother than relu
         }
         
         if function not in func_map:
             raise ValueError(f"Function {function} not supported. Choose from {list(func_map.keys())}")
         self.func = func_map[function]
-        self.h = torch.nn.Parameter(torch.tensor([-3], dtype=dtype))
+        self.h = torch.nn.Parameter(torch.tensor([0.0], dtype=dtype))
+
     def forward(self):
         return self.func(self.h)
 

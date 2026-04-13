@@ -59,7 +59,7 @@ def download_best_bipo_step():
     print(f"-------------------------\n")
 
     # 6. Download the artifacts
-    base_name = f"power-seeking-mistral-7b-all-2-adap-{run_id}_steering-vec-layer"
+    base_name = f"power-seeking-mistral-7b-all-adap-{run_id}_steering-vec-layer"
     layers = range(32)
     
     print(f"Starting download of {len(layers)} artifacts...")
@@ -75,7 +75,7 @@ def download_best_bipo_step():
             print(f"Error downloading layer {layer}: {e}")
             pass
 
-    base_name = f"power-seeking-mistral-7b-all-2-adap-{run_id}_gate-layer"
+    base_name = f"power-seeking-mistral-7b-all-adap-{run_id}_gate-layer"
     layers = range(32)
     
     print(f"Starting download of {len(layers)} artifacts...")

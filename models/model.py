@@ -25,7 +25,7 @@ class MaskGate(torch.nn.Module):
             raise ValueError(f"Function {function} not supported. Choose from {list(func_map.keys())}")
         self.func = func_map[function]
         self.h = torch.nn.Parameter(torch.tensor([0.0], dtype=dtype))
-    def forward(self, x):
+    def forward(self):
         return self.func(self.h)
 
 
@@ -43,12 +43,8 @@ class MaskGate2(torch.nn.Module):
             raise ValueError(f"Function {function} not supported. Choose from {list(func_map.keys())}")
         self.func = func_map[function]
         self.h = torch.nn.Parameter(torch.tensor([0.0], dtype=dtype))
-        self.h2 = torch.nn.Parameter(torch.tensor([0.0], dtype=dtype))
-    def forward(self, x, param):
-        if param == 's':
-            return self.func(self.h)
-        elif param == 'b':
-            return self.func(self.h2)
+    def forward(self, x):
+        return self.func(self.h)
 
 
 
@@ -88,30 +84,28 @@ class BlockWrapper(torch.nn.Module):
     
     def forward(self, hidden_states, *args, **kwargs):
         output = self.block(hidden_states, *args, **kwargs)
+        out_tensor = output[0] if isinstance(output, tuple) else output
+        avg_output = out_tensor.detach().mean(dim=1)
+        current_vec = (self.multiplier * self.vec).to(avg_output.device)
+        
+        cos_sim = torch.nn.functional.cosine_similarity(avg_output, current_vec, dim=-1)
+        cos_sim_c = torch.clamp(cos_sim, min=-1.0, max=1.0) 
+        cos_dis = 1 - cos_sim_c
 
+        # 2. Tracking Block
         with torch.no_grad():
-            out_tensor = output[0] if isinstance(output, tuple) else output
-            
-            avg_output = out_tensor.detach().mean(dim=1)
-            
-            current_vec = (self.multiplier * self.vec).to(avg_output.device)
-            cos_sim = torch.nn.functional.cosine_similarity(avg_output, current_vec, dim=-1)
-            cos_sim_c = torch.clamp(cos_sim, min=-1.0, max=1.0) 
-            cos_dis = 1 - cos_sim_c
-            self.cosine_space.append(cos_dis)
+            self.cosine_space.append(cos_dis.cpu()) # Move to CPU to save VRAM if only for logging
 
             vec_norm = torch.norm(current_vec, p=2, dim=-1)
             output_norm = torch.norm(avg_output, p=2, dim=-1)
             output_norm_safe = torch.clamp(output_norm, min=1e-8)
             rel_norm = vec_norm / output_norm_safe
-            self.rel_norm_space.append(rel_norm)
+            self.rel_norm_space.append(rel_norm.cpu())
             
         mask = self.multiplier 
 
-        if self.skip:
-            if self.skip == 'llbds':
-                llbds = cos_dis.to(output[0].device)
-                mask = mask * llbds
+        if self.skip == 'llbds' and self.gate_mask is not None:        
+            mask = mask * torch.nn.functional.relu( self.gate_mask() - cos_sim_c)
 
         if isinstance(mask, torch.Tensor):
             while mask.dim() < hidden_states.dim():

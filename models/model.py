@@ -129,13 +129,13 @@ class BlockWrapper(torch.nn.Module):
 
     
     def set_gate(self, path):
-        if self.gate:
+        if self.gate_mask:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             state_dict = torch.load(path, map_location=device, weights_only=True)
             
-            self.gate.load_state_dict(state_dict)
-            self.gate.to(device)
-            self.gate.eval()
+            self.gate_mask.load_state_dict(state_dict)
+            self.gate_mask.to(device)
+            self.gate_mask.eval()
         else:
             raise ValueError("Gate not initialized. Please define the model architecture first.")
 

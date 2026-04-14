@@ -248,6 +248,7 @@ def eval_generation(
             min_new_tokens=16,
             do_sample=False,
             temperature=1.0,
+            num_beams=1,
             generation_config=None,   
         )[0]["generated_text"]
 

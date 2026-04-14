@@ -159,6 +159,7 @@ def generate_answers(
         max_new_tokens=max_new_tokens,
         do_sample=False,
         temperature=1.0,
+        num_beams=1,
         batch_size=batch_size,
         return_full_text=False, 
         generation_config=None

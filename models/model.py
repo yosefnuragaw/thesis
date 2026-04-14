@@ -104,7 +104,7 @@ class BlockWrapper(torch.nn.Module):
             rel_norm = vec_norm / output_norm_safe
             self.rel_norm_space.append(rel_norm.cpu())
             
-        mask = self.multiplier * self.k1 
+        mask = self.multiplier 
 
         if self.skip == 'adap' and self.gate_mask is not None:        
             mask = mask * torch.nn.functional.relu(self.gate_mask().to(output[0].device) - cos_sim_c.to(output[0].device))

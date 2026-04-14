@@ -99,10 +99,13 @@ def evaluate_batch(
 
     outputs = pipe(
         chat_prompts,
-        max_new_tokens=1024, 
-        temperature=0.2,   
-        top_p=0.9,
-        do_sample=True,        
+        max_new_tokens=1024,
+        min_new_tokens=1,
+        do_sample=False,
+        temperature=1.0,
+        top_p=1.0,
+        num_beams=1,
+        repetition_penalty=1.0,
         return_full_text=False,
         batch_size=pipe._batch_size
     )

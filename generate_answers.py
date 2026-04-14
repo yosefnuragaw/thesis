@@ -72,7 +72,7 @@ class ScriptArguments:
     )
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
     max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
-    temperature: Optional[float] = field(default=0.7, metadata={"help": "LLM generation temperature"})
+    temperature: Optional[float] = field(default=0.1, metadata={"help": "LLM generation temperature"})
     gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
     skip: Optional[str] = field(default=None, metadata={"help" : "cosine scaler None | distance | similarity"})
     k1: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
@@ -157,8 +157,8 @@ def generate_answers(
     for output in tqdm(generator(
         prompt_loader,
         max_new_tokens=max_new_tokens,
-        do_sample=True,
-        temperature=temperature,
+        do_sample=False,
+        temperature=1.0,
         batch_size=batch_size,
         return_full_text=False, 
         generation_config=None

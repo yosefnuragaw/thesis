@@ -278,53 +278,45 @@ class RAPR(PatcherEngine):
             sweep_results[-1][m] = stat[-1]
 
         return sweep_results
-
+    
     def compute_weight(self, sweep_results, direction):
         def __norm(arr):
             return (arr - np.min(arr)) / (np.max(arr) - np.min(arr) + 1e-8)
-        
-        # 1. Identify all multipliers dynamically
+
         muls = list(sweep_results[direction].keys())
         opp_direction = -1 * direction
-        
-        # 2. Build 3D Matrices -> Shape: (Num_Muls, Readout, Intervention)
+
         sens_matrix_3d = np.array([sweep_results[direction][m].T for m in muls])
         ops_sens_matrix_3d = np.array([sweep_results[opp_direction][m].T for m in muls])
-        
-        # 3. Calculate Influence (Final Layer Impact)
-        # sens_matrix_3d[:, -1, :] extracts the last readout layer for ALL multipliers
-        # We take the mean across axis 0 (the multipliers) to get the average impact
-        influence_vec = 1-__norm(np.nanmean(sens_matrix_3d[:, -1, :], axis=0))
-        
-        # 4. Calculate Friction
-        # We want the row-wise average (Readout depth), so we must average across:
-        # Axis 0 (Multipliers) AND Axis 2 (Intervention layers)
-        avg_sens = np.nanmean(sens_matrix_3d, axis=(0, 2))
-        avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 2))
-        
-        friction_vec = avg_sens - avg_ops_sens
 
-        # Define the conditions based on the sign of friction_vec
-        conditions = [
-            friction_vec > 0,  # Positive friction
-            friction_vec < 0   # Negative friction
-        ]
+        # --- Multiplier weights: favor stronger multipliers ---
+        mul_weights = np.array([float(m) for m in muls])
+        mul_weights = 1.0 / (mul_weights + 1e-8)  # invert, guard div-by-zero
+        mul_weights /= mul_weights.sum()
 
-        multipliers = [
-            -0.5, 
-            0.5
-        ]
+        # --- Depth weights: favor later readout layers ---
+        n_readout = sens_matrix_3d.shape[1]
+        depth_weights = np.linspace(0.5, 1.0, n_readout)
+        depth_weights /= depth_weights.sum()
 
-        # Apply the conditions, defaulting to 0.0 if friction_vec is exactly 0
-        asymmetric_scale = np.select(conditions, multipliers, default=0.0)
+        # --- Influence: weighted over muls then readout depth ---
+        # (Num_Muls, Readout, Intervention) -> (Readout, Intervention)
+        mul_weighted = np.tensordot(mul_weights, sens_matrix_3d, axes=([0], [0]))
+        # (Readout, Intervention) -> (Intervention,)
+        depth_weighted = np.tensordot(depth_weights, mul_weighted, axes=([0], [0]))
+        influence_vec = 1 - __norm(depth_weighted)
 
-        gated_friction = influence_vec * asymmetric_scale
-        
-        # 6. Combine and cap
+        # --- Friction: direction asymmetry, continuous ---
+        avg_sens = np.nanmean(sens_matrix_3d, axis=(0, 2))      # (Readout,)
+        avg_ops  = np.nanmean(ops_sens_matrix_3d, axis=(0, 2))  # (Readout,)
+        friction_per_depth = avg_sens - avg_ops
+        friction_scalar = float(np.dot(depth_weights, np.tanh(friction_per_depth)))
+
+        gated_friction = influence_vec * friction_scalar * 0.5
+
+        # --- Combine ---
         influence = influence_vec + gated_friction
-        
-        return np.maximum(influence, 0.0)
-    
+        return np.maximum(influence, 0.0)    
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(
             self.model_name,

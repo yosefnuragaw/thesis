@@ -160,6 +160,9 @@ class RAPR(PatcherEngine):
         eval_epoch: int,
         loader: DataLoader,
         verbose: bool = False,
+        gate:bool =False,
+        gate_func:Optional[str] = None,
+        skip:Optional[str] = None
     ):
         self.model_name = model_name
         self.vec_dir    = vec_dir
@@ -167,6 +170,10 @@ class RAPR(PatcherEngine):
         self.eval_epoch = eval_epoch
         self.loader     = loader
         self.verbose    = verbose
+        self.gate       = gate
+        self.gate_func = gate_func
+        self.skip = skip
+
 
     def compute_matrix_sweep(self, multipliers: List[float]):
         N    = len(self.layers)
@@ -333,7 +340,13 @@ class RAPR(PatcherEngine):
                 model.model.layers[layer],
                 hidden_dim=model.config.hidden_size,
                 vec=torch.zeros(model.config.hidden_size, dtype=model.dtype),
+                gate_function= self.gate_func,
+                skip=self.skip
             )
+            if self.gate:
+                gate_path = f"{self.vec_dir}/gate_ep{self.eval_epoch}_layer{layer}.pt"
+                if os.path.exists(gate_path):
+                    model.model.layers[layer].set_gate(gate_path)
         model.eval()
         return model
 
@@ -673,6 +686,8 @@ class ScriptArguments:
         metadata={"help": "Directory where .pt vectors are saved"}
     )
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
+    gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
+    skip: Optional[str] = field(default=None, metadata={"help" : "cosine scaler None | distance | similarity"})
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -702,6 +717,9 @@ if __name__ == "__main__":
         eval_epoch=script_args.eval_epoch,
         loader=loader,
         verbose=True,
+        gate = True,
+        gate_func = script_args.gate_function,
+        skip = script_args.skip
     )
     multipliers_to_test = [0.1,1.0, 2.0, 3.0]
     print(f"\nStarting Calibration Sweep across Multipliers: {multipliers_to_test}")

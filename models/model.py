@@ -86,27 +86,37 @@ class BlockWrapper(torch.nn.Module):
     def forward(self, hidden_states, *args, **kwargs):
         output = self.block(hidden_states, *args, **kwargs)
         out_tensor = output[0] if isinstance(output, tuple) else output
-        avg_output = out_tensor.detach().mean(dim=1)
-        current_vec = (self.multiplier * self.vec).to(avg_output.device)
         
-        cos_sim = torch.nn.functional.cosine_similarity(avg_output, current_vec, dim=-1)
-        cos_sim_c = torch.clamp(cos_sim, min=-1.0, max=1.0) 
-        cos_dis = 1 - cos_sim_c
+        # out_tensor shape: [batch, seq_len, hidden_dim]
+        current_vec = (self.multiplier * self.vec).to(out_tensor.device)
+        
+        # Expand vec to broadcast against all tokens: [1, 1, hidden_dim]
+        vec_expanded = current_vec.unsqueeze(0).unsqueeze(0)
+        
+        # cos_sim shape: [batch, seq_len]
+        cos_sim = torch.nn.functional.cosine_similarity(
+            out_tensor.detach(), vec_expanded, dim=-1
+        )
+        cos_sim_c = torch.clamp(cos_sim, min=-1.0, max=1.0)
+        cos_dis = 1 - cos_sim_c  # shape: [batch, seq_len]
 
-        # 2. Tracking Block
         with torch.no_grad():
-            self.cosine_space.append(cos_dis.cpu()) # Move to CPU to save VRAM if only for logging
+            self.cosine_space.append(cos_dis.cpu())  # [batch, seq_len] per call
 
             vec_norm = torch.norm(current_vec, p=2, dim=-1)
-            output_norm = torch.norm(avg_output, p=2, dim=-1)
+            output_norm = torch.norm(out_tensor.detach(), p=2, dim=-1)  # [batch, seq_len]
             output_norm_safe = torch.clamp(output_norm, min=1e-8)
-            rel_norm = vec_norm / output_norm_safe
+            rel_norm = vec_norm / output_norm_safe  # broadcasts: [batch, seq_len]
             self.rel_norm_space.append(rel_norm.cpu())
-            
-        mask = self.multiplier 
 
-        if self.skip == 'adap' and self.gate_mask is not None:        
-            mask = mask * torch.nn.functional.relu(self.gate_mask().to(output[0].device) - cos_sim_c.to(output[0].device))
+        mask = self.multiplier
+
+        if self.skip == 'adap' and self.gate_mask is not None:
+            # cos_sim_c [batch, seq_len, 1] 
+            gate = torch.nn.functional.relu(
+                self.gate_mask().to(out_tensor.device) - cos_sim_c.unsqueeze(-1).to(out_tensor.device)
+            )
+            mask = mask * gate
 
         if isinstance(mask, torch.Tensor):
             while mask.dim() < hidden_states.dim():

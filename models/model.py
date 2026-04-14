@@ -51,7 +51,7 @@ class MaskGate2(torch.nn.Module):
 
 
 class BlockWrapper(torch.nn.Module):
-    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False, gate_function:Optional[str] = None, skip:Optional[str] = None, k1:float = 0.):
+    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False, gate_function:Optional[str] = None, skip:Optional[str] = None, k1:float = 1.):
         super().__init__()
         self.multiplier = 1.0
         self.block = block
@@ -104,7 +104,7 @@ class BlockWrapper(torch.nn.Module):
             rel_norm = vec_norm / output_norm_safe
             self.rel_norm_space.append(rel_norm.cpu())
             
-        mask = self.multiplier 
+        mask = self.multiplier * self.k1 
 
         if self.skip == 'adap' and self.gate_mask is not None:        
             mask = mask * torch.nn.functional.relu(self.gate_mask().to(output[0].device) - cos_sim_c.to(output[0].device))

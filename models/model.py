@@ -93,22 +93,22 @@ class BlockWrapper(torch.nn.Module):
         cos_sim_c = torch.clamp(cos_sim, min=-1.0, max=1.0) 
         cos_dis = 1 - cos_sim_c
 
-        vec_norm = torch.norm(current_vec, p=2, dim=-1)
-        output_norm = torch.norm(avg_output, p=2, dim=-1)
-        output_norm_safe = torch.clamp(output_norm, min=1e-8)
-        rel_norm = vec_norm / output_norm_safe
+       
     
         # 2. Tracking Block
         with torch.no_grad():
             self.cosine_space.append(cos_dis.cpu()) # Move to CPU to save VRAM if only for logging
 
-            
+            vec_norm = torch.norm(current_vec, p=2, dim=-1)
+            output_norm = torch.norm(avg_output, p=2, dim=-1)
+            output_norm_safe = torch.clamp(output_norm, min=1e-8)
+            rel_norm = vec_norm / output_norm_safe
             self.rel_norm_space.append(rel_norm.cpu())
             
         mask = self.multiplier 
 
         if self.skip == 'adap' and self.gate_mask is not None:        
-            mask = mask * rel_norm* torch.nn.functional.relu(self.gate_mask().to(output[0].device) - cos_sim_c.to(output[0].device))
+            mask = mask * 2* torch.nn.functional.relu(self.gate_mask().to(output[0].device) - cos_sim_c.to(output[0].device))
 
         if isinstance(mask, torch.Tensor):
             while mask.dim() < hidden_states.dim():

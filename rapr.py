@@ -332,7 +332,7 @@ class RAPR(PatcherEngine):
             if active_cols.any():
                 s  = np.nanmean(sens_matrix_3d[:, row, :][:, active_cols])
                 op = np.nanmean(ops_sens_matrix_3d[:, row, :][:, active_cols])
-                friction_per_depth[row] = s - op
+                friction_per_depth[row] = op-s
 
         friction_scalar = float(np.dot(depth_weights, np.tanh(friction_per_depth)))
         gated_friction  = influence_vec * friction_scalar 

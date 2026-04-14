@@ -311,7 +311,7 @@ class RAPR(PatcherEngine):
         ]
 
         multipliers = [
-            -1.0, 
+            -0.95, 
             0.
         ]
 

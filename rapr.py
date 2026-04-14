@@ -334,8 +334,8 @@ class RAPR(PatcherEngine):
                 op = np.nanmean(ops_sens_matrix_3d[:, row, :][:, active_cols])
                 friction_per_depth[row] = s - op
 
-        friction_scalar = float(np.dot(depth_weights, np.tanh(friction_per_depth * 3.0)))
-        gated_friction  = influence_vec * friction_scalar * 0.5
+        friction_scalar = float(np.dot(depth_weights, np.tanh(friction_per_depth)))
+        gated_friction  = influence_vec * friction_scalar 
 
         influence = influence_vec + gated_friction
         inf_norm = influence / (influence.mean() + 1e-8)

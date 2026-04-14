@@ -43,7 +43,7 @@ class MaskGate2(torch.nn.Module):
         if function not in func_map:
             raise ValueError(f"Function {function} not supported. Choose from {list(func_map.keys())}")
         self.func = func_map[function]
-        self.h = torch.nn.Parameter(torch.tensor([-5.0], dtype=dtype))
+        self.h = torch.nn.Parameter(torch.tensor([0.0], dtype=dtype))
 
     def forward(self):
         return self.func(self.h)

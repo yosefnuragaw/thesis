@@ -46,7 +46,7 @@ class MaskGate2(torch.nn.Module):
         self.h = torch.nn.Parameter(torch.tensor([0.0], dtype=dtype))
 
     def forward(self):
-        return self.h
+        return self.func(self.h)
 
 
 

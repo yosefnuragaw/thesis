@@ -338,7 +338,8 @@ class RAPR(PatcherEngine):
         gated_friction  = influence_vec * friction_scalar * 0.5
 
         influence = influence_vec + gated_friction
-        return np.maximum(influence, 0.0)
+        inf_norm = influence / (influence.mean() + 1e-8)
+        return np.maximum(inf_norm, 0.0)
     
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(

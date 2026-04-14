@@ -294,11 +294,10 @@ class RAPR(PatcherEngine):
         mul_weights = 1.0 / (mul_weights + 1e-8)  # invert, guard div-by-zero
         mul_weights /= mul_weights.sum()
 
-        # --- Depth weights: favor later readout layers ---
+       # --- Depth weights: favor earlier readout layers ---
         n_readout = sens_matrix_3d.shape[1]
-        depth_weights = np.linspace(0.5, 1.0, n_readout)
+        depth_weights = np.linspace(1.0, 0.5, n_readout)  # descending instead of ascending
         depth_weights /= depth_weights.sum()
-
         # --- Influence: weighted over muls then readout depth ---
         # (Num_Muls, Readout, Intervention) -> (Readout, Intervention)
         mul_weighted = np.tensordot(mul_weights, sens_matrix_3d, axes=([0], [0]))

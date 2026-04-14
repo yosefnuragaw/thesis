@@ -27,7 +27,7 @@ experiment: True
 pipeline: "trace_analysis"
 moving: "default"
 skip: "adap"
-gate_function: 'softplus1'
+gate_function: 'sigmoid'
 
 # Evaluation
 vec_dir: "pretrained_vector/power-seeking/llama-3/all-adap"

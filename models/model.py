@@ -30,19 +30,20 @@ class MaskGate(torch.nn.Module):
 
 
 class MaskGate2(torch.nn.Module):
-    def __init__(self, hidden_dim: int, dtype: torch.dtype = torch.float32, function: str = "softplus1"):
+    def __init__(self, hidden_dim: int, dtype: torch.dtype = torch.float32, function: str = "sigmoid"):
         super().__init__()
 
         func_map = {
             "relu":      lambda x: torch.nn.functional.relu(x),
             "softplus":  lambda x: torch.nn.functional.softplus(x),
             "softplus1": lambda x: torch.nn.functional.softplus(x - 1),  # starts ~0, smoother than relu
+            "sigmoid":  lambda x: torch.nn.functional.sigmoid(x),
         }
         
         if function not in func_map:
             raise ValueError(f"Function {function} not supported. Choose from {list(func_map.keys())}")
         self.func = func_map[function]
-        self.h = torch.nn.Parameter(torch.tensor([0.0], dtype=dtype))
+        self.h = torch.nn.Parameter(torch.tensor([-5.0], dtype=dtype))
 
     def forward(self):
         return self.func(self.h)
@@ -93,8 +94,6 @@ class BlockWrapper(torch.nn.Module):
         cos_sim_c = torch.clamp(cos_sim, min=-1.0, max=1.0) 
         cos_dis = 1 - cos_sim_c
 
-       
-    
         # 2. Tracking Block
         with torch.no_grad():
             self.cosine_space.append(cos_dis.cpu()) # Move to CPU to save VRAM if only for logging

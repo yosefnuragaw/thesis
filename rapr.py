@@ -305,8 +305,10 @@ class RAPR(PatcherEngine):
         friction_vec = avg_sens - avg_ops_sens
 
         top_k_mask = np.ones(len(friction_vec))
-        top_k_indices = np.argsort(friction_vec)[-3:]  # indices of 3 largest
-        top_k_mask[top_k_indices] = 2
+        top_k_indices = np.argsort(friction_vec)[-3:] 
+        min_k_indices = np.argsort(friction_vec)[:3]  
+        top_k_mask[top_k_indices] = 0.5
+        top_k_mask[min_k_indices] = 1.5
 
         influence = influence_vec * top_k_mask
         

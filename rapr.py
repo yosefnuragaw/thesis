@@ -308,10 +308,7 @@ class RAPR(PatcherEngine):
         top_k_indices = np.argsort(friction_vec)[-3:]  # indices of 3 largest
         top_k_mask[top_k_indices] = 0
 
-        gated_friction = influence_vec * top_k_mask 
-        
-        # 6. Combine and cap
-        influence = influence_vec + gated_friction
+        influence = influence_vec * top_k_mask
         
         return np.maximum(influence, 0.0)
 

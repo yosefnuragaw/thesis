@@ -312,7 +312,7 @@ class RAPR(PatcherEngine):
 
         influence = influence_vec * top_k_mask
         
-        return np.maximum(influence, 0.0)
+        return top_k_mask
 
     
     def _init_model(self) -> AutoModelForCausalLM:

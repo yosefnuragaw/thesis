@@ -191,7 +191,8 @@ def main(baseline:bool, args: ScriptArguments)->None:
                 total_layer = args.total_layer,
                 gate_function = args.gate_function,
                 skip = args.skip,
-                k1 = args.k1
+                k1 = args.k1,
+                baseline= baseline
             )
     if not baseline:
         for multiplier in args.multipliers:

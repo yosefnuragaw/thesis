@@ -52,7 +52,7 @@ class ScriptArguments:
     prompt: Optional[str] = field(default=None, metadata={"help" : "cosine scaler None | distance | similarity"})
 
 def init_model(
-        model_name: str, vec_dir: str, gate_dir:str, layers: List[int], multiplier: int, epoch: int|None = None, gate_function:Optional[str]=None, skip:Optional[str]=None, buffer:bool = False, total_layer:int = 26, k1:float = 0.
+        model_name: str, vec_dir: str, gate_dir:str, layers: List[int], multiplier: int, epoch: int|None = None, gate_function:Optional[str]=None, skip:Optional[str]=None, buffer:bool = False, total_layer:int = 26, k1:float = 0., baseline: bool = False
     )->tuple[AutoModelForCausalLM, AutoTokenizer]:
 
     model = AutoModelForCausalLM.from_pretrained(
@@ -75,7 +75,7 @@ def init_model(
                     k1= k1
                 )
         
-        if epoch != None and layer in layers:
+        if epoch != None and layer in layers and not baseline:
             vec_path = f"{vec_dir}/vec_ep{epoch}_layer{layer}.pt"
             if os.path.exists(vec_path):
                 layer_device = next(model.model.layers[layer].parameters()).device

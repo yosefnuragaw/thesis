@@ -281,65 +281,40 @@ class RAPR(PatcherEngine):
     
     def compute_weight(self, sweep_results, direction):
         def __norm(arr):
-            mn, mx = np.nanmin(arr), np.nanmax(arr)
-            if mx - mn < 1e-8:
-                return np.zeros_like(arr)
-            return (arr - mn) / (mx - mn)
-
+            return (arr - np.min(arr)) / (np.max(arr) - np.min(arr) + 1e-8)
+        
+        # 1. Identify all multipliers dynamically
         muls = list(sweep_results[direction].keys())
         opp_direction = -1 * direction
-
-        # Shape: (n_muls, N, N) — keep .T as before
-        sens_matrix_3d     = np.array([sweep_results[direction][m].T     for m in muls])
+        
+        # 2. Build 3D Matrices -> Shape: (Num_Muls, Readout, Intervention)
+        sens_matrix_3d = np.array([sweep_results[direction][m].T for m in muls])
         ops_sens_matrix_3d = np.array([sweep_results[opp_direction][m].T for m in muls])
+        
+        # 3. Calculate Influence (Final Layer Impact)
+        # sens_matrix_3d[:, -1, :] extracts the last readout layer for ALL multipliers
+        # We take the mean across axis 0 (the multipliers) to get the average impact
+        influence_vec = 1-__norm(np.nanmean(sens_matrix_3d[:, -1, :], axis=0))
+        
+        # 4. Calculate Friction
+        # We want the row-wise average (Readout depth), so we must average across:
+        # Axis 0 (Multipliers) AND Axis 2 (Intervention layers)
+        avg_sens = np.nanmean(sens_matrix_3d, axis=(0, 2))
+        avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 2))
+        
+        friction_vec = avg_sens - avg_ops_sens
 
-        N = sens_matrix_3d.shape[1]
+        top_k_mask = np.ones(len(friction_vec))
+        top_k_indices = np.argsort(friction_vec)[-3:]  # indices of 3 largest
+        top_k_mask[top_k_indices] = 0
 
-        # Build active mask from the first multiplier's non-NaN pattern
-        # Shape: (N, N) — True where the triangular data exists
-        active_mask = ~np.isnan(sens_matrix_3d[0])  # (N, N)
-
-        # --- Multiplier weights: favor lower multipliers ---
-        mul_weights = np.array([float(m) for m in muls])
-        mul_weights = 1.0 / (mul_weights + 1e-8)
-        mul_weights /= mul_weights.sum()
-
-        # --- Depth weights: favor earlier readout layers ---
-        n_readout = N
-        depth_weights = np.linspace(1.0, 0.5, n_readout)
-        depth_weights /= depth_weights.sum()
-
-        # --- Influence: weighted mean over muls, then over active readout cells only ---
-        # (n_muls, N, N) -> (N, N) weighted over multipliers
-        mul_weighted = np.tensordot(mul_weights, sens_matrix_3d, axes=([0], [0]))  # (N, N)
-
-        # Per intervention layer (axis=1 = readout depth), average only active rows
-        influence_vec = np.zeros(N)
-        for col in range(N):
-            active_rows = active_mask[:, col]
-            if active_rows.any():
-                # depth_weights for the active subset only
-                dw = depth_weights[active_rows]
-                dw = dw / dw.sum()
-                influence_vec[col] = np.dot(dw, mul_weighted[active_rows, col])
-
-        influence_vec = 1 - __norm(influence_vec)
-
-        # --- Friction: per-depth average over active cells only ---
-        friction_per_depth = np.zeros(n_readout)
-        for row in range(n_readout):
-            active_cols = active_mask[row, :]
-            if active_cols.any():
-                s  = np.nanmean(sens_matrix_3d[:, row, :][:, active_cols])
-                op = np.nanmean(ops_sens_matrix_3d[:, row, :][:, active_cols])
-                friction_per_depth[row] = s - op
-
-        friction_scalar = float(np.dot(depth_weights, np.tanh(friction_per_depth)))
-        gated_friction  = influence_vec * friction_scalar 
-
+        gated_friction = influence_vec * top_k_mask 
+        
+        # 6. Combine and cap
         influence = influence_vec + gated_friction
-        inf_norm = influence / (influence.mean() + 1e-8)
-        return np.maximum(inf_norm, 0.0)
+        
+        return np.maximum(influence, 0.0)
+
     
     def _init_model(self) -> AutoModelForCausalLM:
         model = AutoModelForCausalLM.from_pretrained(

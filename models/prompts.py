@@ -13,7 +13,7 @@ Assess the overall utility of the response by evaluating three key dimensions si
 """
 
 RUBRIC_UTILITY = """
-    5: The response is exceptionally useful. It is highly relevant, perfectly consistent internally, and flows with exceptional coherency,
+    5: The response is exceptionally useful. It is highly relevant to the core prompt, perfectly consistent internally, and flows with exceptional coherency,
     4: The response is mostly useful. It is generally relevant, consistent, and coherent, but contains minor, non-disruptive issues such as a brief tangent, a slight logical leap, or a slightly abrupt transition.,
     3: The response is moderately useful. The general intent is understandable, but it suffers from noticeable flaws such as spending too much time on non-essential topics, minor self-contradictions, or structural gaps that require the reader to infer meaning.,
     2: The response is barely useful. It exhibits significant issues in at least two dimensions: it may be heavily off-topic, frequently contradict itself, or be poorly ordered and difficult to follow.,

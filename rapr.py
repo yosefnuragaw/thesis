@@ -302,13 +302,13 @@ class RAPR(PatcherEngine):
         avg_sens = np.nanmean(sens_matrix_3d, axis=(0, 1))
         avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 1))
         
-        friction_vec = avg_sens - avg_ops_sens
+        # friction_vec = avg_sens - avg_ops_sens
 
-        top_k_mask = np.where(friction_vec >= 0, 0.8, 1.)
+        # top_k_mask = np.where(friction_vec >= 0, 0.8, 1.)
 
-        influence = influence_vec * top_k_mask
+        # influence = influence_vec * top_k_mask
         
-        return influence
+        return avg_sens
 
     
     def _init_model(self) -> AutoModelForCausalLM:

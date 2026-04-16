@@ -563,7 +563,7 @@ def plot_sweep_heatmaps(sweep_results, multipliers_tested, build_heatmap_rgba, _
         plt.close(fig)
         print(f"Saved: {fname}")
         
-def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgba, _draw_heatmap,id):
+def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgba, _draw_heatmap, id):
     def _minmax_scale(matrix: np.ndarray) -> np.ndarray:
         """Scale a matrix to [0, 1] using its own finite min/max, NaNs preserved."""
         out  = np.full_like(matrix, np.nan, dtype=float)
@@ -581,7 +581,7 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
         1, n_muls,
         figsize=(6 * n_muls, 6),
         sharey=True,
-        constrained_layout=True,   # replaces tight_layout — handles colorbars cleanly
+        constrained_layout=True,
     )
     fig.patch.set_facecolor("white")
     if n_muls == 1:
@@ -611,20 +611,38 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
         rgba               = cmap(norm(np.where(active_mask, diff, 0.0)))
         rgba[~active_mask] = [0.85, 0.85, 0.85, 1.0]
 
-        ax.imshow(
-            rgba, aspect="auto", origin="upper",
-            extent=[-0.5, N - 0.5, N - 0.5, -0.5],
-        )
+        # ── Match regular heatmap orientation exactly ──────────────────────
+        # Regular heatmap does: rgba.transpose(1,0,2)[:, ::-1, :] + origin="lower"
+        display = rgba.transpose(1, 0, 2)[:, ::-1, :]
+
+        ax.imshow(display, aspect="auto", origin="lower", interpolation="nearest")
         ax.set_title(f"Mul: {m}", fontsize=11, pad=6, fontweight="bold")
-        ax.set_xlabel("Layer index", fontsize=9)
+
+        ticks = list(range(N))
+
+        # X ticks: layer index 0 → 31 (left to right) — same as regular heatmap
+        ax.set_xticks(ticks)
+        ax.set_xticklabels([str(i) for i in range(N)], fontsize=7)
+
+        # Y ticks: steered-layer depth 31 → 0 (top to bottom) — same as regular heatmap
+        ax.set_yticks(ticks)
+        ax.set_yticklabels([str(N - 1 - i) for i in range(N)], fontsize=7)
+
+        ax.tick_params(axis="both", which="both", direction="in", length=3)
+        ax.set_xlabel("Layer Index (0 → 31)", fontsize=11, labelpad=6)
         if ax == axes[0]:
-            ax.set_ylabel("Layer subset depth", fontsize=9)
+            ax.set_ylabel("Layer Index (31 → 0)", fontsize=11, labelpad=6)
         else:
             ax.set_ylabel("")
 
-        ax.set_xticks(range(0, N, 1))
-        ax.set_yticks(range(0, N, 1))
-        ax.tick_params(labelsize=7)
+        # Faint grid every 4 — identical to regular heatmap
+        for v in range(0, N, 4):
+            ax.axvline(v - 0.5, color="black", lw=0.4, alpha=0.15)
+            ax.axhline(v - 0.5, color="black", lw=0.4, alpha=0.15)
+
+        ax.text(0.99, 0.99, "gray = inactive",
+                transform=ax.transAxes, fontsize=7.5, color="#555",
+                ha="right", va="top")
 
         for spine in ax.spines.values():
             spine.set_edgecolor("#cccccc")
@@ -632,8 +650,6 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
 
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
-
-    # Use fig.colorbar with a dedicated inset — constrained_layout manages spacing
     cbar = fig.colorbar(sm, ax=axes, fraction=0.015, pad=0.02, shrink=0.85)
     cbar.set_label("Δ Cosine distance  (+1) − (−1)  [min-max scaled]", fontsize=10)
     cbar.ax.tick_params(labelsize=8)
@@ -644,16 +660,14 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
         ha="center", fontsize=10, color="#444444",
     )
     fig.suptitle(
-        "Diff Heatmap Sweep (−1)  [min-max scaled]",
+        "Diff Heatmap Sweep  (+1) − (−1)  [min-max scaled]",
         fontsize=13, fontweight="bold",
     )
 
-    # No plt.tight_layout() call — constrained_layout handles it automatically
     fname = f"all-{id}-heatmap_sweep_diff.png"
     plt.savefig(fname, dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"Saved: {fname}")
-
 
 @dataclass
 class ScriptArguments:

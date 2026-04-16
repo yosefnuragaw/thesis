@@ -308,7 +308,7 @@ class RAPR(PatcherEngine):
 
         # influence = influence_vec * top_k_mask
         
-        return avg_sens
+        return avg_sens *top_k_mask
 
     
     def _init_model(self) -> AutoModelForCausalLM:

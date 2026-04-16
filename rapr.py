@@ -304,7 +304,7 @@ class RAPR(PatcherEngine):
         
         friction_vec = __norm(avg_sens) - __norm(avg_ops_sens)
 
-        top_k_mask = np.where(friction_vec >= 0, 2,0.8)
+        top_k_mask = np.where(friction_vec >= 0, 2,0.5)
 
         # influence = influence_vec * top_k_mask
         

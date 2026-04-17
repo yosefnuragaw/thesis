@@ -280,36 +280,69 @@ class RAPR(PatcherEngine):
         return sweep_results
     
     def compute_weight(self, sweep_results, direction, scale):
-        def __norm(arr):
-            return (arr - np.min(arr)) / (np.max(arr) - np.min(arr) + 1e-8)
+        # def __norm(arr):
+        #     return (arr - np.min(arr)) / (np.max(arr) - np.min(arr) + 1e-8)
         
-        # 1. Identify all multipliers dynamically
-        muls = list(sweep_results[direction].keys())
-        opp_direction = -1 * direction
+        # # 1. Identify all multipliers dynamically
+        # muls = list(sweep_results[direction].keys())
+        # opp_direction = -1 * direction
         
-        # 2. Build 3D Matrices -> Shape: (Num_Muls, Readout, Intervention)
-        sens_matrix_3d = np.array([sweep_results[direction][m].T for m in muls])
-        ops_sens_matrix_3d = np.array([sweep_results[opp_direction][m].T for m in muls])
+        # # 2. Build 3D Matrices -> Shape: (Num_Muls, Readout, Intervention)
+        # sens_matrix_3d = np.array([sweep_results[direction][m].T for m in muls])
+        # ops_sens_matrix_3d = np.array([sweep_results[opp_direction][m].T for m in muls])
         
-        # 3. Calculate Influence (Final Layer Impact)
-        # sens_matrix_3d[:, -1, :] extracts the last readout layer for ALL multipliers
-        # We take the mean across axis 0 (the multipliers) to get the average impact
-        influence_vec = np.nanmean(sens_matrix_3d[:, -1, :], axis=0)
+        # # 3. Calculate Influence (Final Layer Impact)
+        # # sens_matrix_3d[:, -1, :] extracts the last readout layer for ALL multipliers
+        # # We take the mean across axis 0 (the multipliers) to get the average impact
+        # influence_vec = np.nanmean(sens_matrix_3d[:, -1, :], axis=0)
         
-        # 4. Calculate Friction
-        # We want the row-wise average (Readout depth), so we must average across:
-        # Axis 0 (Multipliers) AND Axis 2 (Intervention layers)
-        avg_sens = np.nanmean(sens_matrix_3d, axis=(0, 1))
-        avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 1))
+        # # 4. Calculate Friction
+        # # We want the row-wise average (Readout depth), so we must average across:
+        # # Axis 0 (Multipliers) AND Axis 2 (Intervention layers)
+        # avg_sens = np.nanmean(sens_matrix_3d, axis=(0, 1))
+        # avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 1))
         
-        friction_vec = avg_sens - avg_ops_sens
-        top_k_mask = np.where(friction_vec > 0, scale,0.0) 
-        # top_k_mask = np.where(friction_vec >= 0, 1.5,0.5) #LLAMA
-        # top_k_mask = np.where(friction_vec >= 0, 1.0,1.0)
+        # friction_vec = avg_sens - avg_ops_sens
+        # top_k_mask = np.where(friction_vec > 0, scale,0.0) 
+        # # top_k_mask = np.where(friction_vec >= 0, 1.5,0.5) #LLAMA
+        # # top_k_mask = np.where(friction_vec >= 0, 1.0,1.0)
 
-        # influence = influence_vec * top_k_mask
+        # # influence = influence_vec * top_k_mask
         
-        return avg_sens *top_k_mask
+        # return avg_sens *top_k_mask
+
+        def compute_weight_normalized(self, sweep_results, direction, base_scale):
+            # 1 & 2. Setup Matrices (same as before)
+            muls = list(sweep_results[direction].keys())
+            opp_direction = -1 * direction
+            
+            sens_matrix_3d = np.array([sweep_results[direction][m].T for m in muls])
+            ops_sens_matrix_3d = np.array([sweep_results[opp_direction][m].T for m in muls])
+            
+            # 3. Calculate Friction
+            avg_sens = np.nanmean(sens_matrix_3d, axis=(0, 1))
+            avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 1))
+            friction_vec = avg_sens - avg_ops_sens
+            
+            # 4. Use the threshold to select active layers (creates the 22 vs 10 split)
+            active_layer_mask = np.where(friction_vec > 0, 1.0, 0.0)
+            
+            # Calculate the raw weights before normalization
+            raw_weights = avg_sens * active_layer_mask
+            
+            # 5. Normalize the weights! 
+            # Calculate the total capacity (sum of active weights)
+            total_capacity = np.sum(raw_weights)
+            
+            # Prevent division by zero
+            if total_capacity > 0:
+                # Scale the weights so their sum equals exactly 1.0, 
+                # then multiply by your desired global scale
+                normalized_weights = (raw_weights / total_capacity) * base_scale
+            else:
+                normalized_weights = raw_weights
+                
+            return normalized_weights
 
     
     def _init_model(self) -> AutoModelForCausalLM:

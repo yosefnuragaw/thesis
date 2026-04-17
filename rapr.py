@@ -315,6 +315,7 @@ class RAPR(PatcherEngine):
         muls = list(sweep_results[direction].keys())
         opp_direction = -1 * direction
         
+        # 2. Build 3D Matrices
         sens_matrix_3d = np.array([sweep_results[direction][m].T for m in muls])
         ops_sens_matrix_3d = np.array([sweep_results[opp_direction][m].T for m in muls])
         
@@ -323,25 +324,22 @@ class RAPR(PatcherEngine):
         avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 1))
         friction_vec = avg_sens - avg_ops_sens
         
-        # 4. Use the threshold to select active layers (creates the 22 vs 10 split)
-        active_layer_mask = np.where(friction_vec > 0, 1.0, 0.0)
+        # 4. Strict Top-K Selection
+        # Treat the 'scale' parameter as our integer K
+        k = int(scale)
         
-        # Calculate the raw weights before normalization
-        raw_weights = avg_sens * active_layer_mask
+        # Get the indices of the top K highest friction values
+        # np.argsort sorts ascending, so [-k:] grabs the largest ones
+        top_k_indices = np.argsort(friction_vec)[-k:]
         
-        # 5. Normalize the weights! 
-        # Calculate the total capacity (sum of active weights)
-        total_capacity = np.sum(raw_weights)
+        # Create a mask of zeros and set only the top K layers to 1.0
+        active_layer_mask = np.zeros_like(friction_vec)
+        active_layer_mask[top_k_indices] = 1.0
         
-        # Prevent division by zero
-        if total_capacity > 0:
-            # Scale the weights so their sum equals exactly 1.0, 
-            # then multiply by your desired global scale
-            normalized_weights = (raw_weights / total_capacity) * scale
-        else:
-            normalized_weights = raw_weights
-            
-        return normalized_weights
+        # 5. Apply the mask to the raw sensitivities
+        final_weights = avg_sens * active_layer_mask
+        
+        return final_weights
 
     
     def _init_model(self) -> AutoModelForCausalLM:

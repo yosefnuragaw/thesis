@@ -302,7 +302,7 @@ class RAPR(PatcherEngine):
         avg_sens = np.nanmean(sens_matrix_3d, axis=(0, 1))
         avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 1))
         
-        friction_vec = __norm(avg_sens) - __norm(avg_ops_sens)
+        friction_vec = avg_sens - avg_ops_sens
         top_k_mask = np.where(friction_vec > 0, scale,0.0) 
         # top_k_mask = np.where(friction_vec >= 0, 1.5,0.5) #LLAMA
         # top_k_mask = np.where(friction_vec >= 0, 1.0,1.0)

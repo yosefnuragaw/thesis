@@ -21,53 +21,38 @@ from models.scheduler import QuantileSchedulerCallback
 # --- Arguments ---
 @dataclass
 class ScriptArguments:
-    beta: Optional[float] = field(default=0.1, metadata={"help": "the beta parameter for DPO loss"})
-    model_name_or_path: Optional[str] = field(
-        default="Qwen/Qwen3-8B",
-        metadata={"help": "Supported: meta-llama/Llama-3.1-8B-Instruct, mistralai/Mistral-7B-Instruct-v0.3, google/gemma-3-1b-it"},
+    seed: int = field(default=42, metadata={"help": "Environment Seed"})
+    data_root: str = field(default='/kaggle/input/datasets/limbodhiwijaya/phase-1-uba', metadata={"help": "Path to data root"})
+    label_dir: str = field(default='Label', metadata={"help": "Directory for labels"})
+    checkpoint_dir: str = field(default='checkpoints_modular', metadata={"help": "Directory to save/load checkpoints"})
+    
+    load_checkpoint: bool = field(default=True, metadata={"help": "Whether to load existing checkpoints"})
+    force_rebuild_features: bool = field(default=False, metadata={"help": "Force rebuilding of features"})
+    force_retrain: bool = field(default=False, metadata={"help": "Force retraining even if checkpoints exist"})
+    epoch_log: int = field(default=5, metadata={"help": "Log interval for epochs"})
+    fast_cuda: bool = field(default=True, metadata={"help": "Enable fast CUDA options"})
+    mixed_precision: bool = field(default=False, metadata={"help": "Use mixed precision (False = Use full precision)"})
+    dataloader: int = field(default=2, metadata={"help": "Number of dataloader workers"})
+
+    # Experimentation-Pipeline
+    train_ratio: float = field(default=0.70, metadata={"help": "Ratio of training data"})
+    valid_ratio: float = field(default=0.15, metadata={"help": "Ratio of validation data"})
+    test_ratio: float = field(default=0.15, metadata={"help": "Ratio of test data"})
+    batch_size: int = field(default=1024, metadata={"help": "Batch size for training"})
+
+    # Experimentation-Models
+    iso_forest_contamination_rate: float = field(default=0.005, metadata={"help": "Contamination rate for Isolation Forest"})
+    iso_forest_quantile: int = field(default=99, metadata={"help": "Quantile threshold for Isolation Forest"})
+    
+    auto_encoder_quantile: int = field(default=95, metadata={"help": "Quantile threshold for AutoEncoder"})
+    
+    ens_quantile: int = field(default=99, metadata={"help": "Quantile threshold for Ensemble model"})
+
+    # Experimentation-Metrics
+    top_k: List[int] = field(
+        default_factory=lambda: [10, 50, 100, 1000], 
+        metadata={"help": "Top-K values for evaluation metrics"}
     )
-    id: Optional[str] = field(default="baseline", metadata={"help": "Run id"})
-    learning_rate: Optional[float] = field(default=5e-4, metadata={"help": "optimizer learning rate"})
-    lr_scheduler_type: Optional[str] = field(default="cosine", metadata={"help": "the lr scheduler type"})
-    warmup_steps: Optional[int] = field(default=20, metadata={"help": "the number of warmup steps"})
-    weight_decay: Optional[float] = field(default=0.05, metadata={"help": "the weight decay"})
-    optimizer_type: Optional[str] = field(default="adamw_torch", metadata={"help": "the optimizer type"})
-
-    per_device_train_batch_size: Optional[int] = field(default=4, metadata={"help": "train batch size per device"})
-    per_device_eval_batch_size: Optional[int] = field(default=1, metadata={"help": "eval batch size per device"})
-    gradient_accumulation_steps: Optional[int] = field(default=1, metadata={"help": "gradient accumulation steps"})
-    gradient_checkpointing: Optional[bool] = field(default=False, metadata={"help": "use gradient checkpointing"})
-
-    max_prompt_length: Optional[int] = field(default=2048, metadata={"help": "maximum prompt length"})
-    max_length: Optional[int] = field(default=2048, metadata={"help": "maximum sequence length"})
-    num_train_epochs: Optional[int] = field(default=20, metadata={"help": "number of training epochs"})
-    logging_steps: Optional[int] = field(default=1, metadata={"help": "logging frequency"})
-    log_freq: Optional[int] = field(default=1, metadata={"help": "logging frequency"})
-
-    behavior: Optional[str] = field(default="power-seeking", metadata={"help": "the behavior"})
-    layer: Optional[List[int]] = field(
-        default_factory=lambda: list(range(26)), 
-        metadata={"help": "the layer the steering vector extracted from"}
-    )
-    total_layer: Optional[int] = field(default=26, metadata={"help": "total model layer"})
-
-    report_to: Optional[str] = field(default="wandb", metadata={"help": "integration to report to"})
-    ignore_bias_buffers: Optional[bool] = field(default=False, metadata={"help": "fix for DDP issues"})
-
-    # Experiment : 
-
-    experiment: Optional[bool] = field(default=False, metadata={"help": "Run experimentation"})
-    quantile: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
-    filter_step: Optional[int] = field(default=0, metadata={"help": "Filter step window"})
-    quantile_scheduler: Optional[bool] = field(default=False, metadata={"help": "Run with quantile scheduler"})
-    quantile_scheduler_type: Optional[str] = field(default='linear', metadata={"help": "Quantile scheduler type"})
-    pipeline: Optional[str] = field(default='default', metadata={"help": "experimentation pipeline both | one| two"})
-    masking_type: Optional[str] = field(default='soft', metadata={"help": "experimentation masking type hard | soft"})
-    moving: Optional[str] = field(default='default', metadata={"help": "gradual moving backward | forward"})
-    gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
-    skip: Optional[str] = field(default=None, metadata={"help" : "cosine scaler None | distance | similarity"})
-    k1: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
-    scale: Optional[float] = field(default=1., metadata={"help": "Direction scale"})
 
 
 
@@ -77,11 +62,8 @@ if __name__ == "__main__":
     parser.add_argument("--config", type=str, required=True, help="Path to your YAML config file")
     args, remaining = parser.parse_known_args()
 
-    hf_parser = HfArgumentParser(ScriptArguments)
     if args.config.endswith(".yaml"):
-        script_args = hf_parser.parse_yaml_file(yaml_file=args.config, allow_extra_keys=True)[0]
     elif args.config.endswith(".json"):
-        script_args = hf_parser.parse_json_file(json_file=args.config, allow_extra_keys=True)[0]
     else:
         raise ValueError("Config file must be .yaml or .json")
 

@@ -62,8 +62,11 @@ if __name__ == "__main__":
     parser.add_argument("--config", type=str, required=True, help="Path to your YAML config file")
     args, remaining = parser.parse_known_args()
 
+    hf_parser = HfArgumentParser(ScriptArguments)
     if args.config.endswith(".yaml"):
+        script_args = hf_parser.parse_yaml_file(yaml_file=args.config, allow_extra_keys=True)[0]
     elif args.config.endswith(".json"):
+        script_args = hf_parser.parse_json_file(json_file=args.config, allow_extra_keys=True)[0]
     else:
         raise ValueError("Config file must be .yaml or .json")
 

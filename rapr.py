@@ -303,43 +303,13 @@ class RAPR(PatcherEngine):
         avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 1))
         
         friction_vec = avg_sens - avg_ops_sens
-        num_layers = len(friction_vec)
-        # This creates a line starting at 1.0 and ending at 'scale'
-        depth_bias = np.linspace(1.0, scale, num_layers)
+        top_k_mask = np.where(friction_vec > 0, scale,0.0) 
+        # top_k_mask = np.where(friction_vec >= 0, 1.5,0.5) #LLAMA
+        # top_k_mask = np.where(friction_vec >= 0, 1.0,1.0)
 
-        top_k_mask = np.where(friction_vec > 0, 1.0,0.0) 
+        # influence = influence_vec * top_k_mask
         
-        return avg_sens *top_k_mask * depth_bias
-
-        # 1 & 2. Setup Matrices (same as before)
-        muls = list(sweep_results[direction].keys())
-        opp_direction = -1 * direction
-        
-        # 2. Build 3D Matrices
-        sens_matrix_3d = np.array([sweep_results[direction][m].T for m in muls])
-        ops_sens_matrix_3d = np.array([sweep_results[opp_direction][m].T for m in muls])
-        
-        # 3. Calculate Friction
-        avg_sens = np.nanmean(sens_matrix_3d, axis=(0, 1))
-        avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 1))
-        friction_vec = avg_sens - avg_ops_sens
-        
-        # 4. Strict Top-K Selection
-        # Treat the 'scale' parameter as our integer K
-        k = int(scale)
-        
-        # Get the indices of the top K highest friction values
-        # np.argsort sorts ascending, so [-k:] grabs the largest ones
-        top_k_indices = np.argsort(friction_vec)[-k:]
-        
-        # Create a mask of zeros and set only the top K layers to 1.0
-        active_layer_mask = np.zeros_like(friction_vec)
-        active_layer_mask[top_k_indices] = 1.0
-        
-        # 5. Apply the mask to the raw sensitivities
-        final_weights = avg_sens * active_layer_mask
-        
-        return final_weights
+        return avg_sens *top_k_mask
 
     
     def _init_model(self) -> AutoModelForCausalLM:

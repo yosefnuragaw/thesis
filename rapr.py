@@ -279,7 +279,7 @@ class RAPR(PatcherEngine):
 
         return sweep_results
     
-    def compute_weight(self, sweep_results, direction):
+    def compute_weight(self, sweep_results, direction, scale):
         def __norm(arr):
             return (arr - np.min(arr)) / (np.max(arr) - np.min(arr) + 1e-8)
         
@@ -303,7 +303,7 @@ class RAPR(PatcherEngine):
         avg_ops_sens = np.nanmean(ops_sens_matrix_3d, axis=(0, 1))
         
         friction_vec = __norm(avg_sens) - __norm(avg_ops_sens)
-        top_k_mask = np.where(friction_vec > 0, 1.0,0.0) 
+        top_k_mask = np.where(friction_vec > 0, scale,0.0) 
         # top_k_mask = np.where(friction_vec >= 0, 1.5,0.5) #LLAMA
         # top_k_mask = np.where(friction_vec >= 0, 1.0,1.0)
 
@@ -689,6 +689,7 @@ class ScriptArguments:
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
     gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
     skip: Optional[str] = field(default=None, metadata={"help" : "cosine scaler None | distance | similarity"})
+    scale: Optional[int] = field(default=1, metadata={"help": "Reward scale"})
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -729,7 +730,7 @@ if __name__ == "__main__":
     plot_sweep_heatmaps(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap, id= script_args.id)
     plot_sweep_diff_heatmap(sweep_results, multipliers_to_test, build_heatmap_rgba, _draw_heatmap, id=script_args.id)
 
-    w_pos,w_neg = engine.compute_weight(sweep_results,direction=1),engine.compute_weight(sweep_results,direction=-1)
+    w_pos,w_neg = engine.compute_weight(sweep_results,direction=1, scale = script_args.scale),engine.compute_weight(sweep_results,direction=-1, scale = script_args.scale)
 
     print(f'pos_weight: {w_pos.tolist()}')
     print(f'neg_weight: {w_neg.tolist()}')

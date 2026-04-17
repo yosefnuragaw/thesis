@@ -569,7 +569,7 @@ def plot_sweep_diff_heatmap(sweep_results, multipliers_tested, build_heatmap_rgb
             lo, hi = matrix[mask].min(), matrix[mask].max()
             if hi > lo:
                 # out[mask] = (matrix[mask] - lo) / (hi - lo)
-                out[mask] = matrix[mask] - lo
+                out[mask] = matrix[mask] 
             else:
                 out[mask] = 0.0
         return out

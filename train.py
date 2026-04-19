@@ -18,42 +18,58 @@ from models.scheduler import QuantileSchedulerCallback
 
 
 
-# --- Arguments ---
 @dataclass
 class ScriptArguments:
-    seed: int = field(default=42, metadata={"help": "Environment Seed"})
-    data_root: str = field(default='/kaggle/input/datasets/limbodhiwijaya/phase-1-uba', metadata={"help": "Path to data root"})
-    label_dir: str = field(default='Label', metadata={"help": "Directory for labels"})
-    checkpoint_dir: str = field(default='checkpoints_modular', metadata={"help": "Directory to save/load checkpoints"})
-    
-    load_checkpoint: bool = field(default=True, metadata={"help": "Whether to load existing checkpoints"})
-    force_rebuild_features: bool = field(default=False, metadata={"help": "Force rebuilding of features"})
-    force_retrain: bool = field(default=False, metadata={"help": "Force retraining even if checkpoints exist"})
-    epoch_log: int = field(default=5, metadata={"help": "Log interval for epochs"})
-    fast_cuda: bool = field(default=True, metadata={"help": "Enable fast CUDA options"})
-    mixed_precision: bool = field(default=False, metadata={"help": "Use mixed precision (False = Use full precision)"})
-    dataloader: int = field(default=2, metadata={"help": "Number of dataloader workers"})
-
-    # Experimentation-Pipeline
-    train_ratio: float = field(default=0.70, metadata={"help": "Ratio of training data"})
-    valid_ratio: float = field(default=0.15, metadata={"help": "Ratio of validation data"})
-    test_ratio: float = field(default=0.15, metadata={"help": "Ratio of test data"})
-    batch_size: int = field(default=1024, metadata={"help": "Batch size for training"})
-
-    # Experimentation-Models
-    iso_forest_contamination_rate: float = field(default=0.005, metadata={"help": "Contamination rate for Isolation Forest"})
-    iso_forest_quantile: int = field(default=99, metadata={"help": "Quantile threshold for Isolation Forest"})
-    
-    auto_encoder_quantile: int = field(default=95, metadata={"help": "Quantile threshold for AutoEncoder"})
-    
-    ens_quantile: int = field(default=99, metadata={"help": "Quantile threshold for Ensemble model"})
-
-    # Experimentation-Metrics
-    top_k: List[int] = field(
-        default_factory=lambda: [10, 50, 100, 1000], 
-        metadata={"help": "Top-K values for evaluation metrics"}
+    """
+    The arguments for the LLM as a judge eval scrip,
+    """
+    id: Optional[str] = field(
+        default="baseline",
+        metadata={"help": "Run id"}
     )
 
+    model_name_or_path: Optional[str] = field(
+        default="google/gemma-3-1b-it",
+        metadata={"help": "Model Answer Folder"}
+    )
+    behavior: Optional[str] = field(default="power-seeking", metadata={"help": "the behavior"})
+    layer: Optional[List[int]] = field(
+        default_factory=lambda: list(range(32)), 
+        metadata={"help": "the layer the steering vector extracted from"}
+    )
+    pos_weight: Optional[List[int]] = field(
+        default_factory=lambda: list(1 for x in range(32)), 
+        metadata={"help": "Weight layer"}
+    )
+    neg_weight: Optional[List[int]] = field(
+        default_factory=lambda: list(1 for x in range(32)), 
+        metadata={"help": "Weight layer"}
+    )
+    total_layer: Optional[int] = field(default=200, metadata={"help": "LLM total number of layers"})
+
+    multipliers: Optional[List[float]] = field(
+        default_factory=lambda: [2,1.5,1.,0.5,-0.5,-1.,-1.5,-2.], 
+        # default_factory=lambda: [2], 
+        metadata={"help": "the layer the steering vector extracted from"}
+    )
+    vec_dir: Optional[str] = field(
+        default= None,
+        metadata={"help": "Directory where .pt vectors are saved"}
+    )
+    gate_dir: Optional[str] = field(
+        default= None,
+        metadata={"help": "Directory where .pt vectors are saved"}
+    )
+    answer_dir: Optional[str] = field(
+        default="/kaggle/working/BiPO/vector/power-seeking_gemma-3",
+        metadata={"help": "Directory where .csw will be saved"}
+    )
+    eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
+    max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
+    temperature: Optional[float] = field(default=0.1, metadata={"help": "LLM generation temperature"})
+    gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
+    skip: Optional[str] = field(default=None, metadata={"help" : "cosine scaler None | distance | similarity"})
+    k1: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
 
 
 

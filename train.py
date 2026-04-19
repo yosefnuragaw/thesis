@@ -20,56 +20,53 @@ from models.scheduler import QuantileSchedulerCallback
 
 @dataclass
 class ScriptArguments:
-    """
-    The arguments for the LLM as a judge eval scrip,
-    """
-    id: Optional[str] = field(
-        default="baseline",
-        metadata={"help": "Run id"}
-    )
-
+    beta: Optional[float] = field(default=0.1, metadata={"help": "the beta parameter for DPO loss"})
     model_name_or_path: Optional[str] = field(
-        default="google/gemma-3-1b-it",
-        metadata={"help": "Model Answer Folder"}
+        default="Qwen/Qwen3-8B",
+        metadata={"help": "Supported: meta-llama/Llama-3.1-8B-Instruct, mistralai/Mistral-7B-Instruct-v0.3, google/gemma-3-1b-it"},
     )
+    id: Optional[str] = field(default="baseline", metadata={"help": "Run id"})
+    learning_rate: Optional[float] = field(default=5e-4, metadata={"help": "optimizer learning rate"})
+    lr_scheduler_type: Optional[str] = field(default="cosine", metadata={"help": "the lr scheduler type"})
+    warmup_steps: Optional[int] = field(default=20, metadata={"help": "the number of warmup steps"})
+    weight_decay: Optional[float] = field(default=0.05, metadata={"help": "the weight decay"})
+    optimizer_type: Optional[str] = field(default="adamw_torch", metadata={"help": "the optimizer type"})
+
+    per_device_train_batch_size: Optional[int] = field(default=4, metadata={"help": "train batch size per device"})
+    per_device_eval_batch_size: Optional[int] = field(default=1, metadata={"help": "eval batch size per device"})
+    gradient_accumulation_steps: Optional[int] = field(default=1, metadata={"help": "gradient accumulation steps"})
+    gradient_checkpointing: Optional[bool] = field(default=False, metadata={"help": "use gradient checkpointing"})
+
+    max_prompt_length: Optional[int] = field(default=2048, metadata={"help": "maximum prompt length"})
+    max_length: Optional[int] = field(default=2048, metadata={"help": "maximum sequence length"})
+    num_train_epochs: Optional[int] = field(default=20, metadata={"help": "number of training epochs"})
+    logging_steps: Optional[int] = field(default=1, metadata={"help": "logging frequency"})
+    log_freq: Optional[int] = field(default=1, metadata={"help": "logging frequency"})
+
     behavior: Optional[str] = field(default="power-seeking", metadata={"help": "the behavior"})
     layer: Optional[List[int]] = field(
-        default_factory=lambda: list(range(32)), 
+        default_factory=lambda: list(range(26)), 
         metadata={"help": "the layer the steering vector extracted from"}
     )
-    pos_weight: Optional[List[int]] = field(
-        default_factory=lambda: list(1 for x in range(32)), 
-        metadata={"help": "Weight layer"}
-    )
-    neg_weight: Optional[List[int]] = field(
-        default_factory=lambda: list(1 for x in range(32)), 
-        metadata={"help": "Weight layer"}
-    )
-    total_layer: Optional[int] = field(default=200, metadata={"help": "LLM total number of layers"})
+    total_layer: Optional[int] = field(default=26, metadata={"help": "total model layer"})
 
-    multipliers: Optional[List[float]] = field(
-        default_factory=lambda: [2,1.5,1.,0.5,-0.5,-1.,-1.5,-2.], 
-        # default_factory=lambda: [2], 
-        metadata={"help": "the layer the steering vector extracted from"}
-    )
-    vec_dir: Optional[str] = field(
-        default= None,
-        metadata={"help": "Directory where .pt vectors are saved"}
-    )
-    gate_dir: Optional[str] = field(
-        default= None,
-        metadata={"help": "Directory where .pt vectors are saved"}
-    )
-    answer_dir: Optional[str] = field(
-        default="/kaggle/working/BiPO/vector/power-seeking_gemma-3",
-        metadata={"help": "Directory where .csw will be saved"}
-    )
-    eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
-    max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
-    temperature: Optional[float] = field(default=0.1, metadata={"help": "LLM generation temperature"})
+    report_to: Optional[str] = field(default="wandb", metadata={"help": "integration to report to"})
+    ignore_bias_buffers: Optional[bool] = field(default=False, metadata={"help": "fix for DDP issues"})
+
+    # Experiment : 
+
+    experiment: Optional[bool] = field(default=False, metadata={"help": "Run experimentation"})
+    quantile: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
+    filter_step: Optional[int] = field(default=0, metadata={"help": "Filter step window"})
+    quantile_scheduler: Optional[bool] = field(default=False, metadata={"help": "Run with quantile scheduler"})
+    quantile_scheduler_type: Optional[str] = field(default='linear', metadata={"help": "Quantile scheduler type"})
+    pipeline: Optional[str] = field(default='default', metadata={"help": "experimentation pipeline both | one| two"})
+    masking_type: Optional[str] = field(default='soft', metadata={"help": "experimentation masking type hard | soft"})
+    moving: Optional[str] = field(default='default', metadata={"help": "gradual moving backward | forward"})
     gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
     skip: Optional[str] = field(default=None, metadata={"help" : "cosine scaler None | distance | similarity"})
     k1: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
+    scale: Optional[float] = field(default=1., metadata={"help": "Direction scale"})
 
 
 

@@ -55,7 +55,8 @@ def init_model(
 
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        attn_implementation="flash_attention_2",
+        attn_implementation="sdpa",
+        # attn_implementation="flash_attention_2",
         low_cpu_mem_usage=True,
         trust_remote_code=True,
     )

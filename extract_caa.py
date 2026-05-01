@@ -16,7 +16,24 @@ from torch.utils.data import DataLoader
 from models.dataset import MultipleOptionDataset
 from models.model import CAABlockWrapper
 from models.prompts import SYSTEM_PROMPT
-from utils import set_seed, get_eval_data, batch_logps
+from utils import set_seed, get_eval_data, get_data
+
+class PairedCAADataset(torch.utils.data.Dataset):
+    def __init__(self, data, mode="chosen"):
+        self.data = data
+        self.mode = mode  # "chosen" or "rejected"
+
+    def set_mode(self, mode):
+        self.mode = mode
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        ex = self.data[idx]
+        return ex["prompt"] + ex[self.mode]  # "chosen" or "rejected"
+
+
 
 @dataclass
 class ScriptArguments:
@@ -36,17 +53,31 @@ class ScriptArguments:
         metadata={"help": "Directory where .pt vectors are saved"}
     )
 
-def produce_dataloader(behavior: str, tokenizer: AutoTokenizer):
-    data = get_eval_data(tokenizer=tokenizer, behavior=behavior)
-    eval_dataset = MultipleOptionDataset(
-        tokenizer=tokenizer,
-        questions=data['questions'],
-        prompts=data['prompts'],
-        labels=data['labels'],
-    )
-    eval_loader = DataLoader(dataset=eval_dataset, batch_size=1, shuffle=False, num_workers=0)
-    return eval_loader
+def produce_dataloader(behavior: str, tokenizer: AutoTokenizer, batch_size: int = 4):
+    data = get_data(tokenizer=tokenizer, behavior=behavior, generation_prompt=False)
 
+    def collate_fn(texts):
+        enc = tokenizer(
+            texts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=512,
+        )
+        return {
+            "input_ids":      enc["input_ids"],
+            "attention_mask": enc["attention_mask"],
+        }
+
+    dataset = PairedCAADataset(data)
+
+    loader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=collate_fn,
+    )
+    return loader
 def init_model(model_name: str, apply_type: str, total_layer: int = 26) -> tuple[AutoModelForCausalLM, AutoTokenizer]:
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
@@ -74,31 +105,26 @@ def init_model(model_name: str, apply_type: str, total_layer: int = 26) -> tuple
     tokenizer.pad_token = tokenizer.eos_token
     return model, tokenizer
 
-def extract_caa(
-        model, loader: DataLoader, multiplier: float, layers: List[int], vec_dir: str, total_layer: int = 26, verbose: bool = False,
-    ):
+def extract_caa(model, loader, multiplier, layers, vec_dir, total_layer=26, verbose=False):
     directions = [1, -1]
+    mode_map = {1: "chosen", -1: "rejected"}
     pbar = tqdm(directions, desc="Extracting", ncols=100) if verbose else directions
 
     for direction in pbar:
+        loader.dataset.set_mode(mode_map[direction])  # ← switch chosen/rejected
         for layer in range(total_layer):
             if isinstance(model.model.layers[layer], CAABlockWrapper):
                 model.model.layers[layer].set_multiplier(direction * multiplier)
 
         for batch in loader:
-            for input_ids, attention_mask in zip(batch["input_ids"], batch["attention_mask"]):
-                input_ids = input_ids.to(model.device)
-                attention_mask = attention_mask.to(model.device)
-                with torch.no_grad():
-                    _ = model(input_ids=input_ids, attention_mask=attention_mask).logits
+            input_ids = batch["input_ids"].to(model.device)        # [batch_size, seq_len]
+            attention_mask = batch["attention_mask"].to(model.device)
+            with torch.no_grad():
+                _ = model(input_ids=input_ids, attention_mask=attention_mask).logits
 
     os.makedirs(vec_dir, exist_ok=True)
     for layer in range(total_layer):
         if isinstance(model.model.layers[layer], CAABlockWrapper):
-            pos_len = len(model.model.layers[layer].caa_buffer['pos'])
-            neg_len = len(model.model.layers[layer].caa_buffer['neg'])
-            mul = model.model.layers[layer].multiplier
-            print(f"Layer {layer}: pos={pos_len}, neg={neg_len}, multiplier={mul}")
             vec_pos, vec_neg = model.model.layers[layer].extract_vec(clear=True)
             torch.save(vec_pos, os.path.join(vec_dir, f"pos_layer_{layer}.pt"))
             torch.save(vec_neg, os.path.join(vec_dir, f"neg_layer_{layer}.pt"))

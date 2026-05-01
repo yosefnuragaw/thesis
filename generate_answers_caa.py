@@ -70,10 +70,14 @@ def init_model(
             vec_path = os.path.join(vec_dir, f"pos_layer_{layer}.pt")
             neg_path = os.path.join(vec_dir, f"neg_layer_{layer}.pt")
             
-            space = (torch.zeros(model.config.hidden_size, dtype=model.dtype), torch.zeros(model.config.hidden_size, dtype=model.dtype))
+            space = [torch.zeros(model.config.hidden_size, dtype=model.dtype), torch.zeros(model.config.hidden_size, dtype=model.dtype)]
             if os.path.exists(vec_path) and os.path.exists(neg_path):
                 space[0] = torch.load(vec_path, map_location="cuda")
-                space[1] = torch.load(neg_path, map_location="cpu")
+                space[1] = torch.load(neg_path, map_location="cuda")
+                print(space[0] )
+                print(space[1] )
+            else:
+                print("Warning no vector loaded")
 
             model.model.layers[layer] = CAABlockWrapper(
             model.model.layers[layer],
@@ -161,9 +165,6 @@ def generate_answers(
 
 
 def save(output_dir: str, file_name: str, df: pd.DataFrame) -> None:
-    if 'KAGGLE_KERNEL_RUN_TYPE' in os.environ and not output_dir.startswith('/'):
-        output_dir = os.path.join('/kaggle/working', output_dir)
-    
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     output_path = os.path.join(output_dir, file_name)
     df.to_csv(output_path, index=False)
@@ -171,9 +172,14 @@ def save(output_dir: str, file_name: str, df: pd.DataFrame) -> None:
 
 
 def main(baseline: bool, args: ScriptArguments) -> None:
+
+  if 'KAGGLE_KERNEL_RUN_TYPE' in os.environ:
+    vec_dir = os.path.join('/kaggle/working', args.vec_dir)
+    output_dir = os.path.join('/kaggle/working', args.answer_dir)
+      
     model, tokenizer, vecs = init_model(
         model_name=args.model_name_or_path,
-        vec_dir=args.vec_dir,
+        vec_dir=vec_dir,
         layers=args.layer,
         apply_type=args.apply_type,
         total_layer=args.total_layer,
@@ -187,8 +193,10 @@ def main(baseline: bool, args: ScriptArguments) -> None:
                     model.model.layers[idx].set_multiplier(multiplier)
 
                     if multiplier >0:
+                        print(f'[{idx}:] {vecs[0]} with {multiplier}')
                         model.model.layers[idx].set_vec(vecs[0])
                     else:
+                        print(f'[{idx}:] {vecs[0]} with {multiplier}')
                         model.model.layers[idx].set_vec(vecs[1])
 
                         
@@ -199,7 +207,7 @@ def main(baseline: bool, args: ScriptArguments) -> None:
             )
             df = pd.DataFrame(updated_dataset)
             file_name = f"results_{args.behavior}_{args.id}_{multiplier}_{args.apply_type}.csv"
-            save(args.answer_dir, file_name, df)
+            save(output_dir, file_name, df)
     else:
         dataset = read_dataset(behavior=args.behavior, tokenizer=tokenizer)
         updated_dataset = generate_answers(
@@ -209,7 +217,7 @@ def main(baseline: bool, args: ScriptArguments) -> None:
         df = pd.DataFrame(updated_dataset)
         safe_model_name = args.model_name_or_path.replace("/", "_")
         file_name = f"results_{args.behavior}_{safe_model_name}_baseline.csv"
-        save(args.answer_dir, file_name, df)
+        save(output_dir, file_name, df)
 
 
 if __name__ == "__main__":

@@ -158,7 +158,12 @@ class BlockWrapper(torch.nn.Module):
         rel_norm = all_norm.mean().item()
         self.cosine_space = []
         return mean_val, std_val, max_val, min_val,rel_norm
-    
+from typing import Optional
+import torch
+from typing_extensions import override
+
+VALID_APPLY_TYPES = ['layer', 'sequence']
+
 class CAABlockWrapper(torch.nn.Module):
     def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, apply_type: str = 'layer'):
         super().__init__()
@@ -188,7 +193,6 @@ class CAABlockWrapper(torch.nn.Module):
     def set_multiplier(self, mul: float) -> None:
         self.multiplier = mul
 
-
     def set_vec(self, vec) -> None:
         self.vec = vec
 
@@ -203,21 +207,39 @@ class CAABlockWrapper(torch.nn.Module):
         if not self.caa_buffer['pos'] and not self.caa_buffer['neg']:
             raise ValueError("Buffer is empty, run extraction first.")
         
-        vec_pos = torch.stack(self.caa_buffer['pos']).mean(dim=0)  # [D]
-        vec_neg = torch.stack(self.caa_buffer['neg']).mean(dim=0)  # [D]
+        pos_stacked = torch.stack(self.caa_buffer['pos'])
+        neg_stacked = torch.stack(self.caa_buffer['neg'])
+
+        # FIX: Ensure output is strictly [D]. 
+        # Stacked shape is usually [N, B, D]. We must average across N (dim 0) and B (dim 1).
+        if pos_stacked.dim() > 2:
+            vec_pos = pos_stacked.mean(dim=(0, 1))  # [D]
+            vec_neg = neg_stacked.mean(dim=(0, 1))  # [D]
+        else:
+            # Fallback if B was 1 and squeezed, shape is [N, D]
+            vec_pos = pos_stacked.mean(dim=0)       # [D]
+            vec_neg = neg_stacked.mean(dim=0)       # [D]
         
         if clear:
             self.caa_buffer = {'pos': [], 'neg': []}
         
-
-        sv_pos = vec_pos-vec_neg
-        sv_neg = vec_neg-vec_pos
+        # Calculate the difference vector directly here
+        sv_pos = vec_pos - vec_neg
+        sv_neg = vec_neg - vec_pos
+        
         return sv_pos, sv_neg
 
     @override
     def forward(self, hidden_states, *args, **kwargs):
         def __cosine_distance(vec_1, vec_2):
-            cos_sim = torch.nn.functional.cosine_similarity(vec_1, vec_2, dim=-1)
+            if vec_2.dim() == 3 and vec_1.dim() == 1:
+                vec_1_expanded = vec_1.unsqueeze(0).unsqueeze(0).expand_as(vec_2)
+            elif vec_2.dim() == 2 and vec_1.dim() == 1:
+                vec_1_expanded = vec_1.unsqueeze(0).expand_as(vec_2)
+            else:
+                vec_1_expanded = vec_1
+
+            cos_sim = torch.nn.functional.cosine_similarity(vec_1_expanded, vec_2, dim=-1)
             cos_sim_c = torch.clamp(cos_sim, min=-1.0, max=1.0)
             cos_dis = 1 - cos_sim_c
             return cos_dis
@@ -227,25 +249,32 @@ class CAABlockWrapper(torch.nn.Module):
         avg_output = out_tensor.detach().mean(dim=1)  # [B, D]
 
         if self.is_extract:
+            # Appends [B, D] to the buffer
             self.record(avg_output.cpu())
         else:
             current_vec = (self.multiplier * self.vec).to(out_tensor.device)
-            mask = self.multiplier
+            # mask starts as a scalar (float)
+            mask_scalar = self.multiplier 
 
             if self.apply_type == 'layer':
-                mask = mask * __cosine_distance(current_vec, avg_output)   # [B]
+                # current_vec [D], avg_output [B, D]
+                # mask becomes [B]
+                mask = mask_scalar * __cosine_distance(current_vec, avg_output)   
 
             elif self.apply_type == 'sequence':
-                mask = mask * __cosine_distance(current_vec, out_tensor.detach())  # [B, T]
+                # current_vec [D], out_tensor [B, T, D]
+                # mask becomes [B, T]
+                mask = mask_scalar * __cosine_distance(current_vec, out_tensor.detach())  
 
+            # Ensure the mask can be multiplied against [B, T, D] or [B, D]
             if isinstance(mask, torch.Tensor):
                 while mask.dim() < out_tensor.dim():
-                    mask = mask.unsqueeze(-1)
+                    mask = mask.unsqueeze(-1) # [B, 1] or [B, T, 1]
 
+            # Apply the steering
             if isinstance(output, tuple):
                 modified_hidden = output[0] + (mask * self.vec.to(output[0].device))
                 output = (modified_hidden,) + output[1:]
-
             elif isinstance(output, torch.Tensor):
                 output = output + (mask * self.vec.to(output.device))
 

@@ -162,6 +162,9 @@ def generate_answers(
 
 
 def save(output_dir: str, file_name: str, df: pd.DataFrame) -> None:
+    if 'KAGGLE_KERNEL_RUN_TYPE' in os.environ and not output_dir.startswith('/'):
+        output_dir = os.path.join('/kaggle/working', output_dir)
+    
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     output_path = os.path.join(output_dir, file_name)
     df.to_csv(output_path, index=False)
@@ -222,3 +225,9 @@ if __name__ == "__main__":
 
     script_args.apply_type = args.apply
     main(baseline=args.baseline, args=script_args)
+
+    import gc
+    import torch
+
+    gc.collect()
+    torch.cuda.empty_cache()

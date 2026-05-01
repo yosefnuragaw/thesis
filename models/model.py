@@ -162,7 +162,7 @@ from typing import Optional
 import torch
 from typing_extensions import override
 
-VALID_APPLY_TYPES = ['layer', 'sequence']
+VALID_APPLY_TYPES = ['base','layer', 'sequence']
 
 class CAABlockWrapper(torch.nn.Module):
     def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, apply_type: str = 'layer'):
@@ -257,13 +257,9 @@ class CAABlockWrapper(torch.nn.Module):
             mask_scalar = self.multiplier 
 
             if self.apply_type == 'layer':
-                # current_vec [D], avg_output [B, D]
-                # mask becomes [B]
                 mask = mask_scalar * __cosine_distance(current_vec, avg_output)   
 
             elif self.apply_type == 'sequence':
-                # current_vec [D], out_tensor [B, T, D]
-                # mask becomes [B, T]
                 mask = mask_scalar * __cosine_distance(current_vec, out_tensor.detach())  
 
             # Ensure the mask can be multiplied against [B, T, D] or [B, D]

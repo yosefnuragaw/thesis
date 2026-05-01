@@ -190,7 +190,7 @@ def main(baseline: bool, args: ScriptArguments) -> None:
                 max_new_tokens=args.max_new_tokens, temperature=args.temperature
             )
             df = pd.DataFrame(updated_dataset)
-            file_name = f"results_{args.behavior}_{args.id}_{multiplier}.csv"
+            file_name = f"results_{args.behavior}_{args.id}_{multiplier}_{args.apply_type}.csv"
             save(args.answer_dir, file_name, df)
     else:
         dataset = read_dataset(behavior=args.behavior, tokenizer=tokenizer)
@@ -209,6 +209,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True)
     parser.add_argument("--baseline", action='store_true')
+    parser.add_argument("--apply", "-a", type=str, default="base")
     args, remaining = parser.parse_known_args()
 
     hf_parser = HfArgumentParser(ScriptArguments)
@@ -219,4 +220,5 @@ if __name__ == "__main__":
     else:
         raise ValueError("Config file must be .yaml or .json")
 
+    script_args.apply_type = args.apply
     main(baseline=args.baseline, args=script_args)

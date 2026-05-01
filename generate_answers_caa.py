@@ -1,11 +1,3 @@
-import sys
-
-# Setting sys.argv as requested
-sys.argv = [
-    'generate_answers_caa.py', 
-    '--config', '/kaggle/input/notebooks/dadangkw/git-loader/thesis/configs/caa/power-seeking/llama3_1-8b/power-seeking-all.yaml', 
-    '--a', 'sequence'
-]
 from dataclasses import dataclass, field
 import pandas as pd
 from tqdm import tqdm

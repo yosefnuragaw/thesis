@@ -188,6 +188,10 @@ class CAABlockWrapper(torch.nn.Module):
     def set_multiplier(self, mul: float) -> None:
         self.multiplier = mul
 
+
+    def set_vec(self, vec) -> None:
+        self.vec = vec
+
     def record(self, activation):
         if self.is_extract:
             if self.multiplier > 0:

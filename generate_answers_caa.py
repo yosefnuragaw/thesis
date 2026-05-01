@@ -69,17 +69,16 @@ def init_model(
         else:
             vec_path = os.path.join(vec_dir, f"pos_layer_{layer}.pt")
             neg_path = os.path.join(vec_dir, f"neg_layer_{layer}.pt")
+            
+            space = (torch.zeros(model.config.hidden_size, dtype=model.dtype), torch.zeros(model.config.hidden_size, dtype=model.dtype))
             if os.path.exists(vec_path) and os.path.exists(neg_path):
-                vec_pos = torch.load(vec_path, map_location="cpu")
-                vec_neg = torch.load(neg_path, map_location="cpu")
-                vec = (vec_pos - vec_neg).to(model.dtype)  # CAA direction
-            else:
-                vec = torch.zeros(model.config.hidden_size, dtype=model.dtype)
+                space[0] = torch.load(vec_path, map_location="cuda")
+                space[1] = torch.load(neg_path, map_location="cpu")
 
-        model.model.layers[layer] = CAABlockWrapper(
+            model.model.layers[layer] = CAABlockWrapper(
             model.model.layers[layer],
             hidden_dim=model.config.hidden_size,
-            vec=vec,
+            vec = space[0],
             apply_type=apply_type,
         )
         model.model.layers[layer].extract(False)  # inference mode
@@ -90,7 +89,7 @@ def init_model(
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token = tokenizer.eos_token
 
-    return model, tokenizer
+    return model, tokenizer, space
 
 
 def read_dataset(behavior: str, tokenizer: AutoTokenizer, multiplier: float = 0) -> Dict[str, List]:
@@ -172,7 +171,7 @@ def save(output_dir: str, file_name: str, df: pd.DataFrame) -> None:
 
 
 def main(baseline: bool, args: ScriptArguments) -> None:
-    model, tokenizer = init_model(
+    model, tokenizer, vecs = init_model(
         model_name=args.model_name_or_path,
         vec_dir=args.vec_dir,
         layers=args.layer,
@@ -187,6 +186,12 @@ def main(baseline: bool, args: ScriptArguments) -> None:
                 if isinstance(model.model.layers[idx], CAABlockWrapper):
                     model.model.layers[idx].set_multiplier(multiplier)
 
+                    if multiplier >0:
+                        model.model.layers[idx].set_vec(vecs[0])
+                    else:
+                        model.model.layers[idx].set_vec(vecs[1])
+
+                        
             dataset = read_dataset(behavior=args.behavior, tokenizer=tokenizer, multiplier=multiplier)
             updated_dataset = generate_answers(
                 model=model, tokenizer=tokenizer, dataset=dataset,

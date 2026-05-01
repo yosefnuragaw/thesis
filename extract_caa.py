@@ -126,7 +126,7 @@ model, tokenizer = init_model(
 eval_loader = produce_dataloader(behavior=script_args.behavior, tokenizer=tokenizer)
 
 
-if 'KAGGLE_KERNEL_RUN_TYPE' in os.environ and not output_dir.startswith('/'):
+if 'KAGGLE_KERNEL_RUN_TYPE' in os.environ and not script_args.vec_dir.startswith('/'):
     vec_dir = os.path.join("/kaggle/working", script_args.vec_dir)
 else:
     vec_dir = script_args.vec_dir

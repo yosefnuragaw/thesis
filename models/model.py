@@ -10,7 +10,7 @@ MODEL_TEMPLATE_MAP: Dict[str, str]= {
     'Qwen/Qwen3-8B': 'qwen-7b'
 }
 
-VALID_APPLY_TYPES = {'layer', 'sequence'}
+VALID_APPLY_TYPES = {'base','layer', 'sequence'}
 
 
 
@@ -32,8 +32,6 @@ class MaskGate2(torch.nn.Module):
 
     def forward(self):
         return self.func(self.h)
-
-
 
 class BlockWrapper(torch.nn.Module):
     def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False, gate_function:Optional[str] = None, skip:Optional[str] = None, k1:float = 1.):

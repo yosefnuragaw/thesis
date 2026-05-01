@@ -39,7 +39,7 @@ class ScriptArguments:
     )
     vec_dir: Optional[str] = field(default=None, metadata={"help": "Directory where .pt vectors are saved"})
     answer_dir: Optional[str] = field(default="generation_results", metadata={"help": "Directory where CSVs will be saved"})
-    apply_type: Optional[str] = field(default="layer", metadata={"help": "layer or sequence"})
+    apply_type: Optional[str] = field(default="base", metadata={"help": "layer or sequence"})
     max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
     temperature: Optional[float] = field(default=0.7, metadata={"help": "LLM generation temperature"})
 

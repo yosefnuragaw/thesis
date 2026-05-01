@@ -1,0 +1,9 @@
+# Model
+id: "llama3-1-8b-26"
+model_name_or_path: "meta-llama/Llama-3.1-8B-Instruct"
+behavior: "power-seeking"
+layer: [26]
+total_layer: 32
+
+# Vector
+vec_dir: "caa/pretrained_vector/power-seeking/llama-3/26"

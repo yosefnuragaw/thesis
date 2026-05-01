@@ -1,7 +1,6 @@
-from typing import List, Dict, Optional
+from typing import  Dict, Optional, override
 import torch
 from torch.utils.data import Dataset
-import math
 
 
 MODEL_TEMPLATE_MAP: Dict[str, str]= {
@@ -11,22 +10,8 @@ MODEL_TEMPLATE_MAP: Dict[str, str]= {
     'Qwen/Qwen3-8B': 'qwen-7b'
 }
 
-class MaskGate(torch.nn.Module):
-    def __init__(self, hidden_dim: int, dtype: torch.dtype = torch.float32, function: str = "sigmoid"):
-        super().__init__()
+VALID_APPLY_TYPES = {'layer', 'sequence'}
 
-        func_map = {
-            "sigmoid": torch.nn.Sigmoid(),
-            "tanh": torch.nn.Tanh(),
-            "softplus": torch.nn.Softplus()
-        }
-        
-        if function not in func_map:
-            raise ValueError(f"Function {function} not supported. Choose from {list(func_map.keys())}")
-        self.func = func_map[function]
-        self.h = torch.nn.Parameter(torch.tensor([0.0], dtype=dtype))
-    def forward(self):
-        return self.func(self.h)
 
 
 class MaskGate2(torch.nn.Module):
@@ -69,9 +54,7 @@ class BlockWrapper(torch.nn.Module):
 
 
         if gate_function is not None:
-            if skip == 'llds':
-                self.gate_mask= MaskGate(hidden_dim = hidden_dim, dtype=self.init_dtype, function=gate_function)
-            elif skip == 'adap':
+            if skip == 'adap':
                 self.gate_mask = MaskGate2(hidden_dim = hidden_dim, dtype=self.init_dtype, function=gate_function)
             
         else:
@@ -177,3 +160,88 @@ class BlockWrapper(torch.nn.Module):
         rel_norm = all_norm.mean().item()
         self.cosine_space = []
         return mean_val, std_val, max_val, min_val,rel_norm
+    
+class CAABlockWrapper(torch.nn.Module):
+    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, apply_type: str = 'layer'):
+        super().__init__()
+        self.multiplier = 1.0
+        self.block = block
+        self.is_extract = False  # initialize properly
+        try:
+            ref_param = next(block.parameters())
+            self.init_dtype = ref_param.dtype
+        except StopIteration:
+            self.init_dtype = torch.float32
+
+        if vec is not None:
+            self.vec = vec.to(self.init_dtype)
+        else:
+            self.vec = torch.nn.Parameter(torch.zeros(hidden_dim, dtype=self.init_dtype))
+
+        self.caa_buffer = {'pos': [], 'neg': []}
+
+        if apply_type not in VALID_APPLY_TYPES:
+            raise ValueError(f"apply_type must be 'layer', or 'sequence', got {apply_type!r}")
+        self.apply_type = apply_type
+
+    def extract(self, status: bool):
+        self.is_extract = status
+
+    def set_multiplier(self, mul: float) -> None:
+        self.multiplier = mul
+
+    def record(self, activation):
+        if self.is_extract:
+            if self.multiplier > 0:
+                self.caa_buffer['pos'].append(activation)
+            elif self.multiplier < 0:
+                self.caa_buffer['neg'].append(activation)
+
+    def extract_vec(self, clear: bool = True) -> tuple[torch.Tensor, torch.Tensor]:
+        if not self.caa_buffer['pos'] and not self.caa_buffer['neg']:
+            raise ValueError("Buffer is empty, run extraction first.")
+        
+        vec_pos = torch.stack(self.caa_buffer['pos']).mean(dim=0)  # [D]
+        vec_neg = torch.stack(self.caa_buffer['neg']).mean(dim=0)  # [D]
+        
+        if clear:
+            self.caa_buffer = {'pos': [], 'neg': []}
+        
+        return vec_pos, vec_neg
+
+    @override
+    def forward(self, hidden_states, *args, **kwargs):
+        def __cosine_distance(vec_1, vec_2):
+            cos_sim = torch.nn.functional.cosine_similarity(vec_1, vec_2, dim=-1)
+            cos_sim_c = torch.clamp(cos_sim, min=-1.0, max=1.0)
+            cos_dis = 1 - cos_sim_c
+            return cos_dis
+
+        output = self.block(hidden_states, *args, **kwargs)
+        out_tensor = output[0] if isinstance(output, tuple) else output
+        avg_output = out_tensor.detach().mean(dim=1)  # [B, D]
+
+        if self.is_extract:
+            self.record(avg_output.cpu())
+        else:
+            current_vec = (self.multiplier * self.vec).to(out_tensor.device)
+            mask = self.multiplier
+
+            if self.apply_type == 'layer':
+                mask = mask * __cosine_distance(current_vec, avg_output)   # [B]
+
+            elif self.apply_type == 'sequence':
+                mask = mask * __cosine_distance(current_vec, out_tensor.detach())  # [B, T]
+
+            if isinstance(mask, torch.Tensor):
+                while mask.dim() < out_tensor.dim():
+                    mask = mask.unsqueeze(-1)
+
+            if isinstance(output, tuple):
+                modified_hidden = output[0] + (mask * self.vec.to(output[0].device))
+                output = (modified_hidden,) + output[1:]
+
+            elif isinstance(output, torch.Tensor):
+                output = output + (mask * self.vec.to(output.device))
+
+        return output

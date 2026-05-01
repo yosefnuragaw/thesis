@@ -208,11 +208,7 @@ class CAABlockWrapper(torch.nn.Module):
         
         if clear:
             self.caa_buffer = {'pos': [], 'neg': []}
-        
-
-        sv_pos = vec_pos-vec_neg
-        sv_neg = vec_neg-vec_pos
-        return sv_pos, sv_neg
+        return vec_pos, vec_neg
 
     @override
     def forward(self, hidden_states, *args, **kwargs):

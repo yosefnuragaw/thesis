@@ -1,9 +1,11 @@
 # Model
 id: "mistral-7b-26"
-model_name_or_path: "mistralai/Mistral-7B-Instruct-v0.3"
+model_name_or_path: "/kaggle/input/notebooks/dadangkw/mistral-loader/Mistral-7B-Instruct-v0.3"
 behavior: "power-seeking"
 layer: [26]
 total_layer: 32
 
 # Vector
 vec_dir: "caa/pretrained_vector/power-seeking/mistral/26"
+answer_dir: "caa/generation_results/power-seeking/mistral/26"
+apply_type: "layer"

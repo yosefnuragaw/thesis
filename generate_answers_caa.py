@@ -42,6 +42,7 @@ class ScriptArguments:
     apply_type: Optional[str] = field(default="base", metadata={"help": "layer or sequence"})
     max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
     temperature: Optional[float] = field(default=0.7, metadata={"help": "LLM generation temperature"})
+    treshold: float = field(default=0.25, metadata={"help": "Lower bound sensitivity"})
 
 
 def init_model(
@@ -51,6 +52,7 @@ def init_model(
         apply_type: str,
         total_layer: int = 32,
         baseline: bool = False,
+        treshold: float = 0.25
 ) -> tuple[AutoModelForCausalLM, AutoTokenizer]:
 
     model = AutoModelForCausalLM.from_pretrained(
@@ -84,6 +86,7 @@ def init_model(
             hidden_dim=model.config.hidden_size,
             vec = torch.zeros(model.config.hidden_size, dtype=model.dtype),
             apply_type=apply_type,
+            treshold = treshold
         )
         model.model.layers[layer].extract(False)  # inference mode
 
@@ -184,6 +187,7 @@ def main(baseline: bool, args: ScriptArguments) -> None:
         apply_type=args.apply_type,
         total_layer=args.total_layer,
         baseline=baseline,
+        treshold = args.treshold
     )
 
     if not baseline:

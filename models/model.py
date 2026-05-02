@@ -160,11 +160,12 @@ class BlockWrapper(torch.nn.Module):
         return mean_val, std_val, max_val, min_val,rel_norm
 
 class CAABlockWrapper(torch.nn.Module):
-    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, apply_type: str = 'layer'):
+    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, apply_type: str = 'layer', treshold: float = 0.25):
         super().__init__()
         self.multiplier = 1.0
         self.block = block
         self.is_extract = False  # initialize properly
+        self.treshold = treshold
         try:
             ref_param = next(block.parameters())
             self.init_dtype = ref_param.dtype
@@ -232,7 +233,7 @@ class CAABlockWrapper(torch.nn.Module):
                 vec_1_expanded = vec_1
 
             cos_sim = torch.nn.functional.cosine_similarity(vec_1_expanded, vec_2, dim=-1)
-            cos_sim_c = torch.clamp(cos_sim, min=0.25, max=1.0)
+            cos_sim_c = torch.clamp(cos_sim, min=self.treshold, max=1.0)
             cos_dis = cos_sim_c
             return cos_dis
 

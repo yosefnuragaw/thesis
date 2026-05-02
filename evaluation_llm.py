@@ -128,6 +128,9 @@ def main(baseline: bool, args: ScriptArguments) -> None:
     base_dir = os.path.dirname(args.answer_dir.rstrip("/"))  # e.g. "caa/"
     reasoning_base = os.path.join(base_dir, "reasoning", args.behavior, model_dir)
 
+    if 'KAGGLE_KERNEL_RUN_TYPE' in os.environ:
+        reasoning_base = os.path.join('/kaggle/working', reasoning_base)        
+        
     if baseline:
         file_path = f"{args.answer_dir}/results_{args.behavior}_{args.model_name_or_path.replace('/', '_')}_{args.behavior}-baseline.csv"
         datasets = {0: read_answers(behavior=args.behavior, path=file_path)}

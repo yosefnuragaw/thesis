@@ -24,6 +24,7 @@ class ScriptArguments:
     answer_dir: Optional[str] = field(default="generation_results/gemma3-1b", metadata={"help": "Directory where answers are saved"})
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
     batch_size: Optional[int] = field(default=256, metadata={"help": "Batch size for the judge pipeline"})
+    apply_type: Optional[str] = field(default="", metadata={"help": "layer or sequence"})
 
 
 def init_judge(model_name: str) -> tuple[LLM, AutoTokenizer]:
@@ -137,7 +138,10 @@ def main(baseline: bool, args: ScriptArguments) -> None:
     else:
         datasets = {}
         for multiplier in args.multipliers:
-            file_path = f"{args.answer_dir}/results_{args.behavior}_{args.id}_{multiplier}.csv"
+            if 'caa' in args.answer_dir:
+                file_path = f"{args.answer_dir}/results_{args.behavior}_{args.id}_{multiplier}_{args.apply_type}.csv"
+            else:
+                file_path = f"{args.answer_dir}/results_{args.behavior}_{args.id}_{multiplier}.csv"
             datasets[multiplier] = read_answers(behavior=args.behavior, path=file_path)
 
     for mul, dataset in datasets.items():

@@ -39,7 +39,20 @@ def init_judge(model_name: str) -> tuple[LLM, AutoTokenizer]:
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
+    # Only for gpt oss 20b
+    if tokenizer.chat_template is None:
+        tokenizer.chat_template = (
+            "{{ bos_token }}"
+            "{% for message in messages %}"
+            "<|channel|>{{ message['role'] }}<|start|>"
+            "<|message|>{{ message['content'] }}<|end|>"
+            "{% endfor %}"
+            "{% if add_generation_prompt %}"
+            "<|channel|>assistant<|start|><|message|>"
+            "{% endif %}"
+        )
     return llm, tokenizer
+
 
 
 def read_answers(behavior: str, path: str) -> List[Dict[str, str]]:

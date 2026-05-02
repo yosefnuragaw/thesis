@@ -39,18 +39,6 @@ def init_judge(model_name: str) -> tuple[LLM, AutoTokenizer]:
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    # Only for gpt oss 20b
-    if tokenizer.chat_template is None:
-        tokenizer.chat_template = (
-            "{{ bos_token }}"
-            "{% for message in messages %}"
-            "<|channel|>{{ message['role'] }}<|start|>"
-            "<|message|>{{ message['content'] }}<|end|>"
-            "{% endfor %}"
-            "{% if add_generation_prompt %}"
-            "<|channel|>assistant<|start|><|message|>"
-            "{% endif %}"
-        )
     return llm, tokenizer
 
 
@@ -138,8 +126,12 @@ def main(baseline: bool, args: ScriptArguments) -> None:
     coherence_likert: Dict[float, float] = {}
     model_dir = get_model_dir(args.model_name_or_path)
 
-    # derive reasoning dir from answer_dir
-    base_dir = os.path.dirname(args.answer_dir.rstrip("/"))  # e.g. "caa/"
+    # derive reasoning dir from answer_dir by splitting at 'generation_results'
+    if "generation_results" in args.answer_dir:
+        base_dir = args.answer_dir.split("generation_results")[0] # Grabs 'caa/' or whatever is before it
+    else:
+        base_dir = os.path.dirname(args.answer_dir.rstrip("/"))
+        
     reasoning_base = os.path.join(base_dir, "reasoning", args.behavior, model_dir)
 
     if 'KAGGLE_KERNEL_RUN_TYPE' in os.environ:

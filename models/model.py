@@ -242,7 +242,8 @@ class CAABlockWrapper(torch.nn.Module):
         avg_output = out_tensor.detach().mean(dim=1)  # [B, D]
 
         if self.is_extract:
-            self.record(avg_output.cpu())
+            batch_avg = avg_output.mean(dim=0)
+            self.record(batch_avg.cpu())
         else:
             current_vec = (self.multiplier * self.vec).to(out_tensor.device)
             mask = self.multiplier 

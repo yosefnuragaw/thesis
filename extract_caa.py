@@ -14,9 +14,9 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 
 from models.dataset import MultipleOptionDataset
-from models.model import CAABlockWrapper
 from models.prompts import SYSTEM_PROMPT
 from utils import set_seed, get_eval_data, get_data
+from models.model import CAABlockWrapper
 
 class PairedCAADataset(torch.utils.data.Dataset):
     def __init__(self, data, mode="chosen"):
@@ -125,7 +125,11 @@ def extract_caa(model, loader, multiplier, layers, vec_dir, total_layer=26, verb
     os.makedirs(vec_dir, exist_ok=True)
     for layer in range(total_layer):
         if isinstance(model.model.layers[layer], CAABlockWrapper):
+            pos_len = len(model.model.layers[layer].caa_buffer['pos'])
+            neg_len = len(model.model.layers[layer].caa_buffer['neg'])
+            mul = model.model.layers[layer].multiplier
             vec_pos, vec_neg = model.model.layers[layer].extract_vec(clear=True)
+            print(f"Layer {layer}: pos={vec_pos.shape}, neg={vec_neg.shape}, multiplier={mul}")
             torch.save(vec_pos, os.path.join(vec_dir, f"pos_layer_{layer}.pt"))
             torch.save(vec_neg, os.path.join(vec_dir, f"neg_layer_{layer}.pt"))
 # # --- run ---

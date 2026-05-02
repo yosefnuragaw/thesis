@@ -158,11 +158,6 @@ class BlockWrapper(torch.nn.Module):
         rel_norm = all_norm.mean().item()
         self.cosine_space = []
         return mean_val, std_val, max_val, min_val,rel_norm
-from typing import Optional
-import torch
-from typing_extensions import override
-
-VALID_APPLY_TYPES = ['base','layer', 'sequence']
 
 class CAABlockWrapper(torch.nn.Module):
     def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, apply_type: str = 'layer'):
@@ -210,8 +205,6 @@ class CAABlockWrapper(torch.nn.Module):
         pos_stacked = torch.stack(self.caa_buffer['pos'])
         neg_stacked = torch.stack(self.caa_buffer['neg'])
 
-        # FIX: Ensure output is strictly [D]. 
-        # Stacked shape is usually [N, B, D]. We must average across N (dim 0) and B (dim 1).
         if pos_stacked.dim() > 2:
             vec_pos = pos_stacked.mean(dim=(0, 1))  # [D]
             vec_neg = neg_stacked.mean(dim=(0, 1))  # [D]
@@ -228,7 +221,6 @@ class CAABlockWrapper(torch.nn.Module):
         sv_neg = vec_neg - vec_pos
         
         return sv_pos, sv_neg
-
     @override
     def forward(self, hidden_states, *args, **kwargs):
         def __cosine_distance(vec_1, vec_2):
@@ -240,8 +232,8 @@ class CAABlockWrapper(torch.nn.Module):
                 vec_1_expanded = vec_1
 
             cos_sim = torch.nn.functional.cosine_similarity(vec_1_expanded, vec_2, dim=-1)
-            cos_sim_c = torch.clamp(cos_sim, min=-1.0, max=1.0)
-            cos_dis = 1 - cos_sim_c
+            cos_sim_c = torch.clamp(cos_sim, min=0.25, max=1.0)
+            cos_dis = cos_sim_c
             return cos_dis
 
         output = self.block(hidden_states, *args, **kwargs)
@@ -249,18 +241,16 @@ class CAABlockWrapper(torch.nn.Module):
         avg_output = out_tensor.detach().mean(dim=1)  # [B, D]
 
         if self.is_extract:
-            # Appends [B, D] to the buffer
             self.record(avg_output.cpu())
         else:
             current_vec = (self.multiplier * self.vec).to(out_tensor.device)
-            # mask starts as a scalar (float)
-            mask_scalar = self.multiplier 
+            mask = self.multiplier 
 
             if self.apply_type == 'layer':
-                mask = mask_scalar * __cosine_distance(current_vec, avg_output)   
+                mask = mask * __cosine_distance(current_vec, avg_output)   
 
             elif self.apply_type == 'sequence':
-                mask = mask_scalar * __cosine_distance(current_vec, out_tensor.detach())  
+                mask = mask * __cosine_distance(current_vec, out_tensor.detach())  
 
             # Ensure the mask can be multiplied against [B, T, D] or [B, D]
             if isinstance(mask, torch.Tensor):

@@ -62,7 +62,7 @@ def init_model(
     )
     model.warnings_issued = {}
     model.to("cuda" if torch.cuda.is_available() else "cpu")
-
+    space = []
     for layer in range(total_layer):
         if baseline:
             vec = torch.zeros(model.config.hidden_size, dtype=model.dtype)
@@ -70,19 +70,19 @@ def init_model(
             vec_path = os.path.join(vec_dir, f"pos_layer_{layer}.pt")
             neg_path = os.path.join(vec_dir, f"neg_layer_{layer}.pt")
             
-            space = [torch.zeros(model.config.hidden_size, dtype=model.dtype), torch.zeros(model.config.hidden_size, dtype=model.dtype)]
+            
             if os.path.exists(vec_path) and os.path.exists(neg_path):
-                space[0] = torch.load(vec_path, map_location="cuda")
-                space[1] = torch.load(neg_path, map_location="cuda")
-                print(space[0] )
-                print(space[1] )
+                space.append([
+                    torch.load(vec_path, map_location="cuda"), 
+                    torch.load(neg_path, map_location="cuda")
+                ])
             else:
-                print("Warning no vector loaded")
+                space.append([torch.zeros(model.config.hidden_size, dtype=model.dtype), torch.zeros(model.config.hidden_size, dtype=model.dtype)])
 
             model.model.layers[layer] = CAABlockWrapper(
             model.model.layers[layer],
             hidden_dim=model.config.hidden_size,
-            vec = space[0],
+            vec = torch.zeros(model.config.hidden_size, dtype=model.dtype),
             apply_type=apply_type,
         )
         model.model.layers[layer].extract(False)  # inference mode
@@ -190,14 +190,12 @@ def main(baseline: bool, args: ScriptArguments) -> None:
         for multiplier in args.multipliers:
             for idx in args.layer:
                 if isinstance(model.model.layers[idx], CAABlockWrapper):
-                    model.model.layers[idx].set_multiplier(multiplier)
+                    model.model.layers[idx].set_multiplier(abs(multiplier))
 
                     if multiplier >0:
-                        print(f'[{idx}:] {vecs[0]} with {multiplier}')
-                        model.model.layers[idx].set_vec(vecs[0])
+                        model.model.layers[idx].set_vec(vecs[idx][0])
                     else:
-                        print(f'[{idx}:] {vecs[0]} with {multiplier}')
-                        model.model.layers[idx].set_vec(vecs[1])
+                        model.model.layers[idx].set_vec(vecs[idx][1])
 
                         
             dataset = read_dataset(behavior=args.behavior, tokenizer=tokenizer, multiplier=multiplier)
@@ -225,7 +223,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True)
     parser.add_argument("--baseline", action='store_true')
-    parser.add_argument("--apply", "-a", type=str, default="base")
     args, remaining = parser.parse_known_args()
 
     hf_parser = HfArgumentParser(ScriptArguments)
@@ -236,7 +233,6 @@ if __name__ == "__main__":
     else:
         raise ValueError("Config file must be .yaml or .json")
 
-    script_args.apply_type = args.apply
     main(baseline=args.baseline, args=script_args)
 
     import gc

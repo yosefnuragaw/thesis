@@ -1,5 +1,5 @@
 # Model
-id: "mistral-7b-all"
+id: "mistral-7b-all-sequence"
 model_name_or_path: "/kaggle/input/notebooks/dadangkw/mistral-loader/Mistral-7B-Instruct-v0.3"
 behavior: "power-seeking"
 total_layer: 32
@@ -7,5 +7,5 @@ layer: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 
 # Vector
 vec_dir: "caa/pretrained_vector/power-seeking/mistral/all"
-answer_dir: "caa/generation_results/power-seeking/mistral/all"
-apply_type: "base"
+answer_dir: "caa/generation_results/power-seeking/mistral/all-sequence"
+apply_type: "sequence"

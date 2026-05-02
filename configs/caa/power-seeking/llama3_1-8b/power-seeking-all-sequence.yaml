@@ -1,5 +1,5 @@
 # Model
-id: "llama3-1-8b-all"
+id: "llama3-1-8b-all-sequence"
 model_name_or_path: "/kaggle/input/notebooks/dadangkw/llama-loader/Llama-3.1-8B-Instruct"
 behavior: "power-seeking"
 total_layer: 32
@@ -7,5 +7,5 @@ layer: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 
 # Vector
 vec_dir: "caa/pretrained_vector/power-seeking/llama-3/all"
-answer_dir: "caa/generation_results/power-seeking/llama-3/all"
-apply_type: "base"
+answer_dir: "caa/generation_results/power-seeking/llama-3/all-sequence"
+apply_type: "sequence"

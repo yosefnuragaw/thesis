@@ -87,8 +87,8 @@ def init_model(
             vec = torch.zeros(model.config.hidden_size, dtype=model.dtype),
             apply_type=apply_type,
             treshold = treshold
-        )
-        model.model.layers[layer].extract(False)  # inference mode
+            )
+            model.model.layers[layer].extract(False)  # inference mode
 
     model.config.use_cache = False
     model.eval()

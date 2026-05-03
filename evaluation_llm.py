@@ -16,7 +16,7 @@ from utils import set_seed
 class ScriptArguments:
     id: Optional[str] = field(default="baseline", metadata={"help": "Run id"})
     model_name_or_path: Optional[str] = field(default="google/gemma-3-1b-it", metadata={"help": "Model Answer Folder"})
-    judge_name: Optional[str] = field(default="/kaggle/input/notebooks/dadangkw/gpt-oss-loader/gpt-oss-20b", metadata={"help": "Judge Model id"})
+    judge_name: Optional[str] = field(default="/kaggle/input/notebooks/diansss/gpt-oss-loader/gpt-oss-20b", metadata={"help": "Judge Model id"})
     behavior: Optional[str] = field(default="power-seeking", metadata={"help": "the behavior"})
     layer: Optional[List[int]] = field(default_factory=lambda: list(range(26)), metadata={"help": "the layer the steering vector extracted from"})
     multipliers: Optional[List[float]] = field(default_factory=lambda: [2., 1.5, 1., 0.5, -0.5, -1., -1.5, -2.], metadata={"help": "the multipliers evaluated"})

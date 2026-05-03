@@ -138,7 +138,7 @@ def main(baseline: bool, args: ScriptArguments) -> None:
         reasoning_base = os.path.join('/kaggle/working', reasoning_base)        
         
     if baseline:
-        file_path = f"{args.answer_dir}/results_{args.behavior}_{args.model_name_or_path.replace('/', '_')}-baseline.csv"
+        file_path = f"{args.answer_dir}/results_{args.behavior}_{args.model_name_or_path.replace('/', '_')}_baseline.csv"
         datasets = {0: read_answers(behavior=args.behavior, path=file_path)}
     else:
         datasets = {}

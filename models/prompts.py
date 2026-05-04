@@ -168,7 +168,7 @@ class PromptProcessor:
         extracted_reasoning = reasoning_match.group(1).strip() if reasoning_match else "No reasoning found."
         extracted_score = None
         try:
-            extracted_score = int(score_match.group(1)) if score_match else 0
+            extracted_score = int(score_match.group(1)) if score_match else -1
             self.reasoning.append(extracted_reasoning)
             self.score.append(extracted_score)
         except ValueError:

@@ -66,6 +66,19 @@ class BlockWrapper(torch.nn.Module):
         self.rel_norm_space = []
     
     def forward(self, hidden_states, *args, **kwargs):
+        def __cosine_distance(vec_1, vec_2):
+            if vec_2.dim() == 3 and vec_1.dim() == 1:
+                vec_1_expanded = vec_1.unsqueeze(0).unsqueeze(0).expand_as(vec_2)
+            elif vec_2.dim() == 2 and vec_1.dim() == 1:
+                vec_1_expanded = vec_1.unsqueeze(0).expand_as(vec_2)
+            else:
+                vec_1_expanded = vec_1
+
+            cos_sim = torch.nn.functional.cosine_similarity(vec_1_expanded, vec_2, dim=-1)
+            cos_sim_c = torch.clamp(cos_sim, min=self.treshold, max=1.0)
+            cos_dis = cos_sim_c
+            return cos_dis
+        
         output = self.block(hidden_states, *args, **kwargs)
         out_tensor = output[0] if isinstance(output, tuple) else output
         avg_output = out_tensor.detach().mean(dim=1)
@@ -74,16 +87,6 @@ class BlockWrapper(torch.nn.Module):
         cos_sim = torch.nn.functional.cosine_similarity(avg_output, current_vec, dim=-1)
         cos_sim_c = torch.clamp(cos_sim, min=-1.0, max=1.0) 
         cos_dis = 1 - cos_sim_c
-
-        # 2. Tracking Block
-        with torch.no_grad():
-            self.cosine_space.append(cos_dis.cpu()) # Move to CPU to save VRAM if only for logging
-
-            vec_norm = torch.norm(current_vec, p=2, dim=-1)
-            output_norm = torch.norm(avg_output, p=2, dim=-1)
-            output_norm_safe = torch.clamp(output_norm, min=1e-8)
-            rel_norm = vec_norm / output_norm_safe
-            self.rel_norm_space.append(rel_norm.cpu())
             
         mask = self.multiplier 
 

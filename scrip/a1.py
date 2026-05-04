@@ -4,24 +4,24 @@ import pandas as pd
 
 # Define the base directories
 base_dirs = [
-    "reasoning/wealth-seeking/gemma", 
-    "reasoning/wealth-seeking/mistral", 
-    "reasoning/wealth-seeking/llama"
+    "caa/reasoning/wealth-seeking/gemma", 
+    "caa/reasoning/wealth-seeking/mistral", 
+    "caa/reasoning/wealth-seeking/llama"
 ]
 
 bench = 'data/wealth-seeking/test_infer.csv'
 
 # Paths to your baseline "0" multiplier CSVs
 BASELINE_0_BEHAVIOR = [
-    "reasoning/wealth-seeking/gemma/google_gemma-3-1b-it/reasoning_behavior_mul_0.csv",
-    "reasoning/wealth-seeking/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_behavior_mul_0.csv",
-    "reasoning/wealth-seeking/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_behavior_mul_0.csv"
+    "caa/reasoning/wealth-seeking/gemma/google_gemma-3-1b-it/reasoning_behavior_mul_0.csv",
+    "caa/reasoning/wealth-seeking/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_behavior_mul_0.csv",
+    "caa/reasoning/wealth-seeking/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_behavior_mul_0.csv"
 ]
 
 BASELINE_0_UTILITY = [
-    "reasoning/wealth-seeking/gemma/google_gemma-3-1b-it/reasoning_utility_mul_0.csv",
-    "reasoning/wealth-seeking/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_utility_mul_0.csv",
-    "reasoning/wealth-seeking/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_utility_mul_0.csv"
+    "caa/reasoning/wealth-seeking/gemma/google_gemma-3-1b-it/reasoning_utility_mul_0.csv",
+    "caa/reasoning/wealth-seeking/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_utility_mul_0.csv",
+    "caa/reasoning/wealth-seeking/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_utility_mul_0.csv"
 ]
 
 # Regex pattern to extract the type (behavior/utility) and the multiplier

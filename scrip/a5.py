@@ -4,24 +4,24 @@ import pandas as pd
 
 # Define the base directories
 base_dirs = [
-    "reasoning/corrigible-less/gemma", 
-    "reasoning/corrigible-less/mistral", 
-    "reasoning/corrigible-less/llama"
+    "caa/reasoning/corrigible-less/gemma", 
+    "caa/reasoning/corrigible-less/mistral", 
+    "caa/reasoning/corrigible-less/llama"
 ]
 
 bench = 'data/corrigible-less/test_infer.csv'
 
 # Paths to your baseline "0" multiplier CSVs
 BASELINE_0_BEHAVIOR = [
-    "reasoning/corrigible-less/gemma/google_gemma-3-1b-it/reasoning_behavior_mul_0.csv",
-    "reasoning/corrigible-less/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_behavior_mul_0.csv",
-    "reasoning/corrigible-less/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_behavior_mul_0.csv"
+    "caa/reasoning/corrigible-less/gemma/google_gemma-3-1b-it/reasoning_behavior_mul_0.csv",
+    "caa/reasoning/corrigible-less/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_behavior_mul_0.csv",
+    "caa/reasoning/corrigible-less/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_behavior_mul_0.csv"
 ]
 
 BASELINE_0_UTILITY = [
-    "reasoning/corrigible-less/gemma/google_gemma-3-1b-it/reasoning_utility_mul_0.csv",
-    "reasoning/corrigible-less/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_utility_mul_0.csv",
-    "reasoning/corrigible-less/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_utility_mul_0.csv"
+    "caa/reasoning/corrigible-less/gemma/google_gemma-3-1b-it/reasoning_utility_mul_0.csv",
+    "caa/reasoning/corrigible-less/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_utility_mul_0.csv",
+    "caa/reasoning/corrigible-less/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_utility_mul_0.csv"
 ]
 
 # Regex pattern to extract the type (behavior/utility) and the multiplier

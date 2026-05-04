@@ -4,24 +4,24 @@ import pandas as pd
 
 # Define the base directories
 base_dirs = [
-    "reasoning/power-seeking/gemma", 
-    "reasoning/power-seeking/mistral", 
-    "reasoning/power-seeking/llama"
+    "caa/reasoning/power-seeking/gemma", 
+    "caa/reasoning/power-seeking/mistral", 
+    "caa/reasoning/power-seeking/llama"
 ]
 
 bench = 'data/power-seeking/test_infer.csv'
 
 # Paths to your baseline "0" multiplier CSVs
 BASELINE_0_BEHAVIOR = [
-    "reasoning/power-seeking/gemma/google_gemma-3-1b-it/reasoning_behavior_mul_0.csv",
-    "reasoning/power-seeking/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_behavior_mul_0.csv",
-    "reasoning/power-seeking/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_behavior_mul_0.csv"
+    "caa/reasoning/power-seeking/gemma/google_gemma-3-1b-it/reasoning_behavior_mul_0.csv",
+    "caa/reasoning/power-seeking/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_behavior_mul_0.csv",
+    "caa/reasoning/power-seeking/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_behavior_mul_0.csv"
 ]
 
 BASELINE_0_UTILITY = [
-    "reasoning/power-seeking/gemma/google_gemma-3-1b-it/reasoning_utility_mul_0.csv",
-    "reasoning/power-seeking/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_utility_mul_0.csv",
-    "reasoning/power-seeking/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_utility_mul_0.csv"
+    "caa/reasoning/power-seeking/gemma/google_gemma-3-1b-it/reasoning_utility_mul_0.csv",
+    "caa/reasoning/power-seeking/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_utility_mul_0.csv",
+    "caa/reasoning/power-seeking/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_utility_mul_0.csv"
 ]
 
 # Regex pattern to extract the type (behavior/utility) and the multiplier

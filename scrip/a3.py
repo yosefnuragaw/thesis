@@ -4,24 +4,24 @@ import pandas as pd
 
 # Define the base directories
 base_dirs = [
-    "reasoning/jailbreak/gemma", 
-    "reasoning/jailbreak/mistral", 
-    "reasoning/jailbreak/llama"
+    "caa/reasoning/jailbreak/gemma", 
+    "caa/reasoning/jailbreak/mistral", 
+    "caa/reasoning/jailbreak/llama"
 ]
 
 bench = 'data/jailbreak/test_infer.csv'
 
 # Paths to your baseline "0" multiplier CSVs
 BASELINE_0_BEHAVIOR = [
-    "reasoning/jailbreak/gemma/google_gemma-3-1b-it/reasoning_behavior_mul_0.csv",
-    "reasoning/jailbreak/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_behavior_mul_0.csv",
-    "reasoning/jailbreak/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_behavior_mul_0.csv"
+    "caa/reasoning/jailbreak/gemma/google_gemma-3-1b-it/reasoning_behavior_mul_0.csv",
+    "caa/reasoning/jailbreak/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_behavior_mul_0.csv",
+    "caa/reasoning/jailbreak/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_behavior_mul_0.csv"
 ]
 
 BASELINE_0_UTILITY = [
-    "reasoning/jailbreak/gemma/google_gemma-3-1b-it/reasoning_utility_mul_0.csv",
-    "reasoning/jailbreak/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_utility_mul_0.csv",
-    "reasoning/jailbreak/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_utility_mul_0.csv"
+    "caa/reasoning/jailbreak/gemma/google_gemma-3-1b-it/reasoning_utility_mul_0.csv",
+    "caa/reasoning/jailbreak/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_utility_mul_0.csv",
+    "caa/reasoning/jailbreak/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_utility_mul_0.csv"
 ]
 
 # Regex pattern to extract the type (behavior/utility) and the multiplier

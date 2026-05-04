@@ -4,24 +4,24 @@ import pandas as pd
 
 # Define the base directories
 base_dirs = [
-    "reasoning/hallucination/gemma", 
-    "reasoning/hallucination/mistral", 
-    "reasoning/hallucination/llama"
+    "caa/reasoning/hallucination/gemma", 
+    "caa/reasoning/hallucination/mistral", 
+    "caa/reasoning/hallucination/llama"
 ]
 
 bench = 'data/hallucination/test_infer.csv'
 
 # Paths to your baseline "0" multiplier CSVs
 BASELINE_0_BEHAVIOR = [
-    "reasoning/hallucination/gemma/google_gemma-3-1b-it/reasoning_behavior_mul_0.csv",
-    "reasoning/hallucination/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_behavior_mul_0.csv",
-    "reasoning/hallucination/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_behavior_mul_0.csv"
+    "caa/reasoning/hallucination/gemma/google_gemma-3-1b-it/reasoning_behavior_mul_0.csv",
+    "caa/reasoning/hallucination/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_behavior_mul_0.csv",
+    "caa/reasoning/hallucination/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_behavior_mul_0.csv"
 ]
 
 BASELINE_0_UTILITY = [
-    "reasoning/hallucination/gemma/google_gemma-3-1b-it/reasoning_utility_mul_0.csv",
-    "reasoning/hallucination/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_utility_mul_0.csv",
-    "reasoning/hallucination/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_utility_mul_0.csv"
+    "caa/reasoning/hallucination/gemma/google_gemma-3-1b-it/reasoning_utility_mul_0.csv",
+    "caa/reasoning/hallucination/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_utility_mul_0.csv",
+    "caa/reasoning/hallucination/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_utility_mul_0.csv"
 ]
 
 # Regex pattern to extract the type (behavior/utility) and the multiplier

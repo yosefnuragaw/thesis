@@ -4,24 +4,24 @@ import pandas as pd
 
 # Define the base directories
 base_dirs = [
-    "reasoning/survival-instinct/gemma", 
-    "reasoning/survival-instinct/mistral", 
-    "reasoning/survival-instinct/llama"
+    "caa/reasoning/survival-instinct/gemma", 
+    "caa/reasoning/survival-instinct/mistral", 
+    "caa/reasoning/survival-instinct/llama"
 ]
 
 bench = 'data/survival-instinct/test_infer.csv'
 
 # Paths to your baseline "0" multiplier CSVs
 BASELINE_0_BEHAVIOR = [
-    "reasoning/survival-instinct/gemma/google_gemma-3-1b-it/reasoning_behavior_mul_0.csv",
-    "reasoning/survival-instinct/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_behavior_mul_0.csv",
-    "reasoning/survival-instinct/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_behavior_mul_0.csv"
+    "caa/reasoning/survival-instinct/gemma/google_gemma-3-1b-it/reasoning_behavior_mul_0.csv",
+    "caa/reasoning/survival-instinct/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_behavior_mul_0.csv",
+    "caa/reasoning/survival-instinct/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_behavior_mul_0.csv"
 ]
 
 BASELINE_0_UTILITY = [
-    "reasoning/survival-instinct/gemma/google_gemma-3-1b-it/reasoning_utility_mul_0.csv",
-    "reasoning/survival-instinct/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_utility_mul_0.csv",
-    "reasoning/survival-instinct/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_utility_mul_0.csv"
+    "caa/reasoning/survival-instinct/gemma/google_gemma-3-1b-it/reasoning_utility_mul_0.csv",
+    "caa/reasoning/survival-instinct/mistral/mistralai_Mistral-7B-Instruct-v0.3/reasoning_utility_mul_0.csv",
+    "caa/reasoning/survival-instinct/llama/meta-llama_Llama-3.1-8B-Instruct/reasoning_utility_mul_0.csv"
 ]
 
 # Regex pattern to extract the type (behavior/utility) and the multiplier

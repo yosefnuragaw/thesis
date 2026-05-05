@@ -118,7 +118,7 @@ def read_dataset(behavior: str, tokenizer: AutoTokenizer, multiplier: float = 0)
             results['questions'].append(row['question'])
             results['prompts'].append(prompt)
 
-            if behavior not in  ['jailbreak', 'environment-climateskeptics','liberal-conservatives','simpleliving-unethical']:
+            if behavior != 'jailbreak':
                 try:
                     pos, neg = row['A'], row['B']
                 except:

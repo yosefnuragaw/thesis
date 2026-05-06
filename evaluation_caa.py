@@ -163,6 +163,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", "-c", type=str, required=True, help="Path to your YAML config file")
     parser.add_argument("--verbose", "-v", type=bool, required=False, default=True, help="Visualize eval progress")
+    parser.add_argument("--baseline", action='store_true')
+
     args, remaining = parser.parse_known_args()
 
     hf_parser = HfArgumentParser(ScriptArguments)
@@ -179,7 +181,7 @@ if __name__ == "__main__":
         layers=script_args.layer,
         apply_type=script_args.apply_type,
         total_layer=script_args.total_layer,
-        baseline=script_args.baseline,
+        baseline=args.baseline,
         treshold = script_args.treshold
     )
 

@@ -2003,74 +2003,72 @@ class BiPOTrainer(BaseTrainer):
         ignore_keys: list[str] | None = None,
         metric_key_prefix: str = "eval",
     ) -> EvalLoopOutput:
-        """
-        Overriding built-in evaluation loop to store metrics for each batch. Prediction/evaluation loop, shared by
-        `Trainer.evaluate()` and `Trainer.predict()`.
-
-        Works both with or without labels.
-        """
-
         print('Enter customized evaluation_loop...')
         print('multiplier_counts: ', self.multiplier_counts)
-        for layer in self.layer:    
+
+        # --- BiPO: track per-direction losses for best-epoch detection ---
+        if not hasattr(self, '_epoch_direction_losses'):
+            self._epoch_direction_losses = {}   # epoch -> list of losses
+        if not hasattr(self, '_best_avg_loss'):
+            self._best_avg_loss = float('inf')
+        if not hasattr(self, '_best_epoch'):
+            self._best_epoch = -1
+
+        for layer in self.layer:
             print('multiplier: ', self.model.model.layers[layer].multiplier)
-            
-            if self.model.model.layers[layer].multiplier > 0:
-                steer_vec = self.model.model.layers[layer].vec.detach().cpu()
-                gate = self.model.model.layers[layer].gate_mask
 
-                print(f'Steer vec at epoch {self.epoch_for_saving_vec} layer {layer}: ', steer_vec[:10], steer_vec.dtype)
-                
-                filename = f"vec_ep{self.epoch_for_saving_vec}_layer{layer}.pt"
-                filepath = f"{self.vec_dir}/{filename}"
-                
-                
+        # Base evaluation
+        initial_output = super().evaluation_loop(
+            dataloader, description, prediction_loss_only, ignore_keys, metric_key_prefix
+        )
 
-                torch.save(steer_vec, filepath)
-                if gate is not None:
-                    filename_gate = f"gate_ep{self.epoch_for_saving_vec}_layer{layer}.pt"
-                    filepath_gate = f"{self.gate_dir}/{filename_gate}"
-                    torch.save(gate.state_dict(), filepath_gate)
+        # Record the loss for this direction at this epoch
+        current_loss = initial_output.metrics.get(f"{metric_key_prefix}_loss", None)
+        ep = self.epoch_for_saving_vec
 
-                if wandb.run is not None:
-                    run_id = wandb.run.id 
-                    run_name = wandb.run.name
-                    artifact_vec = wandb.Artifact(
-              
-                    name=f"{run_name}-{run_id}_steering-vec-layer{layer}", 
-                    type=f"{run_name}-{run_id}_steering_vector",
-                    metadata={
-                        "epoch": self.epoch_for_saving_vec, 
-                        "layer": layer,
-                        "run_id": run_id 
-                        }
-                    )
-                    artifact_vec.add_file(filepath)
-                    wandb.log_artifact(artifact_vec)
+        if current_loss is not None:
+            if ep not in self._epoch_direction_losses:
+                self._epoch_direction_losses[ep] = []
+            self._epoch_direction_losses[ep].append(current_loss)
 
-                    if os.path.exists(filepath):
-                        os.remove(filepath)
-                    
-                    if gate is not None:
-                        artifact_gate = wandb.Artifact(
-                
-                        name=f"{run_name}-{run_id}_gate-layer{layer}", 
-                        type=f"{run_name}-{run_id}_gate",
-                        metadata={
-                            "epoch": self.epoch_for_saving_vec, 
-                            "layer": layer,
-                            "run_id": run_id 
-                            }
-                        )
+            direction_losses = self._epoch_direction_losses[ep]
 
-                        
-                        artifact_gate.add_file(filepath_gate)
-                        wandb.log_artifact(artifact_gate)
+            # Only evaluate best once we have losses from both directions (+1 and -1)
+            if len(direction_losses) == 2:
+                avg_loss = sum(direction_losses) / 2.0
+                print(f'Epoch {ep} avg loss across both directions: {avg_loss:.4f} (best so far: {self._best_avg_loss:.4f})')
 
-                        if os.path.exists(filepath_gate):
-                            os.remove(filepath_gate)
-                   
-                    
+                if avg_loss < self._best_avg_loss:
+                    self._best_avg_loss = avg_loss
+                    self._best_epoch = ep
+                    print(f'New best epoch: {ep} with avg loss {avg_loss:.4f} — saving steering vectors.')
+
+                    for layer in self.layer:
+                        if self.model.model.layers[layer].multiplier > 0:
+                            steer_vec = self.model.model.layers[layer].vec.detach().cpu()
+                            print(f'Steer vec at epoch {ep} layer {layer}: ', steer_vec[:10], steer_vec.dtype)
+
+                            filename = f"vec_layer{layer}.pt"
+                            filepath = f"{self.vec_dir}/{filename}"
+                            torch.save(steer_vec, filepath)
+
+                            if wandb.run is not None:
+                                run_id = wandb.run.id
+                                run_name = wandb.run.name
+                                artifact_vec = wandb.Artifact(
+                                    name=f"{run_name}-{run_id}_steering-vec-layer{layer}",
+                                    type=f"{run_name}-{run_id}_steering_vector",
+                                    metadata={
+                                        "epoch": ep,
+                                        "layer": layer,
+                                        "run_id": run_id,
+                                        "avg_loss": avg_loss,
+                                    }
+                                )
+                                artifact_vec.add_file(filepath)
+                                wandb.log_artifact(artifact_vec)
+                else:
+                    print(f'Epoch {ep} is not the best (avg loss {avg_loss:.4f} >= best {self._best_avg_loss:.4f}), skipping save.')
 
         if self.generate_during_eval:
             num_samples = len(dataloader.dataset)
@@ -2085,7 +2083,7 @@ class BiPOTrainer(BaseTrainer):
             table = pd.DataFrame(
                 columns=["Prompt", "Policy", "Ref Model"],
                 data=[
-                    [prompt, pol[len(prompt) :], ref[len(prompt) :]]
+                    [prompt, pol[len(prompt):], ref[len(prompt):]]
                     for prompt, pol, ref in zip(
                         random_batch_dataset["prompt"], policy_output_decoded, ref_output_decoded, strict=True
                     )
@@ -2093,20 +2091,10 @@ class BiPOTrainer(BaseTrainer):
             )
             if "wandb" in self.args.report_to and self.accelerator.is_main_process:
                 wandb.log({"game_log": wandb.Table(data=table)})
-
             if "comet_ml" in self.args.report_to:
-                log_table_to_comet_experiment(
-                    name="game_log.csv",
-                    table=table,
-                )
-
+                log_table_to_comet_experiment(name="game_log.csv", table=table)
             if "mlflow" in self.args.report_to and self.accelerator.is_main_process:
                 mlflow.log_table(data=table, artifact_file="game_log.json")
-
-        # Base evaluation
-        initial_output = super().evaluation_loop(
-            dataloader, description, prediction_loss_only, ignore_keys, metric_key_prefix
-        )
 
         return initial_output
 

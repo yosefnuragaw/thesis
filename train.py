@@ -54,19 +54,9 @@ class ScriptArguments:
     ignore_bias_buffers: Optional[bool] = field(default=False, metadata={"help": "fix for DDP issues"})
 
     # Experiment : 
+    apply_type: Optional[str] = field(default="base", metadata={"help": "layer or sequence"})
+    treshold: float = field(default=0.25, metadata={"help": "Lower bound sensitivity"})
 
-    experiment: Optional[bool] = field(default=False, metadata={"help": "Run experimentation"})
-    quantile: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
-    filter_step: Optional[int] = field(default=0, metadata={"help": "Filter step window"})
-    quantile_scheduler: Optional[bool] = field(default=False, metadata={"help": "Run with quantile scheduler"})
-    quantile_scheduler_type: Optional[str] = field(default='linear', metadata={"help": "Quantile scheduler type"})
-    pipeline: Optional[str] = field(default='default', metadata={"help": "experimentation pipeline both | one| two"})
-    masking_type: Optional[str] = field(default='soft', metadata={"help": "experimentation masking type hard | soft"})
-    moving: Optional[str] = field(default='default', metadata={"help": "gradual moving backward | forward"})
-    gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
-    skip: Optional[str] = field(default=None, metadata={"help" : "cosine scaler None | distance | similarity"})
-    k1: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
-    scale: Optional[float] = field(default=1., metadata={"help": "Direction scale"})
 
 
 
@@ -89,17 +79,22 @@ if __name__ == "__main__":
     set_seed(seed=42)
     
     # 2. Determine Template Name
+    model = ''
     if script_args.model_name_or_path not in MODEL_TEMPLATE_MAP:
         print(f"Warning: {script_args.model_name_or_path} not in supported list: {list(MODEL_TEMPLATE_MAP.keys())}")
-    template_name = MODEL_TEMPLATE_MAP.get(script_args.model_name_or_path, 'llama-2')
+    elif 'llama' in script_args.model_name_or_path.lower() :
+        model = 'meta-llama/Llama-2-7b-chat-hf'  
+    elif  'mistral' in script_args.model_name_or_path.lower() :
+        model = 'mistralai/Mistral-7B-Instruct-v0.2'
+    template_name = MODEL_TEMPLATE_MAP.get(model, 'llama-2')
 
     print(f"Loaded config from {args.config}")
-    print(f"[Behavior:] {script_args.behavior} | [Layer:] {script_args.layer} | [Model:] {script_args.model_name_or_path} | [Experiment:] {script_args.experiment} | [Moving:] {script_args.moving} | [Skip:] {script_args.skip} [k1:] {script_args.k1} | [Scale:] {script_args.scale}")
+    print(f"[Behavior:] {script_args.behavior} | [Layer:] {script_args.layer} | [Model:] {script_args.model_name_or_path} | [treshold:] {script_args.treshold} | [apply_type:] {script_args.apply_type}")
 
     # 3. Load & Configure Models
     model = AutoModelForCausalLM.from_pretrained(
         script_args.model_name_or_path,
-        low_cpu_mem_usage=True,
+        attn_implementation="flash_attention_2",
         trust_remote_code=True,
     )
     model.warnings_issued = {}
@@ -107,7 +102,7 @@ if __name__ == "__main__":
 
     # Inject BlockWrappers
     for layer in script_args.layer:
-        model.model.layers[layer] = BlockWrapper(model.model.layers[layer], hidden_dim=model.config.hidden_size, gate_function=script_args.gate_function, skip= script_args.skip, k1 = script_args.k1)
+        model.model.layers[layer] = BlockWrapper(model.model.layers[layer], hidden_dim=model.config.hidden_size, apply_type=script_args.apply_type, treshold = script_args.treshold)
 
     if script_args.ignore_bias_buffers:
         model._ddp_params_and_buffers_to_ignore = [
@@ -117,7 +112,6 @@ if __name__ == "__main__":
     # Load Reference Model
     model_ref = AutoModelForCausalLM.from_pretrained(
         script_args.model_name_or_path,
-        low_cpu_mem_usage=True,
         trust_remote_code=True,
     )
     tokenizer = AutoTokenizer.from_pretrained(script_args.model_name_or_path)
@@ -164,36 +158,8 @@ if __name__ == "__main__":
         beta=script_args.beta,
     )
 
-    if script_args.experiment:
-        dpo_trainer = BiPOTrainerEXP(
-            model=model,
-            ref_model=model_ref,
-            args=training_args,
-            train_dataset=train_dataset,
-            eval_dataset={'test_dataset_add': test_dataset, 'test_dataset_sub': test_dataset},
-            processing_class=tokenizer,
-            behavior=script_args.behavior,
-            layer=script_args.layer,
-            name=template_name,
-            quantile=script_args.quantile,
-            filter_step=script_args.filter_step,
-            pipeline = script_args.pipeline,
-            masking_type = script_args.masking_type,
-            num_layer = script_args.total_layer,
-            moving= script_args.moving,
-            scale = script_args.scale
-        )
 
-        if script_args.quantile_scheduler:
-            print(f"[Scheduler:] {script_args.quantile_scheduler_type} | [Start:] {script_args.quantile} ")
-            scheduler_callback = QuantileSchedulerCallback(
-                    start_val=script_args.quantile, 
-                    schedule_type= script_args.quantile_scheduler_type
-                )
-            dpo_trainer.add_callback(scheduler_callback)
-
-    else:
-        dpo_trainer = BiPOTrainer(
+    dpo_trainer = BiPOTrainer(
             model=model,
             ref_model=model_ref,
             args=training_args,

@@ -34,11 +34,16 @@ class MaskGate2(torch.nn.Module):
         return self.func(self.h)
 
 class BlockWrapper(torch.nn.Module):
-    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False, gate_function:Optional[str] = None, skip:Optional[str] = None, k1:float = 1.):
+    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False, apply_type: str = 'layer', treshold: float = -1.0):
         super().__init__()
         self.multiplier = 1.0
         self.block = block
-        self.k1 = k1
+
+        if apply_type not in VALID_APPLY_TYPES:
+            raise ValueError(f"apply_type must be 'base', 'layer', or 'sequence', got {apply_type!r}")
+        self.apply_type = apply_type
+        self.treshold = treshold
+
         try:
             ref_param = next(block.parameters())
             self.init_dtype = ref_param.dtype
@@ -50,15 +55,6 @@ class BlockWrapper(torch.nn.Module):
         else:
             self.vec = torch.nn.Parameter(torch.zeros(hidden_dim, dtype= self.init_dtype))
 
-
-        if gate_function is not None:
-            if skip == 'adap':
-                self.gate_mask = MaskGate2(hidden_dim = hidden_dim, dtype=self.init_dtype, function=gate_function)
-            
-        else:
-            self.gate_mask = None
-
-        self.skip =skip
         self.gen_step = 0 
         self.buffer = buffer
         self.buffer_space = []
@@ -76,22 +72,19 @@ class BlockWrapper(torch.nn.Module):
 
             cos_sim = torch.nn.functional.cosine_similarity(vec_1_expanded, vec_2, dim=-1)
             cos_sim_c = torch.clamp(cos_sim, min=self.treshold, max=1.0)
-            cos_dis = cos_sim_c
-            return cos_dis
+            return cos_sim_c
         
         output = self.block(hidden_states, *args, **kwargs)
         out_tensor = output[0] if isinstance(output, tuple) else output
         avg_output = out_tensor.detach().mean(dim=1)
-        current_vec = (self.multiplier * self.vec).to(avg_output.device)
-        
-        cos_sim = torch.nn.functional.cosine_similarity(avg_output, current_vec, dim=-1)
-        cos_sim_c = torch.clamp(cos_sim, min=-1.0, max=1.0) 
-        cos_dis = 1 - cos_sim_c
-            
+        current_vec = (self.multiplier * self.vec).to(out_tensor.device)
         mask = self.multiplier 
-
-        if self.skip == 'adap' and self.gate_mask is not None:        
-            mask = mask * torch.nn.functional.relu(self.gate_mask().to(output[0].device) - cos_sim_c.to(output[0].device))
+        if self.apply_type == 'layer':
+            mask *= __cosine_distance(current_vec, avg_output)
+        elif self.apply_type == 'sequence':
+            mask *= __cosine_distance(current_vec, out_tensor.detach())
+        else:
+            mask *= __cosine_distance(current_vec, avg_output) # Fallback to layer-wise
 
         if isinstance(mask, torch.Tensor):
             while mask.dim() < hidden_states.dim():
@@ -111,7 +104,6 @@ class BlockWrapper(torch.nn.Module):
     def set_multiplier(self, multiplier):
         self.multiplier = multiplier
 
-    
     def set_gate(self, path):
         if self.gate_mask:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -160,7 +152,6 @@ class BlockWrapper(torch.nn.Module):
         min_val = all_distances.min().item()
         rel_norm = all_norm.mean().item()
         self.cosine_space = []
-        return mean_val, std_val, max_val, min_val,rel_norm
 
 class CAABlockWrapper(torch.nn.Module):
     def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, apply_type: str = 'layer', treshold: float = 0.25):

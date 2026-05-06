@@ -1,0 +1,11 @@
+# Model
+id: "mistral-7b-26"
+model_name_or_path: "/kaggle/input/notebooks/dadangkw/mistral-loader/Mistral-7B-Instruct-v0.3"
+behavior: "coordinate-other"
+layer: [26]
+total_layer: 32
+
+# Vector
+vec_dir: "caa/pretrained_vector/coordinate-other/mistral/all"
+answer_dir: "caa/generation_results/coordinate-other/mistral/26"
+apply_type: "base"

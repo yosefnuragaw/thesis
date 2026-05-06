@@ -1,0 +1,11 @@
+# Model
+id: "llama3-1-8b-26"
+model_name_or_path: "/kaggle/input/notebooks/dadangkw/llama-loader/Llama-3.1-8B-Instruct"
+behavior: "coordinate-other"
+layer: [26]
+total_layer: 32
+
+# Vector
+vec_dir: "caa/pretrained_vector/coordinate-other/llama-3/all"
+answer_dir: "caa/generation_results/coordinate-other/llama-3/26"
+apply_type: "base"

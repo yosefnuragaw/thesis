@@ -129,7 +129,7 @@ def to_test_row(record: dict) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description="Convert JSONL to train/test/test_infer CSVs.")
-    parser.add_argument("--input",      default="corrigible-less-HHH.jsonl")
+    parser.add_argument("--input",      default="coordinate-other-ais.jsonl")
     parser.add_argument("--output-dir", default=".")
     args = parser.parse_args()
 

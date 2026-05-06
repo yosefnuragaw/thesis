@@ -103,6 +103,43 @@ def get_eval_data(tokenizer, behavior, system_prompt=SYSTEM_PROMPT, generation_p
         'labels':labels,
     }
 
+def get_sterbench_data(tokenizer, behavior, system_prompt=SYSTEM_PROMPT, generation_prompt:bool = True):
+    path = f"./data/{behavior}/test_infer.csv"
+    if not os.path.exists(path):
+         raise FileNotFoundError(f"Data file not found: {path}")
+         
+    dataset = load_dataset("csv", data_files=path, split='train')
+    
+    questions = [] 
+    prompts = []  
+    labels = []    
+    communities=[]
+    for row in dataset:
+        if row['question'] is not None:  
+            messages = [
+                {"role": "system", "content": 'Answer the given Question'},
+                {"role": "user", "content": row['question']},
+            ]
+            full_prompt = tokenizer.apply_chat_template(
+                messages, 
+                tokenize=False, 
+                add_generation_prompt=generation_prompt
+            )
+            
+            questions.append(full_prompt)
+            
+            current_options = [row[col] for col in ['A','B','C','D'] if col in row and row[col] is not None]
+            prompts.append(current_options)
+            labels.append(row['matching'])
+            communities.append(row['communities'])
+
+    return{
+        'questions':questions,
+        'prompts':prompts,
+        'labels':labels,
+        'communities':communities,
+    }
+
 def batch_logps(logits: torch.Tensor, ids: torch.Tensor, pad_id: int | None = None) -> Tuple[torch.Tensor, torch.Tensor]:
     if logits.shape[:-1] != ids.shape:
         raise ValueError("Logits and ids must have the same shape. (batch,sequence_length,dim)")

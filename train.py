@@ -112,6 +112,7 @@ if __name__ == "__main__":
     # Load Reference Model
     model_ref = AutoModelForCausalLM.from_pretrained(
         script_args.model_name_or_path,
+        attn_implementation="flash_attention_2",
         trust_remote_code=True,
     )
     tokenizer = AutoTokenizer.from_pretrained(script_args.model_name_or_path)

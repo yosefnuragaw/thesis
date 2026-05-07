@@ -173,6 +173,10 @@ def generate_answers(
     return dataset
 
 def save(output_dir:str,file_name:str,df: pd.DataFrame)->None:
+    if 'KAGGLE_KERNEL_RUN_TYPE' in os.environ and not script_args.vec_dir.startswith('/'):
+        output_dir = os.path.join("/kaggle/working", output_dir)
+    else:
+        output_dir = output_dir
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     output_path = os.path.join(output_dir, file_name)
     df.to_csv(output_path, index=False)

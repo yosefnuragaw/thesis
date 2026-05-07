@@ -2048,7 +2048,7 @@ class BiPOTrainer(BaseTrainer):
                             steer_vec = self.model.model.layers[layer].vec.detach().cpu()
                             print(f'Steer vec at epoch {ep} layer {layer}: ', steer_vec[:10], steer_vec.dtype)
 
-                            filename = f"vec_layer{layer}.pt"
+                            filename = f"vec_layer-{layer}_epoch-{ep}.pt"
                             filepath = f"{self.vec_dir}/{filename}"
                             torch.save(steer_vec, filepath)
 

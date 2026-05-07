@@ -55,6 +55,7 @@ class ScriptArguments:
     # Experiment : 
     apply_type: Optional[str] = field(default="base", metadata={"help": "layer or sequence"})
     treshold: float = field(default=0.25, metadata={"help": "Lower bound sensitivity"})
+    vec_dir: Optional[str] = field(default="", metadata={"help": "vec dir"})
 
 
 
@@ -77,6 +78,13 @@ if __name__ == "__main__":
     set_seed(seed=42)
     
     # 2. Determine Template Name
+
+    if 'KAGGLE_KERNEL_RUN_TYPE' in os.environ and not script_args.vec_dir.startswith('/'):
+        vec_dir = os.path.join("/kaggle/working", script_args.vec_dir)
+    else:
+        vec_dir = script_args.vec_dir
+        
+
     model = ''
     if script_args.model_name_or_path not in MODEL_TEMPLATE_MAP:
         print(f"Warning: {script_args.model_name_or_path} not in supported list: {list(MODEL_TEMPLATE_MAP.keys())}")

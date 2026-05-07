@@ -307,10 +307,13 @@ class BiPOTrainer(BaseTrainer):
 
         if self.name is None:
             self.vec_dir = f"./vector/{self.behavior}"
-            self.gate_dir = f"./gate/{self.behavior}"
         else:
             self.vec_dir = f"./vector/{self.behavior}_{self.name}"
-            self.gate_dir = f"./gate/{self.behavior}_{self.name}"
+
+        if 'KAGGLE_KERNEL_RUN_TYPE' in os.environ :
+            self.vec_dir = os.path.join("/kaggle/working", self.vec_dir)
+      
+            
 
         if not os.path.exists(self.vec_dir):
             os.makedirs(self.vec_dir)
@@ -318,11 +321,6 @@ class BiPOTrainer(BaseTrainer):
         else:
             print('vector dir: ', self.vec_dir)
 
-        if not os.path.exists(self.gate_dir):
-            os.makedirs(self.gate_dir)
-            print('Create gate dir: ', self.gate_dir)
-        else:
-            print('gate dir: ', self.gate_dir)
         
         self.epoch_for_saving_vec = 0
         self.multiplier_counts = {-1.0: 0, 1.0: 0}

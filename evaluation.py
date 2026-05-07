@@ -69,7 +69,7 @@ def init_model(
         model.model.layers[layer] = BlockWrapper(model.model.layers[layer], hidden_dim=model.config.hidden_size, apply_type=apply_type, treshold = treshold)
         
         if epoch != None and layer in layers and not baseline:
-            vec_path = f"{vec_dir}/vec_layer{layer}_epoch-{epoch}.pt"
+            vec_path = f"{vec_dir}/vec_layer-{layer}_epoch-{epoch}.pt"
             if os.path.exists(vec_path):
                 layer_device = next(model.model.layers[layer].parameters()).device
                 steering_vector = torch.load(vec_path, map_location=layer_device)

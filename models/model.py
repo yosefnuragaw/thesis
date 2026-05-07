@@ -34,7 +34,7 @@ class MaskGate2(torch.nn.Module):
         return self.func(self.h)
 
 class BlockWrapper(torch.nn.Module):
-    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False, apply_type: str = 'layer', treshold: float = -1.0):
+    def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False, apply_type: str = 'layer', treshold: float = 1.0):
         super().__init__()
         self.multiplier = 1.0
         self.block = block
@@ -42,7 +42,7 @@ class BlockWrapper(torch.nn.Module):
         if apply_type not in VALID_APPLY_TYPES:
             raise ValueError(f"apply_type must be 'base', 'layer', or 'sequence', got {apply_type!r}")
         self.apply_type = apply_type
-        self.treshold = 0
+        self.treshold = treshold
 
         try:
             ref_param = next(block.parameters())

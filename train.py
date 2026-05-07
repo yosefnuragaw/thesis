@@ -2,7 +2,6 @@ import argparse
 from dataclasses import dataclass, field
 from typing import List, Optional
 import os
-import wandb
 from torch.utils.data import Dataset, DataLoader
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, HfArgumentParser
@@ -50,7 +49,7 @@ class ScriptArguments:
     )
     total_layer: Optional[int] = field(default=26, metadata={"help": "total model layer"})
 
-    report_to: Optional[str] = field(default="wandb", metadata={"help": "integration to report to"})
+    report_to: Optional[str] = field(default="none", metadata={"help": "integration to report to"})
     ignore_bias_buffers: Optional[bool] = field(default=False, metadata={"help": "fix for DDP issues"})
 
     # Experiment : 
@@ -75,7 +74,6 @@ if __name__ == "__main__":
 
     run_name = f"{script_args.behavior}-{script_args.id}"
 
-    os.environ["WANDB_NAME"] = run_name
     set_seed(seed=42)
     
     # 2. Determine Template Name

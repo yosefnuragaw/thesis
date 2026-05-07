@@ -2037,12 +2037,21 @@ class BiPOTrainer(BaseTrainer):
                 print(f'Epoch {ep} avg loss across both directions: {avg_loss:.4f} (best so far: {self._best_avg_loss:.4f})')
 
                 if avg_loss < self._best_avg_loss:
+                    old_best_epoch = getattr(self, '_best_epoch', None)
+
                     self._best_avg_loss = avg_loss
                     self._best_epoch = ep
                     print(f'New best epoch: {ep} with avg loss {avg_loss:.4f} — saving steering vectors.')
 
+                    if old_best_epoch is not None:
+                        for layer in self.layer:
+                            old_filename = f"vec_layer-{layer}_epoch-{old_best_epoch}.pt"
+                            old_filepath = os.path.join(self.vec_dir, old_filename)
+                            if os.path.exists(old_filepath):
+                                os.remove(old_filepath)
+                                print(f"Deleted old steering vector: {old_filename}")
+                                
                     for layer in self.layer:
-                        if self.model.model.layers[layer].multiplier > 0:
                             steer_vec = self.model.model.layers[layer].vec.detach().cpu()
                             print(f'Steer vec at epoch {ep} layer {layer}: ', steer_vec[:10], steer_vec.dtype)
 

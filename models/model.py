@@ -117,7 +117,7 @@ class BlockWrapper(torch.nn.Module):
 
 
     def set_vector(self, vec):
-        self.vec = vec.to(self.init_dtype)
+        self.vec = torch.nn.Parameter(vec.to(self.init_dtype), requires_grad=False)
 
     def __getattr__(self, name):
         try:

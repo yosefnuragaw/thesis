@@ -216,7 +216,7 @@ def main(baseline:bool, args: ScriptArguments)->None:
                 temperature = args.temperature
             )    
             df = pd.DataFrame(updated_dataset)
-            file_name = f"results_{args.behavior}_{args.id}_{multiplier}_{args.eval_epoch}.csv"
+            file_name = f"results_{args.behavior}_{args.id}_{float(multiplier)}_{args.eval_epoch}.csv"
             save(args.answer_dir,file_name, df)     
     
     else:
@@ -235,7 +235,7 @@ def main(baseline:bool, args: ScriptArguments)->None:
             )    
         df = pd.DataFrame(updated_dataset)
         safe_model_name = args.model_name_or_path.replace("/", "_")
-        file_name = f"results_{args.behavior}_{safe_model_name}_{args.behavior}-baseline.csv"
+        file_name = f"results_{args.behavior}_{safe_model_name}_baseline.csv"
         save(args.answer_dir,file_name, df)
 
 

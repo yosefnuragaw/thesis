@@ -76,7 +76,7 @@ def init_model(
                 )
         
         if epoch != None and layer in layers and not baseline:
-            vec_path = f"{vec_dir}/vec_ep{epoch}_layer{layer}.pt"
+            vec_path = f"{vec_dir}/vec_layer{layer}_epoch-{epoch}.pt"
             if os.path.exists(vec_path):
                 layer_device = next(model.model.layers[layer].parameters()).device
                 steering_vector = torch.load(vec_path, map_location=layer_device)

@@ -46,13 +46,14 @@ class ScriptArguments:
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
     max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
     temperature: Optional[float] = field(default=0.1, metadata={"help": "LLM generation temperature"})
-    gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
-    skip: Optional[str] = field(default=None, metadata={"help" : "cosine scaler None | distance | similarity"})
-    k1: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
+    # Experiment : 
+    apply_type: Optional[str] = field(default="base", metadata={"help": "layer or sequence"})
+    treshold: float = field(default=0.25, metadata={"help": "Lower bound sensitivity"})
+    vec_dir: Optional[str] = field(default="", metadata={"help": "vec dir"})
     prompt: Optional[str] = field(default=None, metadata={"help" : "cosine scaler None | distance | similarity"})
 
 def init_model(
-        model_name: str, vec_dir: str, gate_dir:str, layers: List[int], multiplier: int, epoch: int|None = None, gate_function:Optional[str]=None, skip:Optional[str]=None, buffer:bool = False, total_layer:int = 26, k1:float = 0., baseline: bool = False
+        model_name: str, vec_dir: str, apply_type:str, layers: List[int], multiplier: int, treshold:str, epoch: int|None = None, total_layer:int = 26, baseline: bool = False
     )->tuple[AutoModelForCausalLM, AutoTokenizer]:
 
     model = AutoModelForCausalLM.from_pretrained(
@@ -65,15 +66,7 @@ def init_model(
     model.warnings_issued = {}
     model.to("cuda" if torch.cuda.is_available() else "cpu")
     for layer in range(total_layer):
-        model.model.layers[layer] = BlockWrapper(
-                    model.model.layers[layer], 
-                    hidden_dim=model.config.hidden_size, 
-                    vec= torch.zeros(model.config.hidden_size, dtype= model.dtype),
-                    buffer=buffer,
-                    gate_function=gate_function,
-                    skip=skip,
-                    k1= k1
-                )
+        model.model.layers[layer] = BlockWrapper(model.model.layers[layer], hidden_dim=model.config.hidden_size, apply_type=apply_type, treshold = treshold)
         
         if epoch != None and layer in layers and not baseline:
             vec_path = f"{vec_dir}/vec_layer{layer}_epoch-{epoch}.pt"
@@ -83,11 +76,6 @@ def init_model(
                 
                 model.model.layers[layer].set_vector(steering_vector)
                 model.model.layers[layer].set_multiplier(multiplier)
-
-                if gate_dir is not None:
-                    gate_path = f"{gate_dir}/gate_ep{epoch}_layer{layer}.pt"
-                    if os.path.exists(gate_path):
-                        model.model.layers[layer].set_gate(gate_path)
             else:
                 raise ValueError(f"Vector not found at {vec_path}")
         

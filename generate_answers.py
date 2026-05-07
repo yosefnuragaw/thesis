@@ -73,9 +73,8 @@ class ScriptArguments:
     eval_epoch: Optional[int] = field(default=18, metadata={"help": "Which epoch's vector to load"})
     max_new_tokens: Optional[int] = field(default=200, metadata={"help": "Max new generation tokens"})
     temperature: Optional[float] = field(default=0.1, metadata={"help": "LLM generation temperature"})
-    gate_function: Optional[str] = field(default=None, metadata={"help" : "mask gate activation function None | sigmoid | tanh"})
-    skip: Optional[str] = field(default=None, metadata={"help" : "cosine scaler None | distance | similarity"})
-    k1: Optional[float] = field(default=0., metadata={"help": "Quantile for selecting top-K neuron"})
+    apply_type: Optional[str] = field(default="base", metadata={"help": "layer or sequence"})
+    treshold: float = field(default=0.25, metadata={"help": "Lower bound sensitivity"})
 
 def read_dataset(
         behavior: str,
@@ -188,15 +187,13 @@ def main(baseline:bool, args: ScriptArguments)->None:
     model, tokenizer = init_model(
                 model_name=args.model_name_or_path,
                 vec_dir=args.vec_dir,
-                gate_dir=args.gate_dir,
                 epoch=args.eval_epoch,
                 layers=args.layer,
                 multiplier=0,
                 total_layer = args.total_layer,
-                gate_function = args.gate_function,
-                skip = args.skip,
-                k1 = args.k1,
-                baseline= baseline
+                apply_type=script_args.apply_type,
+                treshold=script_args.treshold
+
             )
     if not baseline:
         for multiplier in args.multipliers:

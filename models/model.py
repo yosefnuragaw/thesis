@@ -42,7 +42,7 @@ class BlockWrapper(torch.nn.Module):
         if apply_type not in VALID_APPLY_TYPES:
             raise ValueError(f"apply_type must be 'base', 'layer', or 'sequence', got {apply_type!r}")
         self.apply_type = apply_type
-        self.treshold = treshold
+        self.treshold = 0
 
         try:
             ref_param = next(block.parameters())

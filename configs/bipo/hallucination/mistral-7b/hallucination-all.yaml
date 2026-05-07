@@ -23,9 +23,7 @@ max_length: 2048
 max_prompt_length: 2048
 
 # Experiment
-experiment: True
-pipeline: "trace_analysis"
-moving: "default"
+apply_type: "base"
 
 
 # Evaluation

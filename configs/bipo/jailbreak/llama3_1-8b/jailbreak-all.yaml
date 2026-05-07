@@ -6,7 +6,7 @@ layer: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 total_layer: 32
 
 # Training Hyperparameters
-learning_rate: 5.0e-4
+learning_rate: 5.0e-5
 num_train_epochs: 20
 beta: 0.1
 per_device_train_batch_size: 4
@@ -23,10 +23,7 @@ max_length: 2048
 max_prompt_length: 2048
 
 # Experiment
-experiment: True
-pipeline: "trace_analysis"
-moving: "default"
-
+apply_type: "base"
 
 # Evaluation
 vec_dir: "pretrained_vector/jailbreak/llama-3/all"

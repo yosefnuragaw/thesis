@@ -2050,7 +2050,7 @@ class BiPOTrainer(BaseTrainer):
                             if os.path.exists(old_filepath):
                                 os.remove(old_filepath)
                                 print(f"Deleted old steering vector: {old_filename}")
-                                
+
                     for layer in self.layer:
                             steer_vec = self.model.model.layers[layer].vec.detach().cpu()
                             print(f'Steer vec at epoch {ep} layer {layer}: ', steer_vec[:10], steer_vec.dtype)
@@ -2075,7 +2075,7 @@ class BiPOTrainer(BaseTrainer):
                                 artifact_vec.add_file(filepath)
                                 wandb.log_artifact(artifact_vec)
                 else:
-                    print(f'Epoch {ep} is not the best (avg loss {avg_loss:.4f} >= best {self._best_avg_loss:.4f}), skipping save.')
+                    print(f'Epoch {ep} is not the best (avg loss {avg_loss:.4f} >= best {self._best_avg_loss:.4f} (ep {self._best_epoch})), skipping save.')
 
         if self.generate_during_eval:
             num_samples = len(dataloader.dataset)

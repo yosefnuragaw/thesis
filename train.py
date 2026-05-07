@@ -175,7 +175,7 @@ if __name__ == "__main__":
             processing_class=tokenizer,
             behavior=script_args.behavior,
             layer=script_args.layer,
-            name=template_name,
+            name=script_args.id,
         )
 
     print_trainable_parameters(model)

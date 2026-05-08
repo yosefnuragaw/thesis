@@ -1994,25 +1994,25 @@ class BiPOTrainer(BaseTrainer):
             self._stored_metrics[train_eval][key].append(value)
 
     def evaluation_loop(
-        self,
-        dataloader: DataLoader,
-        description: str,
-        prediction_loss_only: bool | None = None,
-        ignore_keys: list[str] | None = None,
-        metric_key_prefix: str = "eval",
+    self,
+    dataloader: DataLoader,
+    description: str,
+    prediction_loss_only: bool | None = None,
+    ignore_keys: list[str] | None = None,
+    metric_key_prefix: str = "eval",
     ) -> EvalLoopOutput:
         print('Enter customized evaluation_loop...')
         print('multiplier_counts: ', self.multiplier_counts)
 
         # --- BiPO: track per-direction losses for best-epoch detection ---
         if not hasattr(self, '_epoch_direction_losses'):
-            self._epoch_direction_losses = {}   # epoch -> {direction_idx: loss}
-        if not hasattr(self, '_best_combined_score'):
-            self._best_combined_score = float('inf')
+            self._epoch_direction_losses = {}
+        if not hasattr(self, '_best_per_direction'):
+            self._best_per_direction = {}
         if not hasattr(self, '_best_epoch'):
             self._best_epoch = -1
         if not hasattr(self, '_direction_call_count'):
-            self._direction_call_count = {}     # epoch -> int, how many directions logged
+            self._direction_call_count = {}
 
         for layer in self.layer:
             print('multiplier: ', self.model.model.layers[layer].multiplier)
@@ -2030,57 +2030,43 @@ class BiPOTrainer(BaseTrainer):
                 self._epoch_direction_losses[ep] = {}
                 self._direction_call_count[ep] = 0
 
-            # Use call count as direction index (0 = first direction, 1 = second, etc.)
             direction_idx = self._direction_call_count[ep]
             self._epoch_direction_losses[ep][direction_idx] = current_loss
             self._direction_call_count[ep] += 1
 
             direction_losses = self._epoch_direction_losses[ep]
-            num_directions = 2  # adjust if you have more than 2
+            num_directions = 2
 
             if len(direction_losses) == num_directions:
                 losses = list(direction_losses.values())
 
-                # Per-direction best tracking
-                if not hasattr(self, '_best_per_direction'):
-                    self._best_per_direction = {i: float('inf') for i in range(num_directions)}
+                # Initialise per-direction bests on first epoch
+                for i in range(num_directions):
+                    if i not in self._best_per_direction:
+                        self._best_per_direction[i] = float('inf')
 
                 per_dir_info = ", ".join(
-                    f"dir{i}: {l:.4f} (best: {self._best_per_direction[i]:.4f})"
+                    f"dir{i}: {l:.6f} (best: {self._best_per_direction[i]:.6f})"
                     for i, l in enumerate(losses)
                 )
                 print(f'Epoch {ep} losses — {per_dir_info}')
 
-                # Score: max of per-direction *relative* losses (minimise the worst direction)
-                # This avoids one direction dominating a naive average.
-                # You can swap this for sum, max, or a weighted combo.
-                relative_losses = [
-                    l / self._best_per_direction[i] if self._best_per_direction[i] < float('inf') else 1.0
-                    for i, l in enumerate(losses)
-                ]
-                combined_score = max(relative_losses)  # minimax: best worst-case direction
+                # Save only when EVERY direction is at or below its personal best (global min).
+                # Check BEFORE updating bests so epoch 0 correctly triggers a save.
+                all_at_global_min = all(losses[i] <= self._best_per_direction[i] for i in range(num_directions))
 
-                # Fallback for first epoch: use raw max
-                if all(self._best_per_direction[i] == float('inf') for i in range(num_directions)):
-                    combined_score = max(losses)
+                # Update per-direction bests
+                for i, l in enumerate(losses):
+                    self._best_per_direction[i] = min(self._best_per_direction[i], l)
 
-                print(f'Epoch {ep} combined score (minimax relative): {combined_score:.4f} '
-                    f'(best so far: {self._best_combined_score:.4f})')
-
-                if combined_score < self._best_combined_score:
+                if all_at_global_min:
                     old_best_epoch = self._best_epoch
-
-                    self._best_combined_score = combined_score
                     self._best_epoch = ep
 
-                    # Update per-direction bests
-                    for i, l in enumerate(losses):
-                        self._best_per_direction[i] = min(self._best_per_direction[i], l)
-
-                    print(f'New best epoch: {ep} with combined score {combined_score:.4f} — saving steering vectors.')
+                    print(f'Epoch {ep} — all directions at global min, saving steering vectors.')
 
                     # Remove old best vectors
-                    if old_best_epoch is not None and old_best_epoch != -1:
+                    if old_best_epoch != -1:
                         for layer in self.layer:
                             old_filename = f"vec_layer-{layer}_epoch-{old_best_epoch}.pt"
                             old_filepath = os.path.join(self.vec_dir, old_filename)
@@ -2107,20 +2093,19 @@ class BiPOTrainer(BaseTrainer):
                                     "epoch": ep,
                                     "layer": layer,
                                     "run_id": run_id,
-                                    "combined_score": combined_score,
                                     "direction_losses": {str(i): l for i, l in enumerate(losses)},
                                 }
                             )
                             artifact_vec.add_file(filepath)
                             wandb.log_artifact(artifact_vec)
                 else:
-                    # Still update per-direction bests even if not the globally best epoch
-                    for i, l in enumerate(losses):
-                        self._best_per_direction[i] = min(self._best_per_direction[i], l)
-
-                print(f'Epoch {ep} is not the best (score {combined_score:.4f} >= best {self._best_combined_score:.4f} '
-                      f'at ep {self._best_epoch}), skipping save.')
-
+                    not_improved = [
+                        f"dir{i}: {losses[i]:.6f} > best {self._best_per_direction[i]:.6f}"
+                        for i in range(num_directions)
+                        if losses[i] > self._best_per_direction[i]
+                    ]
+                    print(f'Epoch {ep} — not all directions at global min, skipping save. '
+                        f'Not improved: {not_improved}')
 
         if self.generate_during_eval:
             num_samples = len(dataloader.dataset)

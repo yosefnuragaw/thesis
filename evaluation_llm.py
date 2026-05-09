@@ -154,6 +154,7 @@ def main(baseline: bool, args: ScriptArguments) -> None:
             continue
         elif args.behavior in ['hallucination', 'jailbreak'] and mul != 1.0:
             continue  
+        
         print(f"[Evaluating Multiplier:] {mul}")
 
         coherence_factory = PromptProcessor()

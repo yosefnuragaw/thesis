@@ -2052,7 +2052,6 @@ class BiPOTrainer(BaseTrainer):
                 print(f'Epoch {ep} losses — {per_dir_info}')
 
                 # Save only when EVERY direction is at or below its personal best (global min).
-                # Check BEFORE updating bests so epoch 0 correctly triggers a save.
                 all_at_global_min = all(losses[i] <= self._best_per_direction[i] for i in range(num_directions))
 
                 # Update per-direction bests

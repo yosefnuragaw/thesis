@@ -255,8 +255,8 @@ class CAABlockWrapper(torch.nn.Module):
                 # where 0° → 1.0 (identical), 90° → 0.5, 180° → 0.0 (opposite)
                 cos_sim_clamped = cos_sim.clamp(-1.0, 1.0)  # guard for arccos domain
                 angular_dis = (torch.acos(cos_sim_clamped) / torch.pi)  # [B, T]
-                bonus = (1 + self.gain * (angular_dis - self.treshold) / (1 - self.treshold)).clamp(min=0)
-                mask = mask * angular_dis * bonus
+                # bonus = (1 + self.gain * (angular_dis - self.treshold) / (1 - self.treshold)).clamp(min=0)
+                mask = mask * angular_dis 
 
             if isinstance(mask, torch.Tensor):
                 while mask.dim() < out_tensor.dim():

@@ -160,6 +160,8 @@ class CAABlockWrapper(torch.nn.Module):
         self.block = block
         self.is_extract = False  # initialize properly
         self.treshold = treshold
+        self.gain = 1.0
+        
         try:
             ref_param = next(block.parameters())
             self.init_dtype = ref_param.dtype
@@ -216,20 +218,17 @@ class CAABlockWrapper(torch.nn.Module):
         sv_neg = vec_neg - vec_pos
         
         return sv_pos, sv_neg
+    
     @override
     def forward(self, hidden_states, *args, **kwargs):
-        def __cosine_distance(vec_1, vec_2):
+        def __cosine_similarity(vec_1, vec_2):
             if vec_2.dim() == 3 and vec_1.dim() == 1:
                 vec_1_expanded = vec_1.unsqueeze(0).unsqueeze(0).expand_as(vec_2)
             elif vec_2.dim() == 2 and vec_1.dim() == 1:
                 vec_1_expanded = vec_1.unsqueeze(0).expand_as(vec_2)
             else:
                 vec_1_expanded = vec_1
-
-            cos_sim = torch.nn.functional.cosine_similarity(vec_1_expanded, vec_2, dim=-1)
-            cos_sim_c = torch.clamp(cos_sim, min=self.treshold, max=1.0)
-            cos_dis = cos_sim_c
-            return cos_dis
+            return torch.nn.functional.cosine_similarity(vec_1_expanded, vec_2, dim=-1)
 
         output = self.block(hidden_states, *args, **kwargs)
         out_tensor = output[0] if isinstance(output, tuple) else output
@@ -240,20 +239,27 @@ class CAABlockWrapper(torch.nn.Module):
             self.record(batch_avg.cpu())
         else:
             current_vec = (self.multiplier * self.vec).to(out_tensor.device)
-            mask = self.multiplier 
+            mask = self.multiplier
 
             if self.apply_type == 'layer':
-                mask = mask * __cosine_distance(current_vec, avg_output)   
+                cos_sim = __cosine_similarity(current_vec, avg_output)
+                cos_sim_c = cos_sim.clamp(min=self.treshold, max=1.0)
+                mask = mask * cos_sim_c
 
             elif self.apply_type == 'sequence':
-                mask = mask * __cosine_distance(current_vec, out_tensor.detach())  
+                cos_sim = __cosine_similarity(current_vec, out_tensor.detach())
+                cos_sim_c = cos_sim.clamp(min=self.treshold, max=1.0)
+                mask = mask * cos_sim_c
 
-            # Ensure the mask can be multiplied against [B, T, D] or [B, D]
+            elif self.apply_type == 'sequence2':
+                cos_sim = __cosine_similarity(current_vec, out_tensor.detach())  # [B, T]
+                scale = cos_sim * (1 + self.gain * (cos_sim - self.treshold) / (1 - self.treshold))
+                mask = mask * scale.clamp(min=0)
+
             if isinstance(mask, torch.Tensor):
                 while mask.dim() < out_tensor.dim():
-                    mask = mask.unsqueeze(-1) # [B, 1] or [B, T, 1]
+                    mask = mask.unsqueeze(-1)  # [B, 1] or [B, T, 1]
 
-            # Apply the steering
             if isinstance(output, tuple):
                 modified_hidden = output[0] + (mask * self.vec.to(output[0].device))
                 output = (modified_hidden,) + output[1:]

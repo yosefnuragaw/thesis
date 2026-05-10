@@ -157,7 +157,7 @@ class CAABlockWrapper(torch.nn.Module):
         self.multiplier = 1.0
         self.block = block
         self.is_extract = False  # initialize properly
-        self.treshold = treshold
+        self.treshold = 0.5
         self.gain = 1.0
 
         try:

@@ -8,6 +8,6 @@ layer: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 # Vector
 vec_dir: "caa/pretrained_vector/jailbreak/llama-3/all"
 answer_dir: "caa/generation_results/jailbreak/llama-3/all-sequence"
-apply_type: "sequence"
+apply_type: "sequence2"
 
-treshold: 0.25
+treshold: 0.0

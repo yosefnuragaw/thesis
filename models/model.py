@@ -14,8 +14,8 @@ VALID_APPLY_TYPES = {'base','layer', 'sequence','sequence2'}
 
 
 
-class MaskGate2(torch.nn.Module):
-    def __init__(self, hidden_dim: int, dtype: torch.dtype = torch.float32, function: str = "sigmoid"):
+class MaskGate(torch.nn.Module):
+    def __init__(self, dtype: torch.dtype = torch.float32):
         super().__init__()
         self.sigmoid =  torch.nn.functional.sigmoid()
         self.h = torch.nn.Parameter(torch.tensor([0.0], dtype=dtype))
@@ -45,6 +45,7 @@ class BlockWrapper(torch.nn.Module):
         else:
             self.vec = torch.nn.Parameter(torch.zeros(hidden_dim, dtype= self.init_dtype))
 
+        self.gate = MaskGate(dtype=self.init_dtype)
         self.gen_step = 0 
         self.buffer = buffer
         self.buffer_space = []
@@ -52,7 +53,7 @@ class BlockWrapper(torch.nn.Module):
         self.rel_norm_space = []
     
     def forward(self, hidden_states, *args, **kwargs):
-        def __cosine_distance(vec_1, vec_2):
+        def __cosine_similarity(vec_1, vec_2):
             if vec_2.dim() == 3 and vec_1.dim() == 1:
                 vec_1_expanded = vec_1.unsqueeze(0).unsqueeze(0).expand_as(vec_2)
             elif vec_2.dim() == 2 and vec_1.dim() == 1:
@@ -60,9 +61,8 @@ class BlockWrapper(torch.nn.Module):
             else:
                 vec_1_expanded = vec_1
 
-            cos_sim = torch.nn.functional.cosine_similarity(vec_1_expanded, vec_2, dim=-1)
-            cos_sim_c = torch.clamp(cos_sim, min=self.treshold, max=1.0)
-            return cos_sim_c
+            return torch.nn.functional.cosine_similarity(vec_1_expanded, vec_2, dim=-1)
+          
         
         output = self.block(hidden_states, *args, **kwargs)
         out_tensor = output[0] if isinstance(output, tuple) else output
@@ -70,11 +70,19 @@ class BlockWrapper(torch.nn.Module):
         current_vec = (self.multiplier * self.vec).to(out_tensor.device)
         mask = self.multiplier 
         if self.apply_type == 'layer':
-            mask *= __cosine_distance(current_vec, avg_output)
+            cos_sim = __cosine_similarity(current_vec, avg_output)
+            cos_sim_c = cos_sim.clamp(min=self.treshold, max=1.0)
+            mask = mask * cos_sim_c
+
         elif self.apply_type == 'sequence':
-            mask *= __cosine_distance(current_vec, out_tensor.detach())
-        else:
-            mask *= __cosine_distance(current_vec, avg_output) # Fallback to layer-wise
+            cos_sim = __cosine_similarity(current_vec, out_tensor.detach())
+            cos_sim_c = cos_sim.clamp(min=self.treshold, max=1.0)
+            mask = mask * cos_sim_c
+
+        elif self.apply_type == 'sequence2':
+            cos_sim = __cosine_similarity(current_vec, out_tensor.detach())  # [B, T]
+            bonus = (1 + self.gain * (cos_sim - self.gate.forward()) / (1 - self.gate.forward())).clamp(min=0)
+            mask  = mask * cos_sim.clamp(min=0) * bonus
 
         if isinstance(mask, torch.Tensor):
             while mask.dim() < hidden_states.dim():
@@ -243,8 +251,12 @@ class CAABlockWrapper(torch.nn.Module):
 
             elif self.apply_type == 'sequence2':
                 cos_sim = __cosine_similarity(current_vec, out_tensor.detach())  # [B, T]
-                bonus = (1 + self.gain * (cos_sim - self.treshold) / (1 - self.treshold)).clamp(min=0)
-                mask  = mask * cos_sim.clamp(min=0) * bonus
+                # Angular distance: 1 - (arccos(cos_sim) / π), range [0, 1]
+                # where 0° → 1.0 (identical), 90° → 0.5, 180° → 0.0 (opposite)
+                cos_sim_clamped = cos_sim.clamp(-1.0, 1.0)  # guard for arccos domain
+                angular_dis = (torch.acos(cos_sim_clamped) / torch.pi)  # [B, T]
+                bonus = (1 + self.gain * (angular_dis - self.treshold) / (1 - self.treshold)).clamp(min=0)
+                mask = mask * angular_dis * bonus
 
             if isinstance(mask, torch.Tensor):
                 while mask.dim() < out_tensor.dim():

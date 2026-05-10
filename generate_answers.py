@@ -197,6 +197,9 @@ def main(baseline:bool, args: ScriptArguments)->None:
             )
     if not baseline:
         for multiplier in args.multipliers:
+            if not baseline and args.behavior in ['hallucination','jailbreak'] and multiplier != 0:
+                continue
+            
             w = args.pos_weight if multiplier > 0 else args.neg_weight
             for idx,weight in zip(args.layer,w):
                 if isinstance(model.model.layers[idx], BlockWrapper):

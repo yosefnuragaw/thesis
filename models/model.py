@@ -158,7 +158,7 @@ class CAABlockWrapper(torch.nn.Module):
         self.block = block
         self.is_extract = False  # initialize properly
         self.treshold = treshold
-        self.gain = 2.0
+        self.gain = 1.0
 
         try:
             ref_param = next(block.parameters())

@@ -161,6 +161,7 @@ class CAABlockWrapper(torch.nn.Module):
         self.is_extract = False  # initialize properly
         self.treshold = treshold
         self.gain = 1.0
+        self.l = 0.1
 
         try:
             ref_param = next(block.parameters())
@@ -253,8 +254,8 @@ class CAABlockWrapper(torch.nn.Module):
 
             elif self.apply_type == 'sequence2':
                 cos_sim = __cosine_similarity(current_vec, out_tensor.detach())  # [B, T]
-                scale = cos_sim * (1 + self.gain * (cos_sim - self.treshold) / (1 - self.treshold))
-                mask = mask * scale.clamp(min=0)
+                bonus = (1 + self.gain * (cos_sim - self.treshold) / (1 - self.treshold)).clamp(min=self.l)
+                mask  = mask * cos_sim.clamp(min=0) * bonus
 
             if isinstance(mask, torch.Tensor):
                 while mask.dim() < out_tensor.dim():

@@ -10,7 +10,7 @@ MODEL_TEMPLATE_MAP: Dict[str, str]= {
     'Qwen/Qwen3-8B': 'qwen-7b'
 }
 
-VALID_APPLY_TYPES = {'base','layer', 'sequence'}
+VALID_APPLY_TYPES = {'base','layer', 'sequence','sequence2'}
 
 
 
@@ -161,7 +161,7 @@ class CAABlockWrapper(torch.nn.Module):
         self.is_extract = False  # initialize properly
         self.treshold = treshold
         self.gain = 1.0
-        
+
         try:
             ref_param = next(block.parameters())
             self.init_dtype = ref_param.dtype

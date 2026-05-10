@@ -17,21 +17,11 @@ VALID_APPLY_TYPES = {'base','layer', 'sequence','sequence2'}
 class MaskGate2(torch.nn.Module):
     def __init__(self, hidden_dim: int, dtype: torch.dtype = torch.float32, function: str = "sigmoid"):
         super().__init__()
-
-        func_map = {
-            "relu":      lambda x: torch.nn.functional.relu(x),
-            "softplus":  lambda x: torch.nn.functional.softplus(x),
-            "softplus1": lambda x: torch.nn.functional.softplus(x - 1),  # starts ~0, smoother than relu
-            "sigmoid":  lambda x: torch.nn.functional.sigmoid(x),
-        }
-        
-        if function not in func_map:
-            raise ValueError(f"Function {function} not supported. Choose from {list(func_map.keys())}")
-        self.func = func_map[function]
+        self.sigmoid =  torch.nn.functional.sigmoid()
         self.h = torch.nn.Parameter(torch.tensor([0.0], dtype=dtype))
 
     def forward(self):
-        return self.func(self.h)
+        return self.sigmoid(self.h)
 
 class BlockWrapper(torch.nn.Module):
     def __init__(self, block, hidden_dim, vec: Optional[torch.Tensor] = None, buffer: bool = False, apply_type: str = 'layer', treshold: float = 1.0):
@@ -160,8 +150,7 @@ class CAABlockWrapper(torch.nn.Module):
         self.block = block
         self.is_extract = False  # initialize properly
         self.treshold = treshold
-        self.gain = 1.0
-        self.l = 0.1
+        self.gain = 2.0
 
         try:
             ref_param = next(block.parameters())
@@ -254,8 +243,8 @@ class CAABlockWrapper(torch.nn.Module):
 
             elif self.apply_type == 'sequence2':
                 cos_sim = __cosine_similarity(current_vec, out_tensor.detach())  # [B, T]
-                bonus = (1 + self.gain * (cos_sim - self.treshold) / (1 - self.treshold)).clamp(min=self.l)
-                mask  = mask * cos_sim.clamp(min=self.l) * bonus
+                bonus = (1 + self.gain * (cos_sim - self.treshold) / (1 - self.treshold)).clamp(min=0)
+                mask  = mask * cos_sim.clamp(min=0) * bonus
 
             if isinstance(mask, torch.Tensor):
                 while mask.dim() < out_tensor.dim():

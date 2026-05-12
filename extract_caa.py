@@ -56,7 +56,10 @@ class ScriptArguments:
 def produce_dataloader(behavior: str, tokenizer: AutoTokenizer, batch_size: int = 4):
     data = get_data(tokenizer=tokenizer, behavior=behavior, generation_prompt=False)
 
-    def collate_fn(texts):
+    def collate_fn(batch):
+        prompts = [item["prompt"] for item in batch]
+        texts = [item["prompt"] + item["chosen"] for item in batch]
+
         enc = tokenizer(
             texts,
             return_tensors="pt",
@@ -64,9 +67,22 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer, batch_size: int 
             truncation=True,
             max_length=512,
         )
+
+        # 3. Initialize the response mask with zeros (same shape as attention_mask)
+        response_mask = torch.zeros_like(enc["attention_mask"])
+
+        for i, (prompt, text) in enumerate(zip(prompts, texts)):
+            prompt_ids = tokenizer(prompt, truncation=True, max_length=512)["input_ids"]
+            prompt_len = len(prompt_ids)
+            
+            seq_len = enc["attention_mask"][i].sum().item()
+            if prompt_len < seq_len:
+                response_mask[i, prompt_len:seq_len] = 1
+
         return {
             "input_ids":      enc["input_ids"],
             "attention_mask": enc["attention_mask"],
+            "response_mask":  response_mask, 
         }
 
     dataset = PairedCAADataset(data)
@@ -78,6 +94,7 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer, batch_size: int 
         collate_fn=collate_fn,
     )
     return loader
+
 def init_model(model_name: str, apply_type: str, total_layer: int = 26) -> tuple[AutoModelForCausalLM, AutoTokenizer]:
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
@@ -119,8 +136,9 @@ def extract_caa(model, loader, multiplier, layers, vec_dir, total_layer=26, verb
         for batch in loader:
             input_ids = batch["input_ids"].to(model.device)        # [batch_size, seq_len]
             attention_mask = batch["attention_mask"].to(model.device)
+            response_mask = batch["response_mask"].to(model.device)
             with torch.no_grad():
-                _ = model(input_ids=input_ids, attention_mask=attention_mask).logits
+                _ = model(input_ids=input_ids, attention_mask=attention_mask, response_mask=response_mask).logits
 
     os.makedirs(vec_dir, exist_ok=True)
     for layer in range(total_layer):

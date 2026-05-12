@@ -157,9 +157,10 @@ class CAABlockWrapper(torch.nn.Module):
         self.multiplier = 1.0
         self.block = block
         self.is_extract = False  # initialize properly
-        self.treshold = 0.5
-        self.gain = 1.0
-
+        self.treshold = 0.
+        # self.gain = 2.0
+        self._prev_token = None 
+        self.drift_history = []
         try:
             ref_param = next(block.parameters())
             self.init_dtype = ref_param.dtype
@@ -169,7 +170,8 @@ class CAABlockWrapper(torch.nn.Module):
         if vec is not None:
             self.vec = vec.to(self.init_dtype)
         else:
-            self.vec = torch.nn.Parameter(torch.zeros(hidden_dim, dtype=self.init_dtype))
+            print("Non==============")
+            self.vec = torch.zeros(hidden_dim, dtype=self.init_dtype)
 
         self.caa_buffer = {'pos': [], 'neg': []}
 
@@ -216,7 +218,7 @@ class CAABlockWrapper(torch.nn.Module):
         sv_neg = vec_neg - vec_pos
         
         return sv_pos, sv_neg
-    
+        
     @override
     def forward(self, hidden_states, *args, **kwargs):
         def __cosine_similarity(vec_1, vec_2):
@@ -230,9 +232,17 @@ class CAABlockWrapper(torch.nn.Module):
 
         output = self.block(hidden_states, *args, **kwargs)
         out_tensor = output[0] if isinstance(output, tuple) else output
-        avg_output = out_tensor.detach().mean(dim=1)  # [B, D]
+        detached_tensor = out_tensor.detach() # [B, D]
 
         if self.is_extract:
+            response_mask = kwargs.get("response_mask", getattr(self, "current_mask", None))
+            if response_mask is not None:
+                mask_expanded = response_mask.unsqueeze(-1).to(detached_tensor.dtype)
+                masked_tensor = detached_tensor * mask_expanded
+                avg_output = masked_tensor.mean(dim=1)
+            else:
+                raise ValueError('Response Mask Not Found')
+            
             batch_avg = avg_output.mean(dim=0)
             self.record(batch_avg.cpu())
         else:
@@ -250,13 +260,40 @@ class CAABlockWrapper(torch.nn.Module):
                 mask = mask * cos_sim_c
 
             elif self.apply_type == 'sequence2':
-                cos_sim = __cosine_similarity(current_vec, out_tensor.detach())  # [B, T]
-                # Angular distance: 1 - (arccos(cos_sim) / π), range [0, 1]
-                # where 0° → 1.0 (identical), 90° → 0.5, 180° → 0.0 (opposite)
-                cos_sim_clamped = cos_sim.clamp(-1.0, 1.0)  # guard for arccos domain
-                angular_dis = (torch.acos(cos_sim_clamped) / torch.pi)  # [B, T]
-                bonus = (1 + self.gain * (angular_dis - self.treshold) / (1 - self.treshold)).clamp(min=0)
-                mask = mask * angular_dis * bonus
+                last_token = out_tensor.detach()[:, -1, :]
+            
+                if out_tensor.shape[1] > 1:
+                    prev_token = out_tensor.detach()[:, -2, :]
+                elif self._prev_token is not None:
+                    prev_token = self._prev_token.to(out_tensor.device)
+                else:
+                    prev_token = last_token
+            
+                self._prev_token = last_token.clone()
+            
+                # --- Variance: low = repeating, high = drifting ---
+                # --- Variance: low = repeating, high = drifting ---
+                token_seq = torch.stack([prev_token, last_token], dim=1)  # [B, 2, D]
+                seq_var = token_seq.var(dim=1).mean(dim=-1, keepdim=True)  # [B, 1]
+
+                # normalize by average token norm squared — per sample, scale-free
+                token_norm_sq = token_seq.pow(2).mean(dim=(1, 2), keepdim=True)  # [B, 1, 1]
+                var_norm = (seq_var / (token_norm_sq.squeeze(1) + 1e-6)).clamp(0.0, 1.0)
+
+                direction = var_norm * 2.0 - 1.0  # [-1, +1]
+                
+                # --- Alignment: how far current token is from concept ---
+                cos_sim_curr = __cosine_similarity(last_token, current_vec).clamp(-1.0, 1.0)  # [B]
+                alignment = (1.0 - cos_sim_curr).unsqueeze(-1)  # [B, 1], high = far from concept
+                
+                # --- Direction: sign from variance, magnitude from alignment (no quadratic shrink) ---
+                # alignment scales the mask directly; direction only flips the sign
+                signed_alignment = alignment * direction.sign()          # [-1,+1] sign, [0,1] magnitude
+                signed_alignment = signed_alignment.clamp(min=-0.25)     # dampen subtraction
+                
+                mask = mask * signed_alignment
+            
+                self.drift_history.append(signed_alignment.squeeze(-1).detach().cpu())
 
             if isinstance(mask, torch.Tensor):
                 while mask.dim() < out_tensor.dim():
@@ -269,3 +306,22 @@ class CAABlockWrapper(torch.nn.Module):
                 output = output + (mask * self.vec.to(output.device))
 
         return output
+    
+   
+
+    def extract_and_clear_drift(self):
+        """Calculates the average drift and clears the cache for the next run."""
+        if not self.drift_history:
+            return None
+        
+        # FIX: Flatten each tensor to 1D and concatenate them. 
+        # This completely bypasses the batch size mismatch error.
+        all_drifts = torch.cat([d.flatten() for d in self.drift_history])
+        
+        # Calculate the global average drift for this layer
+        avg_drift = torch.mean(all_drifts) 
+        
+        # Clear to prevent bleeding into the next multiplier evaluation
+        self.drift_history.clear()
+        
+        return avg_drift

@@ -62,7 +62,7 @@ def produce_dataloader(behavior: str, tokenizer: AutoTokenizer, batch_size: int 
 
     def collate_fn(batch):
         prompts = [item["prompt"] for item in batch]
-        texts = [item["prompt"] + item["chosen"] for item in batch]
+        texts = [item["prompt"] + item["response"] for item in batch]
 
         enc = tokenizer(
             texts,

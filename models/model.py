@@ -260,40 +260,64 @@ class CAABlockWrapper(torch.nn.Module):
                 mask = mask * cos_sim_c
 
             elif self.apply_type == 'sequence2':
-                last_token = out_tensor.detach()[:, -1, :]
+                from collections import deque
             
-                if out_tensor.shape[1] > 1:
-                    prev_token = out_tensor.detach()[:, -2, :]
-                elif self._prev_token is not None:
-                    prev_token = self._prev_token.to(out_tensor.device)
+                last_token = out_tensor.detach()[:, -1, :]  # [B, D]
+                B = last_token.shape[0]
+                K = 30
+            
+                # --- Initialize per-sequence history on GPU ---
+                if not hasattr(self, '_token_history') or self._token_history is None or len(self._token_history) != B:
+                    self._token_history = [deque(maxlen=K) for _ in range(B)]
+            
+                for b in range(B):
+                    self._token_history[b].append(last_token[b])  # [D] stays on GPU
+            
+                min_history = min(len(self._token_history[b]) for b in range(B))
+            
+                # --- current_vec [D] -> [B, D] ---
+                cv_2d = current_vec.unsqueeze(0).expand(B, -1)   # [B, D]
+            
+                # --- Cosine distance: last token vs current_vec --- [B]
+                cos_dist = (1.0 - __cosine_similarity(last_token, cv_2d).clamp(-1.0, 1.0))  # [B]
+            
+                if min_history < 10:
+                    dynamic_multiplier = cos_dist.unsqueeze(-1)  
+                    self.drift_history.append(dynamic_multiplier.squeeze(-1).detach().cpu())# [B, 1]
                 else:
-                    prev_token = last_token
+                    # --- Build window tensor [B, W, D] — all on GPU, no transfer ---
+                    window = torch.stack([
+                        torch.stack(list(self._token_history[b])[-min_history:], dim=0)
+                        for b in range(B)
+                    ], dim=0)  # [B, W, D]
             
-                self._prev_token = last_token.clone()
+                    # --- Batched cosine sim: all tokens vs current_vec in one op ---
+                    # current_vec [D] -> [1, 1, D] broadcast over [B, W, D]
+                    cv = current_vec.view(1, 1, -1)                                  # [1, 1, D]
+                    dot = (window * cv).sum(dim=-1)                                  # [B, W]
+                    w_norm = window.norm(dim=-1).clamp(min=1e-8)                     # [B, W]
+                    cv_norm = current_vec.norm().clamp(min=1e-8)                     # scalar
+                    cos_sims = (dot / (w_norm * cv_norm)).clamp(-1.0, 1.0)          # [B, W]
             
-                # --- Variance: low = repeating, high = drifting ---
-                # --- Variance: low = repeating, high = drifting ---
-                token_seq = torch.stack([prev_token, last_token], dim=1)  # [B, 2, D]
-                seq_var = token_seq.var(dim=1).mean(dim=-1, keepdim=True)  # [B, 1]
-
-                # normalize by average token norm squared — per sample, scale-free
-                token_norm_sq = token_seq.pow(2).mean(dim=(1, 2), keepdim=True)  # [B, 1, 1]
-                var_norm = (seq_var / (token_norm_sq.squeeze(1) + 1e-6)).clamp(0.0, 1.0)
-
-                direction = var_norm * 2.0 - 1.0  # [-1, +1]
-                
-                # --- Alignment: how far current token is from concept ---
-                cos_sim_curr = __cosine_similarity(last_token, current_vec).clamp(-1.0, 1.0)  # [B]
-                alignment = (1.0 - cos_sim_curr).unsqueeze(-1)  # [B, 1], high = far from concept
-                
-                # --- Direction: sign from variance, magnitude from alignment (no quadratic shrink) ---
-                # alignment scales the mask directly; direction only flips the sign
-                signed_alignment = alignment * direction.sign()          # [-1,+1] sign, [0,1] magnitude
-                signed_alignment = signed_alignment.clamp(min=-0.25)     # dampen subtraction
-                
-                mask = mask * signed_alignment
+                    # --- Pearson vs ranks = Spearman = monotonic trend proxy ---
+                    W = cos_sims.shape[1]
+                    ranks = torch.arange(W, device=out_tensor.device, dtype=out_tensor.dtype)  # [W]
             
-                self.drift_history.append(signed_alignment.squeeze(-1).detach().cpu())
+                    r = ranks - ranks.mean()                                         # [W]
+                    s = cos_sims - cos_sims.mean(dim=1, keepdim=True)               # [B, W]
+            
+                    r_norm = r / (r.norm() + 1e-8)                                  # [W]
+                    s_norm = s / (s.norm(dim=1, keepdim=True) + 1e-8)               # [B, W]
+                    tau_tensor = (s_norm * r_norm).sum(dim=1)                        # [B], in [-1, 1]
+            
+                    # --- Combined signal ---
+                    dynamic_multiplier = cos_dist * (-tau_tensor)              # [B]
+                    dynamic_multiplier = dynamic_multiplier.unsqueeze(-1)           # [B, 1]
+            
+                    self.drift_history.append(dynamic_multiplier.squeeze(-1).detach().cpu())
+            
+                mask = mask * dynamic_multiplier.to(dtype=out_tensor.dtype, device=out_tensor.device)
+            
 
             if isinstance(mask, torch.Tensor):
                 while mask.dim() < out_tensor.dim():
@@ -325,3 +349,4 @@ class CAABlockWrapper(torch.nn.Module):
         self.drift_history.clear()
         
         return avg_drift
+    

@@ -31,7 +31,11 @@ class PairedCAADataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         ex = self.data[idx]
-        return ex["prompt"] + ex[self.mode]  # "chosen" or "rejected"
+        # Return a dictionary so collate_fn can access these separately
+        return {
+            "prompt": ex["prompt"],
+            "response": ex[self.mode]  # dynamically fetches 'chosen' or 'rejected'
+        }
 
 
 

@@ -281,7 +281,7 @@ class CAABlockWrapper(torch.nn.Module):
                 # --- Cosine distance: last token vs current_vec --- [B]
                 cos_dist = (1.0 - __cosine_similarity(last_token, cv_2d).clamp(-1.0, 1.0))  # [B]
             
-                if min_history < 10:
+                if min_history < 30:
                     dynamic_multiplier = cos_dist.unsqueeze(-1)  
                     self.drift_history.append(dynamic_multiplier.squeeze(-1).detach().cpu())# [B, 1]
                 else:
@@ -308,16 +308,16 @@ class CAABlockWrapper(torch.nn.Module):
             
                     r_norm = r / (r.norm() + 1e-8)                                  # [W]
                     s_norm = s / (s.norm(dim=1, keepdim=True) + 1e-8)               # [B, W]
-                    tau_tensor = (s_norm * r_norm).sum(dim=1)                        # [B], in [-1, 1]
+                    tau_tensor = (s_norm * r_norm).sum(dim=1).clamp(-1.0, 1.0)      # [B], in [-1, 1]
             
                     # --- Combined signal ---
-                    dynamic_multiplier = cos_dist * (-tau_tensor)              # [B]
+                    dynamic_multiplier =  cos_dist-tau_tensor  
+                    # [B]
                     dynamic_multiplier = dynamic_multiplier.unsqueeze(-1)           # [B, 1]
             
                     self.drift_history.append(dynamic_multiplier.squeeze(-1).detach().cpu())
             
                 mask = mask * dynamic_multiplier.to(dtype=out_tensor.dtype, device=out_tensor.device)
-            
 
             if isinstance(mask, torch.Tensor):
                 while mask.dim() < out_tensor.dim():

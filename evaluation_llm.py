@@ -33,7 +33,7 @@ def init_judge(model_name: str) -> tuple[LLM, AutoTokenizer]:
         dtype="bfloat16",
         trust_remote_code=True,
         max_model_len=4096,
-        gpu_memory_utilization=0.95,
+        gpu_memory_utilization=0.85,
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     if tokenizer.pad_token is None:
